@@ -8,7 +8,9 @@ interface ImageUploaderProps {
     canvas: HTMLCanvasElement,
     binaryData: boolean[][],
     originalImageData: string,
-    ditherMethod: string
+    ditherMethod: string,
+    threshold: number,
+    invert: boolean
   ) => void;
 }
 
@@ -42,15 +44,23 @@ export default function ImageUploader({
           invert,
         });
 
-        // Create preview canvas
+        // Create preview canvas with 1-bit dithered image
         const previewCanvas = binaryDataToCanvas(binaryData, 1);
         setPreview(previewCanvas.toDataURL());
 
         // Get original image data (stored in dataset)
         const originalImageData = img.dataset.originalData || img.src;
 
-        // Notify parent with original data and dither method
-        onImageProcessed?.(canvas, binaryData, originalImageData, ditherMethod);
+        // Notify parent with the 1-bit dithered canvas (previewCanvas) for display
+        // This ensures the canvas shows the crisp 1-bit image
+        onImageProcessed?.(
+          previewCanvas, // Use previewCanvas instead of canvas for correct 1-bit rendering
+          binaryData,
+          originalImageData,
+          ditherMethod,
+          threshold,
+          invert
+        );
       } catch (error) {
         console.error("Failed to process image:", error);
       } finally {

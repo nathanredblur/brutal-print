@@ -47,6 +47,9 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
         backgroundColor: '#ffffff',
         selection: true,
         preserveObjectStacking: true,
+        // Disable image smoothing globally for pixel-perfect 1-bit rendering
+        enableRetinaScaling: false,
+        imageSmoothingEnabled: false,
       });
 
       fabricRef.current = fabricCanvas;
@@ -168,15 +171,23 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
 
       if (layer.type === 'image') {
         const imageLayer = layer as ImageLayer;
-        const img = new fabric.FabricImage(imageLayer.imageData, {
+        
+        // Create image from canvas element (1-bit processed image)
+        const canvasElement = imageLayer.imageData;
+        
+        // Create Fabric image with proper image smoothing disabled for pixel-perfect 1-bit rendering
+        const img = new fabric.FabricImage(canvasElement, {
           left: layer.x,
           top: layer.y,
-          scaleX: layer.width / imageLayer.imageData.width,
-          scaleY: layer.height / imageLayer.imageData.height,
+          scaleX: 1,  // Use 1:1 scale since canvas is already at target size
+          scaleY: 1,
           angle: layer.rotation,
           selectable: !layer.locked,
           opacity: layer.opacity,
+          // Disable image smoothing for crisp 1-bit rendering
+          imageSmoothing: false,
         }) as FabricObjectWithData;
+        
         obj = img;
       } else if (layer.type === 'text') {
         const textLayer = layer as TextLayer;
@@ -223,7 +234,18 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
         opacity: layer.opacity,
       });
 
-      if (layer.type === 'text' && obj instanceof fabric.FabricText) {
+      if (layer.type === 'image' && obj instanceof fabric.FabricImage) {
+        const imageLayer = layer as ImageLayer;
+        // Update image source if it changed (reprocessed)
+        const currentElement = obj.getElement();
+        if (currentElement !== imageLayer.imageData) {
+          obj.setElement(imageLayer.imageData);
+          obj.set({
+            scaleX: 1,
+            scaleY: 1,
+          });
+        }
+      } else if (layer.type === 'text' && obj instanceof fabric.FabricText) {
         const textLayer = layer as TextLayer;
         obj.set({
           text: textLayer.text,
@@ -273,6 +295,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           left: 0,
           top: 0,
           selectable: true,
+          imageSmoothing: false,  // Crisp 1-bit rendering
         }) as FabricObjectWithData;
         img.data = { layerId };
         fabricCanvas.add(img);

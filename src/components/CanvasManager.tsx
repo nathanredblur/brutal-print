@@ -112,10 +112,10 @@ export default function CanvasManager() {
   }, [isConnected, isPrinting]);
 
   const handleImageProcessed = useCallback(
-    (canvas: HTMLCanvasElement, binaryData: boolean[][], originalImageData: string, ditherMethod: string) => {
+    (canvas: HTMLCanvasElement, binaryData: boolean[][], originalImageData: string, ditherMethod: string, threshold: number, invert: boolean) => {
       // Add image as a new layer (non-destructive!)
       const layerName = `Image ${layers.length + 1}`;
-      addImageLayer(canvas, originalImageData, ditherMethod, {
+      addImageLayer(canvas, originalImageData, ditherMethod, threshold, invert, {
         name: layerName,
         x: 0,
         y: 0,
@@ -224,9 +224,15 @@ export default function CanvasManager() {
   }, []);
 
   // Handle image reprocessing with new filter
-  const handleReprocessImageLayer = useCallback((layerId: string, newDitherMethod: string, newImageData: HTMLCanvasElement) => {
-    reprocessImageLayer(layerId, newDitherMethod, newImageData);
-    toast.success("Image reprocessed!", `New dither method applied: ${newDitherMethod}`);
+  const handleReprocessImageLayer = useCallback((layerId: string, newImageData: HTMLCanvasElement, updates: { ditherMethod?: string; threshold?: number; invert?: boolean }) => {
+    reprocessImageLayer(layerId, newImageData, updates);
+    
+    const changes = [];
+    if (updates.ditherMethod) changes.push(`Dither: ${updates.ditherMethod}`);
+    if (updates.threshold !== undefined) changes.push(`Threshold: ${updates.threshold}`);
+    if (updates.invert !== undefined) changes.push(`Invert: ${updates.invert ? 'ON' : 'OFF'}`);
+    
+    toast.success("Image reprocessed!", changes.join(', '));
   }, [reprocessImageLayer, toast]);
 
   // Handle new canvas (clear all layers)

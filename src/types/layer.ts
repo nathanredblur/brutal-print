@@ -26,6 +26,8 @@ export interface ImageLayer extends BaseLayer {
   imageData: HTMLCanvasElement; // Processed 1-bit image ready to render
   originalImageData: string; // Base64 of original image for reprocessing
   ditherMethod: string; // Current dithering method applied
+  threshold: number; // Threshold value (0-255)
+  invert: boolean; // Whether image is inverted
 }
 
 export interface TextLayer extends BaseLayer {

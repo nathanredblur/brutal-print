@@ -15,7 +15,7 @@ interface PropertiesPanelProps {
   canvasHeight: number;
   onUpdateTextLayer: (layerId: string, updates: Partial<TextLayer>) => void;
   onUpdateImageLayer: (layerId: string, updates: Partial<ImageLayer>) => void;
-  onReprocessImageLayer: (layerId: string, newDitherMethod: string, newImageData: HTMLCanvasElement) => void;
+  onReprocessImageLayer: (layerId: string, newImageData: HTMLCanvasElement, updates: { ditherMethod?: string; threshold?: number; invert?: boolean }) => void;
   onCanvasHeightChange: (height: number) => void;
 }
 
@@ -35,6 +35,8 @@ export default function PropertiesPanel({
   const [italic, setItalic] = useState(false);
   const [align, setAlign] = useState<'left' | 'center' | 'right'>('left');
   const [ditherMethod, setDitherMethod] = useState('steinberg');
+  const [threshold, setThreshold] = useState(128);
+  const [invertImage, setInvertImage] = useState(false);
   const [localCanvasHeight, setLocalCanvasHeight] = useState(canvasHeight);
   const [isReprocessing, setIsReprocessing] = useState(false);
 
@@ -51,6 +53,8 @@ export default function PropertiesPanel({
     } else if (selectedLayer?.type === 'image') {
       const imageLayer = selectedLayer as ImageLayer;
       setDitherMethod(imageLayer.ditherMethod || 'steinberg');
+      setThreshold(imageLayer.threshold ?? 128);
+      setInvertImage(imageLayer.invert ?? false);
     }
   }, [selectedLayer]);
 
@@ -104,30 +108,55 @@ export default function PropertiesPanel({
     }
   };
 
-  const handleDitherMethodChange = async (method: string) => {
+  const reprocessCurrentImage = async (updates: { ditherMethod?: string; threshold?: number; invert?: boolean }) => {
     if (selectedLayer?.type !== 'image') return;
     
     const imageLayer = selectedLayer as ImageLayer;
-    setDitherMethod(method);
     setIsReprocessing(true);
 
     try {
-      // Reprocess image with new dither method
-      const newImageData = await reprocessImage(
+      // Reprocess image with new settings
+      const result = await reprocessImage(
         imageLayer.originalImageData,
-        method as DitherMethod
+        (updates.ditherMethod || imageLayer.ditherMethod) as DitherMethod,
+        {
+          threshold: updates.threshold ?? imageLayer.threshold,
+          invert: updates.invert ?? imageLayer.invert,
+        }
       );
 
       // Update layer with new processed image
-      onReprocessImageLayer(selectedLayer.id, method, newImageData);
+      onReprocessImageLayer(selectedLayer.id, result.canvas, {
+        ditherMethod: updates.ditherMethod,
+        threshold: updates.threshold,
+        invert: updates.invert,
+      });
     } catch (error) {
       console.error('Failed to reprocess image:', error);
       alert('Failed to reprocess image. Please try again.');
-      // Revert to previous method
-      setDitherMethod(imageLayer.ditherMethod);
+      // Revert local state
+      if (updates.ditherMethod) setDitherMethod(imageLayer.ditherMethod);
+      if (updates.threshold !== undefined) setThreshold(imageLayer.threshold);
+      if (updates.invert !== undefined) setInvertImage(imageLayer.invert);
     } finally {
       setIsReprocessing(false);
     }
+  };
+
+  const handleDitherMethodChange = async (method: string) => {
+    setDitherMethod(method);
+    await reprocessCurrentImage({ ditherMethod: method });
+  };
+
+  const handleThresholdChange = async (value: number) => {
+    setThreshold(value);
+    await reprocessCurrentImage({ threshold: value });
+  };
+
+  const handleInvertToggle = async () => {
+    const newValue = !invertImage;
+    setInvertImage(newValue);
+    await reprocessCurrentImage({ invert: newValue });
   };
 
   const handleCanvasHeightChange = (height: number) => {
@@ -310,17 +339,45 @@ export default function PropertiesPanel({
                 </select>
               </div>
 
+              <div className="property-group">
+                <label className="property-label">Threshold: {threshold}</label>
+                <input
+                  type="range"
+                  className="property-slider"
+                  value={threshold}
+                  onChange={(e) => handleThresholdChange(Number(e.target.value))}
+                  min={0}
+                  max={255}
+                  step={1}
+                  disabled={isReprocessing}
+                />
+                <div className="property-info-inline">
+                  <span className="info-text-small">0 (black) ← {threshold} → 255 (white)</span>
+                </div>
+              </div>
+
+              <div className="property-group">
+                <label className="property-label">Invert Colors</label>
+                <button
+                  className={`toggle-btn ${invertImage ? 'active' : ''}`}
+                  onClick={handleInvertToggle}
+                  disabled={isReprocessing}
+                >
+                  {invertImage ? 'ON' : 'OFF'}
+                </button>
+              </div>
+
               {isReprocessing && (
                 <div className="property-info processing">
                   <p className="info-text">
-                    ⏳ Reprocessing image with new dither method...
+                    ⏳ Reprocessing image...
                   </p>
                 </div>
               )}
 
               <div className="property-info">
                 <p className="info-text">
-                  ℹ️ Changes apply instantly. Original image quality is preserved.
+                  ℹ️ All changes apply instantly. Original quality is preserved.
                 </p>
               </div>
             </div>
@@ -466,6 +523,81 @@ export default function PropertiesPanel({
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.6; }
+        }
+
+        .property-slider {
+          width: 100%;
+          height: 6px;
+          border-radius: 3px;
+          background: rgba(15, 23, 42, 0.8);
+          outline: none;
+          -webkit-appearance: none;
+        }
+
+        .property-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: var(--color-purple-primary);
+          cursor: pointer;
+          border: 2px solid var(--color-bg-tertiary);
+        }
+
+        .property-slider::-moz-range-thumb {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: var(--color-purple-primary);
+          cursor: pointer;
+          border: 2px solid var(--color-bg-tertiary);
+        }
+
+        .property-slider:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .property-info-inline {
+          margin-top: 0.25rem;
+          text-align: center;
+        }
+
+        .info-text-small {
+          font-size: 0.625rem;
+          color: var(--color-text-muted);
+        }
+
+        .toggle-btn {
+          width: 100%;
+          padding: 0.5rem;
+          font-size: 0.875rem;
+          font-weight: 600;
+          background: rgba(15, 23, 42, 0.8);
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-sm);
+          color: var(--color-text-secondary);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+
+        .toggle-btn:hover:not(:disabled) {
+          background: rgba(167, 139, 250, 0.1);
+          border-color: var(--color-purple-primary);
+          color: var(--color-purple-primary);
+        }
+
+        .toggle-btn.active {
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+          border-color: var(--color-purple-primary);
+          color: var(--color-purple-primary);
+          box-shadow: 0 0 10px rgba(167, 139, 250, 0.3);
+        }
+
+        .toggle-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
 
         .info-label {

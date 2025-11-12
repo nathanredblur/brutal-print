@@ -21,6 +21,8 @@ export function useLayers(initialState?: Partial<LayerState>) {
     imageData: HTMLCanvasElement,
     originalImageData: string,
     ditherMethod: string,
+    threshold: number = 128,
+    invert: boolean = false,
     options?: Partial<ImageLayer>
   ) => {
     setState(prev => {
@@ -39,6 +41,8 @@ export function useLayers(initialState?: Partial<LayerState>) {
         imageData,
         originalImageData,
         ditherMethod,
+        threshold,
+        invert,
       };
 
       logger.info('useLayers', 'Image layer added', {
@@ -46,6 +50,8 @@ export function useLayers(initialState?: Partial<LayerState>) {
         name: newLayer.name,
         size: { width: newLayer.width, height: newLayer.height },
         ditherMethod,
+        threshold,
+        invert,
       });
 
       return {
@@ -218,8 +224,12 @@ export function useLayers(initialState?: Partial<LayerState>) {
     logger.debug('useLayers', 'Image layer updated', { id, updates });
   }, []);
 
-  // Reprocess image layer with new dither method
-  const reprocessImageLayer = useCallback(async (id: string, newDitherMethod: string, newImageData: HTMLCanvasElement) => {
+  // Reprocess image layer with new settings
+  const reprocessImageLayer = useCallback(async (
+    id: string, 
+    newImageData: HTMLCanvasElement,
+    updates: { ditherMethod?: string; threshold?: number; invert?: boolean }
+  ) => {
     setState(prev => ({
       ...prev,
       layers: prev.layers.map(layer => {
@@ -227,7 +237,9 @@ export function useLayers(initialState?: Partial<LayerState>) {
           return {
             ...layer,
             imageData: newImageData,
-            ditherMethod: newDitherMethod,
+            ditherMethod: updates.ditherMethod ?? layer.ditherMethod,
+            threshold: updates.threshold ?? (layer as ImageLayer).threshold,
+            invert: updates.invert ?? (layer as ImageLayer).invert,
             width: newImageData.width,
             height: newImageData.height,
           };
@@ -236,7 +248,7 @@ export function useLayers(initialState?: Partial<LayerState>) {
       }),
     }));
 
-    logger.info('useLayers', 'Image layer reprocessed', { id, newDitherMethod });
+    logger.info('useLayers', 'Image layer reprocessed', { id, updates });
   }, []);
 
   // Rename layer
