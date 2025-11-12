@@ -7,12 +7,15 @@
 
 import { useState, useEffect } from 'react';
 import type { Layer, TextLayer, ImageLayer } from '../types/layer';
+import { reprocessImage } from '../utils/imageReprocessor';
+import type { DitherMethod } from '../lib/dithering';
 
 interface PropertiesPanelProps {
   selectedLayer: Layer | null;
   canvasHeight: number;
   onUpdateTextLayer: (layerId: string, updates: Partial<TextLayer>) => void;
   onUpdateImageLayer: (layerId: string, updates: Partial<ImageLayer>) => void;
+  onReprocessImageLayer: (layerId: string, newDitherMethod: string, newImageData: HTMLCanvasElement) => void;
   onCanvasHeightChange: (height: number) => void;
 }
 
@@ -21,6 +24,7 @@ export default function PropertiesPanel({
   canvasHeight,
   onUpdateTextLayer,
   onUpdateImageLayer,
+  onReprocessImageLayer,
   onCanvasHeightChange,
 }: PropertiesPanelProps) {
   // Local state for form inputs
@@ -32,6 +36,7 @@ export default function PropertiesPanel({
   const [align, setAlign] = useState<'left' | 'center' | 'right'>('left');
   const [ditherMethod, setDitherMethod] = useState('steinberg');
   const [localCanvasHeight, setLocalCanvasHeight] = useState(canvasHeight);
+  const [isReprocessing, setIsReprocessing] = useState(false);
 
   // Update local state when selected layer changes
   useEffect(() => {
@@ -99,10 +104,29 @@ export default function PropertiesPanel({
     }
   };
 
-  const handleDitherMethodChange = (method: string) => {
+  const handleDitherMethodChange = async (method: string) => {
+    if (selectedLayer?.type !== 'image') return;
+    
+    const imageLayer = selectedLayer as ImageLayer;
     setDitherMethod(method);
-    if (selectedLayer?.type === 'image') {
-      onUpdateImageLayer(selectedLayer.id, { ditherMethod: method });
+    setIsReprocessing(true);
+
+    try {
+      // Reprocess image with new dither method
+      const newImageData = await reprocessImage(
+        imageLayer.originalImageData,
+        method as DitherMethod
+      );
+
+      // Update layer with new processed image
+      onReprocessImageLayer(selectedLayer.id, method, newImageData);
+    } catch (error) {
+      console.error('Failed to reprocess image:', error);
+      alert('Failed to reprocess image. Please try again.');
+      // Revert to previous method
+      setDitherMethod(imageLayer.ditherMethod);
+    } finally {
+      setIsReprocessing(false);
     }
   };
 
@@ -272,19 +296,31 @@ export default function PropertiesPanel({
 
               <div className="property-group">
                 <label className="property-label">Dither Method</label>
-                <div className="property-value">
-                  {ditherMethod === 'steinberg' && 'Floyd-Steinberg'}
-                  {ditherMethod === 'atkinson' && 'Atkinson'}
-                  {ditherMethod === 'bayer' && 'Ordered (Bayer)'}
-                  {ditherMethod === 'pattern' && 'Halftone Pattern'}
-                  {ditherMethod === 'threshold' && 'Threshold'}
-                  {!ditherMethod && 'Floyd-Steinberg (default)'}
-                </div>
+                <select
+                  className="property-select"
+                  value={ditherMethod}
+                  onChange={(e) => handleDitherMethodChange(e.target.value)}
+                  disabled={isReprocessing}
+                >
+                  <option value="steinberg">Floyd-Steinberg</option>
+                  <option value="atkinson">Atkinson</option>
+                  <option value="bayer">Ordered (Bayer)</option>
+                  <option value="pattern">Halftone Pattern</option>
+                  <option value="threshold">Threshold</option>
+                </select>
               </div>
+
+              {isReprocessing && (
+                <div className="property-info processing">
+                  <p className="info-text">
+                    ⏳ Reprocessing image with new dither method...
+                  </p>
+                </div>
+              )}
 
               <div className="property-info">
                 <p className="info-text">
-                  💡 To change dithering method, upload the image again with different settings.
+                  ℹ️ Changes apply instantly. Original image quality is preserved.
                 </p>
               </div>
             </div>
@@ -419,6 +455,17 @@ export default function PropertiesPanel({
           background: rgba(6, 182, 212, 0.1);
           border: 1px solid rgba(6, 182, 212, 0.2);
           border-radius: var(--radius-sm);
+        }
+
+        .property-info.processing {
+          background: rgba(167, 139, 250, 0.1);
+          border-color: rgba(167, 139, 250, 0.3);
+          animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
         }
 
         .info-label {

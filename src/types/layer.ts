@@ -23,9 +23,9 @@ export interface BaseLayer {
 
 export interface ImageLayer extends BaseLayer {
   type: 'image';
-  imageData: HTMLCanvasElement; // Processed image ready to render
-  originalImage?: HTMLImageElement;
-  ditherMethod?: string;
+  imageData: HTMLCanvasElement; // Processed 1-bit image ready to render
+  originalImageData: string; // Base64 of original image for reprocessing
+  ditherMethod: string; // Current dithering method applied
 }
 
 export interface TextLayer extends BaseLayer {

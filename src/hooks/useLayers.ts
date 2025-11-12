@@ -5,20 +5,22 @@
  * Provides non-destructive editing capabilities
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { Layer, LayerState, ImageLayer, TextLayer } from '../types/layer';
 import { logger } from '../lib/logger';
 
-export function useLayers() {
+export function useLayers(initialState?: Partial<LayerState>) {
   const [state, setState] = useState<LayerState>({
-    layers: [],
-    selectedLayerId: null,
-    nextId: 1,
+    layers: initialState?.layers || [],
+    selectedLayerId: initialState?.selectedLayerId || null,
+    nextId: initialState?.nextId || 1,
   });
 
   // Add image layer
   const addImageLayer = useCallback((
     imageData: HTMLCanvasElement,
+    originalImageData: string,
+    ditherMethod: string,
     options?: Partial<ImageLayer>
   ) => {
     setState(prev => {
@@ -35,13 +37,15 @@ export function useLayers() {
         opacity: 1,
         rotation: 0,
         imageData,
-        ditherMethod: options?.ditherMethod,
+        originalImageData,
+        ditherMethod,
       };
 
       logger.info('useLayers', 'Image layer added', {
         id: newLayer.id,
         name: newLayer.name,
         size: { width: newLayer.width, height: newLayer.height },
+        ditherMethod,
       });
 
       return {
@@ -214,6 +218,27 @@ export function useLayers() {
     logger.debug('useLayers', 'Image layer updated', { id, updates });
   }, []);
 
+  // Reprocess image layer with new dither method
+  const reprocessImageLayer = useCallback(async (id: string, newDitherMethod: string, newImageData: HTMLCanvasElement) => {
+    setState(prev => ({
+      ...prev,
+      layers: prev.layers.map(layer => {
+        if (layer.id === id && layer.type === 'image') {
+          return {
+            ...layer,
+            imageData: newImageData,
+            ditherMethod: newDitherMethod,
+            width: newImageData.width,
+            height: newImageData.height,
+          };
+        }
+        return layer;
+      }),
+    }));
+
+    logger.info('useLayers', 'Image layer reprocessed', { id, newDitherMethod });
+  }, []);
+
   // Rename layer
   const renameLayer = useCallback((id: string, name: string) => {
     setState(prev => ({
@@ -239,10 +264,14 @@ export function useLayers() {
     return state.layers.find(l => l.id === state.selectedLayerId) || null;
   }, [state.layers, state.selectedLayerId]);
 
+  // Get next ID (useful for persistence)
+  const getNextId = useCallback(() => state.nextId, [state.nextId]);
+
   return {
     layers: state.layers,
     selectedLayerId: state.selectedLayerId,
     selectedLayer: getSelectedLayer(),
+    nextId: state.nextId,
     addImageLayer,
     addTextLayer,
     removeLayer,
@@ -254,8 +283,10 @@ export function useLayers() {
     updateLayer,
     updateTextLayer,
     updateImageLayer,
+    reprocessImageLayer,
     renameLayer,
     clearLayers,
+    getNextId,
   };
 }
 

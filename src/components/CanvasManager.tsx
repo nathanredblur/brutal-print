@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePrinterContext } from "../contexts/PrinterContext";
 import { useToastContext } from "../contexts/ToastContext";
 import { useLayers } from "../hooks/useLayers";
+import { useCanvasPersistence } from "../hooks/useCanvasPersistence";
 import ImageUploader from "./ImageUploader";
 import PrinterConnection from "./PrinterConnection";
 import TextTool from "./TextTool";
@@ -14,15 +15,63 @@ import { logger } from "../lib/logger";
 
 type Tool = "select" | "image" | "text" | "draw" | "shape" | "icon";
 
+// Helper function to load state from localStorage (outside component)
+function loadSavedState() {
+  try {
+    const stored = localStorage.getItem('thermal-print-studio-canvas-state');
+    if (!stored) return null;
+
+    const state = JSON.parse(stored);
+    
+    // Restore HTMLCanvasElement from base64
+    const restoredLayers = state.layers.map((layer: any) => {
+      if (layer.type === 'image') {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return layer;
+
+        const img = new Image();
+        img.src = layer.imageData;
+        
+        canvas.width = layer.width;
+        canvas.height = layer.height;
+        ctx.drawImage(img, 0, 0);
+
+        return {
+          ...layer,
+          imageData: canvas,
+        };
+      }
+      return layer;
+    });
+
+    logger.info('loadSavedState', 'State loaded from localStorage', {
+      layerCount: restoredLayers.length,
+      canvasHeight: state.canvasHeight,
+    });
+
+    return {
+      ...state,
+      layers: restoredLayers,
+    };
+  } catch (error) {
+    logger.error('loadSavedState', 'Failed to load state', error);
+    return null;
+  }
+}
+
 export default function CanvasManager() {
   const fabricCanvasRef = useRef<FabricCanvasRef>(null);
   const [activeTool, setActiveTool] = useState<Tool>("select");
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [showTextTool, setShowTextTool] = useState(false);
   
+  // Load saved state only once using lazy initialization
+  const [savedState] = useState(() => loadSavedState());
+  
   // Canvas dimensions
   const CANVAS_WIDTH = PRINTER_WIDTH;
-  const [canvasHeight, setCanvasHeight] = useState(800);
+  const [canvasHeight, setCanvasHeight] = useState(savedState?.canvasHeight || 800);
   
   // Use shared printer context
   const { printCanvas, isConnected, isPrinting } = usePrinterContext();
@@ -30,11 +79,12 @@ export default function CanvasManager() {
   // Use toast notifications
   const toast = useToastContext();
   
-  // Use layer system
+  // Use layer system with initial state
   const {
     layers,
     selectedLayerId,
     selectedLayer,
+    nextId,
     addImageLayer,
     addTextLayer,
     removeLayer,
@@ -45,7 +95,12 @@ export default function CanvasManager() {
     updateLayer,
     updateTextLayer,
     updateImageLayer,
-  } = useLayers();
+    reprocessImageLayer,
+    clearLayers,
+  } = useLayers(savedState);
+
+  // Enable persistence (auto-save)
+  const persistence = useCanvasPersistence(layers, canvasHeight, selectedLayerId, nextId);
   
   // Log printer state changes (only when they actually change)
   useEffect(() => {
@@ -57,16 +112,16 @@ export default function CanvasManager() {
   }, [isConnected, isPrinting]);
 
   const handleImageProcessed = useCallback(
-    (canvas: HTMLCanvasElement, binaryData: boolean[][]) => {
+    (canvas: HTMLCanvasElement, binaryData: boolean[][], originalImageData: string, ditherMethod: string) => {
       // Add image as a new layer (non-destructive!)
       const layerName = `Image ${layers.length + 1}`;
-      addImageLayer(canvas, {
+      addImageLayer(canvas, originalImageData, ditherMethod, {
         name: layerName,
         x: 0,
         y: 0,
       });
 
-      logger.success("CanvasManager", "Image added as layer");
+      logger.success("CanvasManager", "Image added as layer with original data");
       // No toast notification - visual feedback is the layer appearing
       setShowImageUploader(false);
     },
@@ -167,6 +222,28 @@ export default function CanvasManager() {
     setCanvasHeight(height);
     logger.info('CanvasManager', 'Canvas height changed', { height });
   }, []);
+
+  // Handle image reprocessing with new filter
+  const handleReprocessImageLayer = useCallback((layerId: string, newDitherMethod: string, newImageData: HTMLCanvasElement) => {
+    reprocessImageLayer(layerId, newDitherMethod, newImageData);
+    toast.success("Image reprocessed!", `New dither method applied: ${newDitherMethod}`);
+  }, [reprocessImageLayer, toast]);
+
+  // Handle new canvas (clear all layers)
+  const handleNewCanvas = useCallback(() => {
+    if (layers.length === 0) {
+      toast.info("Canvas is empty", "No layers to clear.");
+      return;
+    }
+
+    const confirmed = confirm("Are you sure you want to start a new canvas? This will remove all layers.");
+    if (confirmed) {
+      clearLayers();
+      persistence.clearSavedState();
+      toast.success("New canvas created!", "All layers have been cleared.");
+      logger.info('CanvasManager', 'New canvas created - all layers cleared');
+    }
+  }, [layers.length, clearLayers, persistence, toast]);
 
   return (
     <div className="canvas-manager">
@@ -278,6 +355,7 @@ export default function CanvasManager() {
             canvasHeight={canvasHeight}
             onUpdateTextLayer={updateTextLayer}
             onUpdateImageLayer={updateImageLayer}
+            onReprocessImageLayer={handleReprocessImageLayer}
             onCanvasHeightChange={handleCanvasHeightChange}
           />
         </div>
@@ -299,6 +377,28 @@ export default function CanvasManager() {
         <div className="panel">
           <h3 className="panel-title">Printer</h3>
           <PrinterConnection onPrint={handlePrint} />
+        </div>
+
+        {/* Canvas Actions */}
+        <div className="panel">
+          <h3 className="panel-title">Canvas</h3>
+          <button
+            className="action-btn new-canvas-btn"
+            onClick={handleNewCanvas}
+            title="Clear all layers and start fresh"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            New Canvas
+          </button>
         </div>
       </div>
 
@@ -425,6 +525,39 @@ export default function CanvasManager() {
         .close-btn:hover {
           background: rgba(239, 68, 68, 0.1);
           color: #ef4444;
+        }
+
+        .action-btn {
+          width: 100%;
+          padding: 0.75rem;
+          font-size: 0.875rem;
+          font-weight: 600;
+          background: var(--color-bg-tertiary);
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-md);
+          color: var(--color-text-secondary);
+          cursor: pointer;
+          transition: all var(--transition-normal);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+        }
+
+        .action-btn:hover {
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+          border-color: var(--color-purple-primary);
+          color: var(--color-purple-primary);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(167, 139, 250, 0.2);
+        }
+
+        .new-canvas-btn svg {
+          transition: transform var(--transition-fast);
+        }
+
+        .new-canvas-btn:hover svg {
+          transform: rotate(90deg);
         }
 
       `}</style>

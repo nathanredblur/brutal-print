@@ -6,7 +6,9 @@ import type { DitherMethod } from "../lib/dithering";
 interface ImageUploaderProps {
   onImageProcessed?: (
     canvas: HTMLCanvasElement,
-    binaryData: boolean[][]
+    binaryData: boolean[][],
+    originalImageData: string,
+    ditherMethod: string
   ) => void;
 }
 
@@ -44,8 +46,11 @@ export default function ImageUploader({
         const previewCanvas = binaryDataToCanvas(binaryData, 1);
         setPreview(previewCanvas.toDataURL());
 
-        // Notify parent
-        onImageProcessed?.(canvas, binaryData);
+        // Get original image data (stored in dataset)
+        const originalImageData = img.dataset.originalData || img.src;
+
+        // Notify parent with original data and dither method
+        onImageProcessed?.(canvas, binaryData, originalImageData, ditherMethod);
       } catch (error) {
         console.error("Failed to process image:", error);
       } finally {
@@ -64,12 +69,15 @@ export default function ImageUploader({
 
       const reader = new FileReader();
       reader.onload = (e) => {
+        const originalDataUrl = e.target?.result as string;
         const img = new Image();
         img.onload = () => {
           setImage(img);
+          // Store original data URL for later reprocessing
+          img.dataset.originalData = originalDataUrl;
           processImage(img);
         };
-        img.src = e.target?.result as string;
+        img.src = originalDataUrl;
       };
       reader.readAsDataURL(file);
     },

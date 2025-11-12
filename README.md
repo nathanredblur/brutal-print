@@ -190,6 +190,12 @@ brutal-print/
 - [x] **Dynamic Canvas Height** ✅ (Adjust canvas height from 400px to 2000px)
 - [x] **Context-aware UI** ✅ (Panel adapts to selected layer type)
 
+### v1.8 ✅ **COMPLETED**
+- [x] **Smart Image Filters** ✅ (Change dithering method after upload)
+- [x] **Original Image Storage** ✅ (Reprocess without quality loss)
+- [x] **Canvas Persistence** ✅ (Auto-save and restore from localStorage)
+- [x] **New Canvas Button** ✅ (Clear all layers, keep canvas height)
+
 ### v2.0 (Planned)
 - [ ] Drawing tool with brushes
 - [ ] Multiple texture patterns
