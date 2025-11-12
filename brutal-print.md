@@ -10,10 +10,12 @@ A Canva-style web application optimized for designing and printing on black and 
 
 ### 1. **Canvas Editor**
 
-- Workspace adapted to thermal printer dimensions (58mm, 80mm)
-- Real-time preview of final output
-- Smooth zoom and navigation system
+- Workspace adapted to thermal printer dimensions (**384px width** × variable height)
+- Real-time preview of final 1-bit monochrome output
+- Smooth zoom and navigation system (10%-500%)
+- Pan with middle-click or Shift+drag
 - Optional grid for precise alignment
+- Fit-to-screen view option
 
 ### 2. **Layer Management**
 
@@ -175,21 +177,21 @@ A Canva-style web application optimized for designing and printing on black and 
 
 #### Pairing
 
-- Automatic thermal printer detection
-- Bluetooth connection
-- USB connection
+- Automatic MXW01 thermal printer detection via BLE
+- Web Bluetooth API connection (Chrome/Edge/Opera)
 - Manual parameter configuration:
-  - Paper width (58mm, 80mm)
-  - Print density
-  - Speed
+  - Print intensity (0-255, default: 93)
+  - Brightness adjustment (0-255)
+  - Dithering method selection
 
 #### Printing
 
-- Final preview before printing
-- Margin adjustment
-- Number of copies
-- Test print
-- Real-time connection status
+- Final 1-bit preview before printing
+- Real-time print progress indicator
+- Print status monitoring
+- Battery level display
+- Test print functionality
+- Connection status indicators
 
 ---
 
@@ -198,32 +200,51 @@ A Canva-style web application optimized for designing and printing on black and 
 ### Frontend
 
 ```typescript
-// Astro + TypeScript
+// Astro + TypeScript + React
 - Astro 4.x
 - TypeScript 5.x
+- React 18+ (for interactive components)
 - Canvas API for editor
-- Web Bluetooth API for connection
+- Web Bluetooth API for printer connection
 ```
 
 ### Main Libraries
 
 ```bash
-npm install mxw01-thermal-printer
-npm install canvas
-npm install fabric  # For canvas manipulation
-npm install pica    # For image resizing
-npm install jimp    # For image processing
+pnpm add mxw01-thermal-printer  # MXW01 thermal printer library
 ```
+
+### Thermal Printer Specifications
+
+- **Model**: MXW01 (Cat Printer compatible)
+- **Print Width**: **384 pixels** (48 bytes per line)
+- **Print Mode**: 1-bit monochrome (black/white only)
+- **Encoding**: Left to right, top to bottom
+- **Bit Order**: LSB first (bit 0 = leftmost pixel)
+- **Minimum Data**: 4320 bytes (90 lines minimum)
+- **Connection**: Bluetooth Low Energy (BLE)
+- **Protocol**: Custom BLE protocol with 3 characteristics:
+  - `AE01` (Control): Commands for status, print request, intensity
+  - `AE02` (Notify): Status responses and print completion
+  - `AE03` (Data): Image data transfer in chunks
 
 ### Image Processing
 
 ```typescript
-// Custom dithering algorithms
-- Floyd-Steinberg implementation
-- Atkinson dithering
-- Ordered dithering (Bayer matrix)
-- Custom texture generators
+// Custom dithering algorithms (src/lib/dithering/)
+- Floyd-Steinberg (recommended for photos)
+- Atkinson (good for illustrations/comics)
+- Ordered/Bayer (patterns and textures)
+- Halftone (dot pattern effect)
+- Threshold (simple black/white conversion)
 ```
+
+### Paper Sizes
+
+- **Standard**: 384px width × variable height
+- **Minimum print**: 90 lines (4320 bytes)
+- **Physical size**: ~58mm thermal paper width
+- **Scale**: ~6.8 pixels per millimeter
 
 ---
 
