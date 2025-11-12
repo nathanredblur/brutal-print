@@ -15,9 +15,9 @@ Thermal Print Studio is an enhanced version of [catprinter](https://github.com/d
 
 - 🎨 **Modern Neuro Core UI** - Beautiful glassmorphism interface with blue/purple gradients
 - 📐 **384px Canvas** - Optimized for MXW01 thermal printer width
-- 🖼️ **Layer Management** - Drag & drop layers with visibility and lock controls
+- 🖼️ **Layer Management** - Non-destructive editing with visibility and lock controls
 - 🎭 **Advanced Dithering** - Floyd-Steinberg, Atkinson, Ordered, Halftone, and more
-- ⚡ **Real-time Preview** - See your 1-bit monochrome output instantly
+- ⚡ **WYSIWYG Canvas** - What You See Is What You Get - 1-bit preview in real-time
 - 🔌 **Web Bluetooth** - Connect directly to MXW01 printers via BLE
 - 🎯 **Zoom & Pan** - Smooth navigation with 10%-500% zoom
 - 🎨 **Image Processing** - Brightness, contrast, invert, and texture overlays
@@ -151,6 +151,8 @@ brutal-print/
 - **[LOGGER_API.md](./LOGGER_API.md)** - 📘 Logger API reference
 - **[LOGGER_FIXES.md](./LOGGER_FIXES.md)** - 🐛 Fixes de SSR y ruido de logs
 - **[STATE_SYNC_FIX.md](./STATE_SYNC_FIX.md)** - 🔧 **FIX FINAL**: Solución al bug de estado duplicado
+- **[TOAST_SYSTEM.md](./TOAST_SYSTEM.md)** - 🎉 Sistema de notificaciones Toast
+- **[DRAG_DROP_LAYERS.md](./DRAG_DROP_LAYERS.md)** - ↕️ Drag & drop para reordenar capas
 
 ## 🎯 Roadmap
 
@@ -163,15 +165,21 @@ brutal-print/
 - [x] **Basic text tool** ✅
 - [x] **Print functionality** ✅ (Fixed with official API patterns)
 
-### v1.5 (In Progress)
-- [ ] Layer management system
+### v1.5 ✅ **COMPLETED**
+- [x] **Layer management system** ✅ (Non-destructive editing)
+- [x] **WYSIWYG 1-bit canvas** ✅ (Dithering applied in real-time)
+- [x] **Success/error popups** ✅ (Beautiful toast notifications with Neuro Core styling)
+- [x] **Drag & drop layer reordering** ✅ (Reorganize layers by dragging)
+- [x] **Delete confirmation dialog** ✅ (In-app modal for destructive actions)
+- [x] **Subtle UI feedback** ✅ (No toast spam, visual layer feedback)
+
+### v2.0 (Planned)
+- [ ] Drag & drop to reposition layers on canvas
 - [ ] Drawing tool with brushes
 - [ ] Multiple texture patterns
 - [ ] Icons and emojis library
 - [ ] Advanced transformations (rotate, scale)
 - [ ] Save/load projects (JSON)
-
-### v2.0 (Future)
 - [ ] Procedural texture generation
 - [ ] Retro presets (80s receipt, punk fanzines)
 - [ ] Experimental glitch effects

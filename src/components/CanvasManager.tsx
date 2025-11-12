@@ -1,9 +1,13 @@
 // Main canvas manager with all tools integrated
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePrinterContext } from "../contexts/PrinterContext";
+import { useToastContext } from "../contexts/ToastContext";
+import { useLayers } from "../hooks/useLayers";
+import { renderLayers, renderWelcomeMessage } from "../utils/canvasRenderer";
 import ImageUploader from "./ImageUploader";
 import PrinterConnection from "./PrinterConnection";
 import TextTool from "./TextTool";
+import LayerPanel from "./LayerPanel";
 import { PRINTER_WIDTH } from "../lib/dithering";
 import { logger } from "../lib/logger";
 
@@ -15,8 +19,24 @@ export default function CanvasManager() {
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [showTextTool, setShowTextTool] = useState(false);
   
-  // Use shared printer context instead of separate hook instance
+  // Use shared printer context
   const { printCanvas, isConnected, isPrinting } = usePrinterContext();
+  
+  // Use toast notifications
+  const toast = useToastContext();
+  
+  // Use layer system
+  const {
+    layers,
+    selectedLayerId,
+    addImageLayer,
+    addTextLayer,
+    removeLayer,
+    toggleVisibility,
+    toggleLock,
+    selectLayer,
+    moveLayer,
+  } = useLayers();
   
   // Log printer state changes (only when they actually change)
   useEffect(() => {
@@ -27,69 +47,48 @@ export default function CanvasManager() {
     });
   }, [isConnected, isPrinting]);
 
-  const initCanvas = useCallback(() => {
+  // Initialize canvas
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
 
     // Set canvas size
     canvas.width = PRINTER_WIDTH;
     canvas.height = 800;
 
-    // Fill with white background
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Add welcome text
-    ctx.fillStyle = "#000000";
-    ctx.font = "bold 24px Inter, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("⚡ THERMAL", canvas.width / 2, canvas.height / 2 - 40);
-    ctx.fillText("PRINT STUDIO", canvas.width / 2, canvas.height / 2 - 10);
-
-    ctx.font = "12px Inter, sans-serif";
-    ctx.fillText(
-      "384px × Variable Height",
-      canvas.width / 2,
-      canvas.height / 2 + 30
-    );
-    ctx.fillText("1-bit Monochrome", canvas.width / 2, canvas.height / 2 + 50);
-    ctx.fillText(
-      "Upload an image to start",
-      canvas.width / 2,
-      canvas.height / 2 + 80
-    );
-
-    // Draw border
-    ctx.strokeStyle = "#cccccc";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+    // Render welcome message if no layers
+    if (layers.length === 0) {
+      renderWelcomeMessage(canvas);
+    }
   }, []);
 
+  // Re-render canvas when layers change
   useEffect(() => {
-    initCanvas();
-  }, [initCanvas]);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    if (layers.length === 0) {
+      renderWelcomeMessage(canvas);
+    } else {
+      renderLayers(canvas, layers, selectedLayerId);
+    }
+  }, [layers, selectedLayerId]);
 
   const handleImageProcessed = useCallback(
     (canvas: HTMLCanvasElement, binaryData: boolean[][]) => {
-      const mainCanvas = canvasRef.current;
-      if (!mainCanvas) return;
+      // Add image as a new layer (non-destructive!)
+      const layerName = `Image ${layers.length + 1}`;
+      addImageLayer(canvas, {
+        name: layerName,
+        x: 0,
+        y: 0,
+      });
 
-      const ctx = mainCanvas.getContext("2d");
-      if (!ctx) return;
-
-      // Clear canvas
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
-
-      // Draw processed image
-      ctx.drawImage(canvas, 0, 0);
-
+      logger.success("CanvasManager", "Image added as layer");
+      // No toast notification - visual feedback is the layer appearing
       setShowImageUploader(false);
     },
-    []
+    [addImageLayer, layers.length]
   );
 
   const handlePrint = useCallback(async () => {
@@ -99,7 +98,7 @@ export default function CanvasManager() {
     const canvas = canvasRef.current;
     if (!canvas) {
       logger.error("CanvasManager", "Canvas not available");
-      alert("Canvas not available");
+      toast.error("Canvas not available", "Please refresh the page and try again.");
       return;
     }
     
@@ -115,8 +114,7 @@ export default function CanvasManager() {
     
     if (!isConnected) {
       logger.error("CanvasManager", "Printer not connected! isConnected = false");
-      logger.warn("CanvasManager", "This is the bug - printer should be connected but isConnected is false");
-      alert("Please connect to printer first");
+      toast.warning("Printer not connected", "Please connect to your thermal printer first.");
       return;
     }
 
@@ -133,12 +131,12 @@ export default function CanvasManager() {
       await printCanvas(canvas, printOptions);
       
       logger.success("CanvasManager", "Print completed!");
-      alert("Print completed successfully!");
+      toast.success("Print completed!", "Your design has been sent to the printer.");
     } catch (error) {
       logger.error("CanvasManager", "Print failed", error);
-      alert("Print failed: " + (error as Error).message);
+      toast.error("Print failed", (error as Error).message);
     }
-  }, [isConnected, isPrinting, printCanvas]);
+  }, [isConnected, isPrinting, printCanvas, toast]);
 
   const handleToolSelect = useCallback((tool: Tool) => {
     setActiveTool(tool);
@@ -152,29 +150,24 @@ export default function CanvasManager() {
   }, []);
 
   const handleAddText = useCallback((text: string, options: any) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // Apply text style
-    ctx.fillStyle = "#000000";
-    ctx.font = `${options.italic ? "italic " : ""}${
-      options.bold ? "bold " : ""
-    }${options.fontSize}px ${options.fontFamily}`;
-    ctx.textAlign = options.align;
-
-    // Draw text
-    const lines = text.split("\n");
-    const lineHeight = options.fontSize * 1.2;
-
-    lines.forEach((line, index) => {
-      ctx.fillText(line, options.x, options.y + index * lineHeight);
+    // Add text as a new layer (non-destructive!)
+    const layerName = `Text ${layers.length + 1}`;
+    addTextLayer(text, {
+      name: layerName,
+      x: options.x || 50,
+      y: options.y || 50,
+      fontSize: options.fontSize || 24,
+      fontFamily: options.fontFamily || 'Inter',
+      bold: options.bold || false,
+      italic: options.italic || false,
+      align: options.align || 'left',
+      color: '#000000',
     });
 
+    logger.success("CanvasManager", "Text added as layer");
+    toast.success("Text added!", `${layerName} has been added to the canvas.`);
     setShowTextTool(false);
-  }, []);
+  }, [addTextLayer, layers.length, toast]);
 
   return (
     <div className="canvas-manager">
@@ -270,6 +263,19 @@ export default function CanvasManager() {
             />
           </div>
         )}
+
+                {/* Layer Panel */}
+                <div className="panel">
+                  <LayerPanel
+                    layers={layers}
+                    selectedLayerId={selectedLayerId}
+                    onSelectLayer={selectLayer}
+                    onToggleVisibility={toggleVisibility}
+                    onToggleLock={toggleLock}
+                    onRemoveLayer={removeLayer}
+                    onMoveLayer={moveLayer}
+                  />
+                </div>
 
         {/* Printer Connection */}
         <div className="panel">
