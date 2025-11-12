@@ -3,21 +3,26 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { usePrinterContext } from "../contexts/PrinterContext";
 import { useToastContext } from "../contexts/ToastContext";
 import { useLayers } from "../hooks/useLayers";
-import { renderLayers, renderWelcomeMessage } from "../utils/canvasRenderer";
 import ImageUploader from "./ImageUploader";
 import PrinterConnection from "./PrinterConnection";
 import TextTool from "./TextTool";
 import LayerPanel from "./LayerPanel";
+import PropertiesPanel from "./PropertiesPanel";
+import FabricCanvas, { type FabricCanvasRef } from "./FabricCanvas";
 import { PRINTER_WIDTH } from "../lib/dithering";
 import { logger } from "../lib/logger";
 
 type Tool = "select" | "image" | "text" | "draw" | "shape" | "icon";
 
 export default function CanvasManager() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fabricCanvasRef = useRef<FabricCanvasRef>(null);
   const [activeTool, setActiveTool] = useState<Tool>("select");
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [showTextTool, setShowTextTool] = useState(false);
+  
+  // Canvas dimensions
+  const CANVAS_WIDTH = PRINTER_WIDTH;
+  const [canvasHeight, setCanvasHeight] = useState(800);
   
   // Use shared printer context
   const { printCanvas, isConnected, isPrinting } = usePrinterContext();
@@ -29,6 +34,7 @@ export default function CanvasManager() {
   const {
     layers,
     selectedLayerId,
+    selectedLayer,
     addImageLayer,
     addTextLayer,
     removeLayer,
@@ -36,6 +42,9 @@ export default function CanvasManager() {
     toggleLock,
     selectLayer,
     moveLayer,
+    updateLayer,
+    updateTextLayer,
+    updateImageLayer,
   } = useLayers();
   
   // Log printer state changes (only when they actually change)
@@ -46,33 +55,6 @@ export default function CanvasManager() {
       source: "usePrinterContext (shared)"
     });
   }, [isConnected, isPrinting]);
-
-  // Initialize canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    // Set canvas size
-    canvas.width = PRINTER_WIDTH;
-    canvas.height = 800;
-
-    // Render welcome message if no layers
-    if (layers.length === 0) {
-      renderWelcomeMessage(canvas);
-    }
-  }, []);
-
-  // Re-render canvas when layers change
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    if (layers.length === 0) {
-      renderWelcomeMessage(canvas);
-    } else {
-      renderLayers(canvas, layers, selectedLayerId);
-    }
-  }, [layers, selectedLayerId]);
 
   const handleImageProcessed = useCallback(
     (canvas: HTMLCanvasElement, binaryData: boolean[][]) => {
@@ -95,14 +77,15 @@ export default function CanvasManager() {
     logger.separator("HANDLE PRINT");
     logger.info("CanvasManager", "handlePrint() called");
     
-    const canvas = canvasRef.current;
+    // Export canvas from Fabric.js
+    const canvas = fabricCanvasRef.current?.exportToCanvas();
     if (!canvas) {
       logger.error("CanvasManager", "Canvas not available");
       toast.error("Canvas not available", "Please refresh the page and try again.");
       return;
     }
     
-    logger.debug("CanvasManager", "Canvas exists", {
+    logger.debug("CanvasManager", "Canvas exported from Fabric.js", {
       width: canvas.width,
       height: canvas.height,
     });
@@ -169,6 +152,22 @@ export default function CanvasManager() {
     setShowTextTool(false);
   }, [addTextLayer, layers.length, toast]);
 
+  // Handle layer updates from Fabric.js
+  const handleLayerUpdate = useCallback((layerId: string, updates: any) => {
+    updateLayer(layerId, updates);
+  }, [updateLayer]);
+
+  // Handle layer selection from Fabric.js
+  const handleLayerSelect = useCallback((layerId: string | null) => {
+    selectLayer(layerId);
+  }, [selectLayer]);
+
+  // Handle canvas height change
+  const handleCanvasHeightChange = useCallback((height: number) => {
+    setCanvasHeight(height);
+    logger.info('CanvasManager', 'Canvas height changed', { height });
+  }, []);
+
   return (
     <div className="canvas-manager">
       {/* Toolbar */}
@@ -233,7 +232,15 @@ export default function CanvasManager() {
 
       {/* Canvas */}
       <div className="canvas-section">
-        <canvas ref={canvasRef} className="main-canvas" />
+        <FabricCanvas
+          ref={fabricCanvasRef}
+          width={CANVAS_WIDTH}
+          height={canvasHeight}
+          layers={layers}
+          selectedLayerId={selectedLayerId}
+          onLayerUpdate={handleLayerUpdate}
+          onLayerSelect={handleLayerSelect}
+        />
       </div>
 
       {/* Sidebar */}
@@ -264,40 +271,34 @@ export default function CanvasManager() {
           </div>
         )}
 
-                {/* Layer Panel */}
-                <div className="panel">
-                  <LayerPanel
-                    layers={layers}
-                    selectedLayerId={selectedLayerId}
-                    onSelectLayer={selectLayer}
-                    onToggleVisibility={toggleVisibility}
-                    onToggleLock={toggleLock}
-                    onRemoveLayer={removeLayer}
-                    onMoveLayer={moveLayer}
-                  />
-                </div>
+        {/* Properties Panel */}
+        <div className="panel">
+          <PropertiesPanel
+            selectedLayer={selectedLayer}
+            canvasHeight={canvasHeight}
+            onUpdateTextLayer={updateTextLayer}
+            onUpdateImageLayer={updateImageLayer}
+            onCanvasHeightChange={handleCanvasHeightChange}
+          />
+        </div>
+
+        {/* Layer Panel */}
+        <div className="panel">
+          <LayerPanel
+            layers={layers}
+            selectedLayerId={selectedLayerId}
+            onSelectLayer={selectLayer}
+            onToggleVisibility={toggleVisibility}
+            onToggleLock={toggleLock}
+            onRemoveLayer={removeLayer}
+            onMoveLayer={moveLayer}
+          />
+        </div>
 
         {/* Printer Connection */}
         <div className="panel">
           <h3 className="panel-title">Printer</h3>
           <PrinterConnection onPrint={handlePrint} />
-        </div>
-
-        {/* Info Panel */}
-        <div className="panel info-panel">
-          <h3 className="panel-title">Canvas Info</h3>
-          <div className="info-item">
-            <span className="info-label">Width:</span>
-            <span className="info-value">384px</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Height:</span>
-            <span className="info-value">800px</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Mode:</span>
-            <span className="info-value">1-bit B&W</span>
-          </div>
         </div>
       </div>
 
@@ -371,13 +372,6 @@ export default function CanvasManager() {
           padding: 2rem;
         }
 
-        .main-canvas {
-          background: white;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px var(--color-border);
-          border-radius: var(--radius-sm);
-          image-rendering: pixelated;
-        }
-
         .sidebar-section {
           background: linear-gradient(135deg, rgba(21, 24, 54, 0.6) 0%, rgba(12, 15, 38, 0.8) 100%);
           backdrop-filter: blur(10px);
@@ -433,31 +427,6 @@ export default function CanvasManager() {
           color: #ef4444;
         }
 
-        .info-panel {
-          margin-top: auto;
-        }
-
-        .info-item {
-          display: flex;
-          justify-content: space-between;
-          padding: 0.5rem 0;
-          border-bottom: 1px solid var(--color-border);
-        }
-
-        .info-item:last-child {
-          border-bottom: none;
-        }
-
-        .info-label {
-          font-size: 0.75rem;
-          color: var(--color-text-muted);
-        }
-
-        .info-value {
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: var(--color-text-primary);
-        }
       `}</style>
     </div>
   );

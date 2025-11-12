@@ -16,10 +16,11 @@ Thermal Print Studio is an enhanced version of [catprinter](https://github.com/d
 - 🎨 **Modern Neuro Core UI** - Beautiful glassmorphism interface with blue/purple gradients
 - 📐 **384px Canvas** - Optimized for MXW01 thermal printer width
 - 🖼️ **Layer Management** - Non-destructive editing with visibility and lock controls
+- ✨ **Interactive Canvas** - Drag, resize, rotate elements like in Canva (powered by Fabric.js)
+- 🎯 **Direct Manipulation** - Click to select, drag to move, handles for resize/rotate
 - 🎭 **Advanced Dithering** - Floyd-Steinberg, Atkinson, Ordered, Halftone, and more
 - ⚡ **WYSIWYG Canvas** - What You See Is What You Get - 1-bit preview in real-time
 - 🔌 **Web Bluetooth** - Connect directly to MXW01 printers via BLE
-- 🎯 **Zoom & Pan** - Smooth navigation with 10%-500% zoom
 - 🎨 **Image Processing** - Brightness, contrast, invert, and texture overlays
 
 ## 🚀 Quick Start
@@ -136,6 +137,7 @@ brutal-print/
 - **[Astro 4.x](https://astro.build/)** - Web framework
 - **[TypeScript 5.x](https://www.typescriptlang.org/)** - Type safety
 - **[React 18+](https://react.dev/)** - Interactive components
+- **[Fabric.js 6.x](http://fabricjs.com/)** - Interactive canvas manipulation
 - **[Tailwind CSS v4](https://tailwindcss.com/)** - Utility-first CSS
 - **[mxw01-thermal-printer](https://github.com/clementvp/mxw01-thermal-printer)** - Printer library
 - **Web Bluetooth API** - Printer connection
@@ -143,6 +145,9 @@ brutal-print/
 ## 📖 Documentation
 
 - **[brutal-print.md](./brutal-print.md)** - Complete specification and architecture
+- **[INTERACTIVE_CANVAS.md](./INTERACTIVE_CANVAS.md)** - 🎨 Interactive canvas with Fabric.js
+- **[PROPERTIES_PANEL.md](./PROPERTIES_PANEL.md)** - 🎛️ **NEW**: Edit elements with Properties Panel
+- **[TESTING_INTERACTIVE_CANVAS.md](./TESTING_INTERACTIVE_CANVAS.md)** - 🧪 Test guide for interactive features
 - **[PRINTING_FIX.md](./PRINTING_FIX.md)** - ⚡ How we fixed the printing issue
 - **[QUICK_START.md](./QUICK_START.md)** - Quick start guide for users
 - **[TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md)** - Complete testing checklist
@@ -173,13 +178,27 @@ brutal-print/
 - [x] **Delete confirmation dialog** ✅ (In-app modal for destructive actions)
 - [x] **Subtle UI feedback** ✅ (No toast spam, visual layer feedback)
 
+### v1.6 ✅ **COMPLETED**
+- [x] **Interactive Canvas with Fabric.js** ✅ (Drag, resize, rotate elements)
+- [x] **Direct Element Manipulation** ✅ (Click to select, visual handles)
+- [x] **Canvas-to-Layer Sync** ✅ (Bidirectional synchronization)
+- [x] **Professional Design Experience** ✅ (Canva-like interactions)
+
+### v1.7 ✅ **COMPLETED**
+- [x] **Properties Panel** ✅ (Edit text, view image info, adjust canvas height)
+- [x] **Real-time Text Editing** ✅ (Edit content, font, size, style, alignment)
+- [x] **Dynamic Canvas Height** ✅ (Adjust canvas height from 400px to 2000px)
+- [x] **Context-aware UI** ✅ (Panel adapts to selected layer type)
+
 ### v2.0 (Planned)
-- [ ] Drag & drop to reposition layers on canvas
 - [ ] Drawing tool with brushes
 - [ ] Multiple texture patterns
 - [ ] Icons and emojis library
-- [ ] Advanced transformations (rotate, scale)
 - [ ] Save/load projects (JSON)
+- [ ] Undo/redo system
+- [ ] Snap to grid & alignment guides
+- [ ] Group selection
+- [ ] Copy/paste functionality
 - [ ] Procedural texture generation
 - [ ] Retro presets (80s receipt, punk fanzines)
 - [ ] Experimental glitch effects

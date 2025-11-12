@@ -172,6 +172,48 @@ export function useLayers() {
     }));
   }, []);
 
+  // Update layer properties (for Fabric.js integration)
+  const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
+    setState(prev => ({
+      ...prev,
+      layers: prev.layers.map(layer =>
+        layer.id === id ? { ...layer, ...updates } : layer
+      ),
+    }));
+
+    logger.debug('useLayers', 'Layer updated', { id, updates });
+  }, []);
+
+  // Update text layer content and style
+  const updateTextLayer = useCallback((id: string, updates: Partial<TextLayer>) => {
+    setState(prev => ({
+      ...prev,
+      layers: prev.layers.map(layer => {
+        if (layer.id === id && layer.type === 'text') {
+          return { ...layer, ...updates };
+        }
+        return layer;
+      }),
+    }));
+
+    logger.debug('useLayers', 'Text layer updated', { id, updates });
+  }, []);
+
+  // Update image layer properties
+  const updateImageLayer = useCallback((id: string, updates: Partial<ImageLayer>) => {
+    setState(prev => ({
+      ...prev,
+      layers: prev.layers.map(layer => {
+        if (layer.id === id && layer.type === 'image') {
+          return { ...layer, ...updates };
+        }
+        return layer;
+      }),
+    }));
+
+    logger.debug('useLayers', 'Image layer updated', { id, updates });
+  }, []);
+
   // Rename layer
   const renameLayer = useCallback((id: string, name: string) => {
     setState(prev => ({
@@ -209,6 +251,9 @@ export function useLayers() {
     selectLayer,
     moveLayer,
     updateLayerPosition,
+    updateLayer,
+    updateTextLayer,
+    updateImageLayer,
     renameLayer,
     clearLayers,
   };
