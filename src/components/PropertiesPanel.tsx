@@ -5,7 +5,7 @@
  * Supports text editing, image filters, and canvas settings
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Layer, TextLayer, ImageLayer } from '../types/layer';
 import { reprocessImage } from '../utils/imageReprocessor';
 import type { DitherMethod } from '../lib/dithering';
@@ -39,6 +39,9 @@ export default function PropertiesPanel({
   const [invertImage, setInvertImage] = useState(false);
   const [localCanvasHeight, setLocalCanvasHeight] = useState(canvasHeight);
   const [isReprocessing, setIsReprocessing] = useState(false);
+  
+  // Debounce threshold changes
+  const thresholdDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update local state when selected layer changes
   useEffect(() => {
@@ -62,6 +65,15 @@ export default function PropertiesPanel({
   useEffect(() => {
     setLocalCanvasHeight(canvasHeight);
   }, [canvasHeight]);
+  
+  // Cleanup debounce timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (thresholdDebounceRef.current) {
+        clearTimeout(thresholdDebounceRef.current);
+      }
+    };
+  }, []);
 
   // Handle text updates
   const handleTextChange = (newText: string) => {
@@ -108,20 +120,22 @@ export default function PropertiesPanel({
     }
   };
 
-  const reprocessCurrentImage = async (updates: { ditherMethod?: string; threshold?: number; invert?: boolean }) => {
+  const reprocessCurrentImage = useCallback(async (updates: { ditherMethod?: string; threshold?: number; invert?: boolean }) => {
     if (selectedLayer?.type !== 'image') return;
     
     const imageLayer = selectedLayer as ImageLayer;
     setIsReprocessing(true);
 
     try {
-      // Reprocess image with new settings
+      // Reprocess image with new settings at current scaled dimensions
       const result = await reprocessImage(
         imageLayer.originalImageData,
         (updates.ditherMethod || imageLayer.ditherMethod) as DitherMethod,
         {
           threshold: updates.threshold ?? imageLayer.threshold,
           invert: updates.invert ?? imageLayer.invert,
+          targetWidth: Math.round(selectedLayer.width),
+          targetHeight: Math.round(selectedLayer.height),
         }
       );
 
@@ -141,16 +155,25 @@ export default function PropertiesPanel({
     } finally {
       setIsReprocessing(false);
     }
-  };
+  }, [selectedLayer, onReprocessImageLayer]);
 
   const handleDitherMethodChange = async (method: string) => {
     setDitherMethod(method);
     await reprocessCurrentImage({ ditherMethod: method });
   };
 
-  const handleThresholdChange = async (value: number) => {
+  const handleThresholdChange = (value: number) => {
     setThreshold(value);
-    await reprocessCurrentImage({ threshold: value });
+    
+    // Clear existing timeout
+    if (thresholdDebounceRef.current) {
+      clearTimeout(thresholdDebounceRef.current);
+    }
+    
+    // Debounce the reprocessing (wait 500ms after user stops dragging)
+    thresholdDebounceRef.current = setTimeout(() => {
+      reprocessCurrentImage({ threshold: value });
+    }, 500);
   };
 
   const handleInvertToggle = async () => {

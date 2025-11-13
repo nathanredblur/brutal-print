@@ -15,7 +15,7 @@ interface FabricCanvasProps {
   height: number;
   layers: Layer[];
   selectedLayerId: string | null;
-  onLayerUpdate?: (layerId: string, updates: Partial<Layer>) => void;
+  onLayerUpdate?: (layerId: string, updates: Partial<Layer>, wasScaled?: boolean) => void;
   onLayerSelect?: (layerId: string | null) => void;
 }
 
@@ -86,8 +86,12 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
             height: (obj.height || 0) * (obj.scaleY || 1),
             rotation: obj.angle || 0,
           };
-          onLayerUpdate?.(obj.data.layerId, updates);
-          logger.debug('FabricCanvas', 'Object modified', { layerId: obj.data.layerId, updates });
+          
+          // Check if the object was scaled (not just moved or rotated)
+          const wasScaled = e.transform?.action === 'scale' || e.transform?.action === 'scaleX' || e.transform?.action === 'scaleY';
+          
+          onLayerUpdate?.(obj.data.layerId, updates, wasScaled);
+          logger.debug('FabricCanvas', 'Object modified', { layerId: obj.data.layerId, updates, wasScaled });
         }
       });
 
@@ -175,12 +179,16 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
         // Create image from canvas element (1-bit processed image)
         const canvasElement = imageLayer.imageData;
         
+        // Calculate scale based on desired display size vs canvas size
+        const scaleX = layer.width / canvasElement.width;
+        const scaleY = layer.height / canvasElement.height;
+        
         // Create Fabric image with proper image smoothing disabled for pixel-perfect 1-bit rendering
         const img = new fabric.FabricImage(canvasElement, {
           left: layer.x,
           top: layer.y,
-          scaleX: 1,  // Use 1:1 scale since canvas is already at target size
-          scaleY: 1,
+          scaleX: scaleX,
+          scaleY: scaleY,
           angle: layer.rotation,
           selectable: !layer.locked,
           opacity: layer.opacity,
@@ -239,10 +247,16 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
         // Update image source if it changed (reprocessed)
         const currentElement = obj.getElement();
         if (currentElement !== imageLayer.imageData) {
+          // Calculate scale to maintain current display size
+          const currentDisplayWidth = layer.width;
+          const currentDisplayHeight = layer.height;
+          const newCanvasWidth = imageLayer.imageData.width;
+          const newCanvasHeight = imageLayer.imageData.height;
+          
           obj.setElement(imageLayer.imageData);
           obj.set({
-            scaleX: 1,
-            scaleY: 1,
+            scaleX: currentDisplayWidth / newCanvasWidth,
+            scaleY: currentDisplayHeight / newCanvasHeight,
           });
         }
       } else if (layer.type === 'text' && obj instanceof fabric.FabricText) {

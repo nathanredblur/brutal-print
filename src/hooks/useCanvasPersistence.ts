@@ -60,15 +60,15 @@ export function useCanvasPersistence(
   }, [layers, canvasHeight, selectedLayerId, nextId]);
 
   // Load state from localStorage
-  const loadState = useCallback((): Partial<CanvasState> | null => {
+  const loadState = useCallback(async (): Promise<Partial<CanvasState> | null> => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) return null;
 
       const state: CanvasState = JSON.parse(stored);
       
-      // Restore HTMLCanvasElement from base64
-      const restoredLayers = state.layers.map(layer => {
+      // Restore HTMLCanvasElement from base64 (wait for images to load)
+      const restoredLayers = await Promise.all(state.layers.map(async layer => {
         if (layer.type === 'image') {
           const imageLayer = layer as any;
           
@@ -77,13 +77,17 @@ export function useCanvasPersistence(
           const ctx = canvas.getContext('2d');
           if (!ctx) return layer;
 
+          // Wait for image to load
           const img = new Image();
-          img.src = imageLayer.imageData;
+          await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = reject;
+            img.src = imageLayer.imageData;
+          });
           
-          // Note: This is synchronous for cached images
           canvas.width = layer.width;
           canvas.height = layer.height;
-          ctx.drawImage(img, 0, 0);
+          ctx.drawImage(img, 0, 0, layer.width, layer.height);
 
           return {
             ...layer,
@@ -91,7 +95,7 @@ export function useCanvasPersistence(
           };
         }
         return layer;
-      });
+      }));
 
       logger.info('useCanvasPersistence', 'State loaded', {
         layerCount: restoredLayers.length,

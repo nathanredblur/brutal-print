@@ -15,6 +15,32 @@ export function useLayers(initialState?: Partial<LayerState>) {
     selectedLayerId: initialState?.selectedLayerId || null,
     nextId: initialState?.nextId || 1,
   });
+  
+  const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
+
+  // Update state when initialState changes (for loading from localStorage after hydration)
+  useEffect(() => {
+    // Only load once when data becomes available and current state is empty
+    if (!hasLoadedFromStorage && 
+        initialState?.layers && 
+        initialState.layers.length > 0 &&
+        state.layers.length === 0) {
+      
+      setState({
+        layers: initialState.layers,
+        selectedLayerId: initialState.selectedLayerId || null,
+        nextId: initialState.nextId || 1,
+      });
+      
+      setHasLoadedFromStorage(true);
+      
+      logger.info('useLayers', 'State restored from localStorage', {
+        layerCount: initialState.layers.length,
+        nextId: initialState.nextId,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialState, hasLoadedFromStorage]);
 
   // Add image layer
   const addImageLayer = useCallback((
@@ -234,14 +260,20 @@ export function useLayers(initialState?: Partial<LayerState>) {
       ...prev,
       layers: prev.layers.map(layer => {
         if (layer.id === id && layer.type === 'image') {
+          // Preserve current width/height (scaled dimensions)
+          // Only update if they don't exist (first time)
+          const currentWidth = layer.width;
+          const currentHeight = layer.height;
+          
           return {
             ...layer,
             imageData: newImageData,
             ditherMethod: updates.ditherMethod ?? layer.ditherMethod,
             threshold: updates.threshold ?? (layer as ImageLayer).threshold,
             invert: updates.invert ?? (layer as ImageLayer).invert,
-            width: newImageData.width,
-            height: newImageData.height,
+            // Keep the current scaled dimensions instead of resetting to canvas size
+            width: currentWidth,
+            height: currentHeight,
           };
         }
         return layer;

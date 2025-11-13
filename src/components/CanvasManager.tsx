@@ -12,40 +12,89 @@ import PropertiesPanel from "./PropertiesPanel";
 import FabricCanvas, { type FabricCanvasRef } from "./FabricCanvas";
 import { PRINTER_WIDTH } from "../lib/dithering";
 import { logger } from "../lib/logger";
+import type { ImageLayer } from "../types/layer";
 
 type Tool = "select" | "image" | "text" | "draw" | "shape" | "icon";
 
 // Helper function to load state from localStorage (outside component)
-function loadSavedState() {
+async function loadSavedState() {
+  // Check if we're in browser environment
+  if (typeof window === "undefined") {
+    return null;
+  }
+
   try {
-    const stored = localStorage.getItem('thermal-print-studio-canvas-state');
+    const stored = localStorage.getItem("thermal-print-studio-canvas-state");
     if (!stored) return null;
 
     const state = JSON.parse(stored);
-    
-    // Restore HTMLCanvasElement from base64
-    const restoredLayers = state.layers.map((layer: any) => {
-      if (layer.type === 'image') {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return layer;
 
-        const img = new Image();
-        img.src = layer.imageData;
-        
-        canvas.width = layer.width;
-        canvas.height = layer.height;
-        ctx.drawImage(img, 0, 0);
+    // Restore HTMLCanvasElement from base64 (must wait for images to load)
+    const restoredLayers = await Promise.all(
+      state.layers.map(async (layer: any) => {
+        if (layer.type === "image") {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            logger.error(
+              "loadSavedState",
+              "Failed to get 2d context",
+              layer.id
+            );
+            return layer;
+          }
 
-        return {
-          ...layer,
-          imageData: canvas,
-        };
-      }
-      return layer;
-    });
+          // Wait for image to load
+          const img = new Image();
+          try {
+            await new Promise<void>((resolve, reject) => {
+              img.onload = () => {
+                logger.debug("loadSavedState", "Image loaded successfully", {
+                  layerId: layer.id,
+                  imgSize: `${img.naturalWidth}x${img.naturalHeight}`,
+                  targetSize: `${layer.width}x${layer.height}`,
+                });
+                resolve();
+              };
+              img.onerror = (e) => {
+                logger.error("loadSavedState", "Image load error", {
+                  layerId: layer.id,
+                  error: e,
+                });
+                reject(e);
+              };
+              img.src = layer.imageData;
+            });
 
-    logger.info('loadSavedState', 'State loaded from localStorage', {
+            canvas.width = layer.width;
+            canvas.height = layer.height;
+            ctx.drawImage(img, 0, 0, layer.width, layer.height);
+
+            // Verify canvas has actual pixel data
+            const testData = ctx.getImageData(0, 0, 1, 1);
+            logger.debug("loadSavedState", "Canvas drawn", {
+              layerId: layer.id,
+              canvasSize: `${canvas.width}x${canvas.height}`,
+              hasPixels: testData.data.some((v) => v > 0),
+            });
+
+            return {
+              ...layer,
+              imageData: canvas,
+            };
+          } catch (error) {
+            logger.error("loadSavedState", "Failed to restore image layer", {
+              layerId: layer.id,
+              error,
+            });
+            return layer;
+          }
+        }
+        return layer;
+      })
+    );
+
+    logger.info("loadSavedState", "State loaded from localStorage", {
       layerCount: restoredLayers.length,
       canvasHeight: state.canvasHeight,
     });
@@ -55,7 +104,7 @@ function loadSavedState() {
       layers: restoredLayers,
     };
   } catch (error) {
-    logger.error('loadSavedState', 'Failed to load state', error);
+    logger.error("loadSavedState", "Failed to load state", error);
     return null;
   }
 }
@@ -65,20 +114,36 @@ export default function CanvasManager() {
   const [activeTool, setActiveTool] = useState<Tool>("select");
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [showTextTool, setShowTextTool] = useState(false);
-  
-  // Load saved state only once using lazy initialization
-  const [savedState] = useState(() => loadSavedState());
-  
+
+  // Initialize with null to match server render, load after hydration
+  const [savedState, setSavedState] = useState<any>(null);
+
+  // Load saved state after component mounts (client-side only)
+  useEffect(() => {
+    loadSavedState().then((state) => {
+      if (state) {
+        setSavedState(state);
+      }
+    });
+  }, []);
+
   // Canvas dimensions
   const CANVAS_WIDTH = PRINTER_WIDTH;
-  const [canvasHeight, setCanvasHeight] = useState(savedState?.canvasHeight || 800);
-  
+  const [canvasHeight, setCanvasHeight] = useState(800);
+
+  // Update canvas height when saved state loads
+  useEffect(() => {
+    if (savedState?.canvasHeight) {
+      setCanvasHeight(savedState.canvasHeight);
+    }
+  }, [savedState]);
+
   // Use shared printer context
   const { printCanvas, isConnected, isPrinting } = usePrinterContext();
-  
+
   // Use toast notifications
   const toast = useToastContext();
-  
+
   // Use layer system with initial state
   const {
     layers,
@@ -100,28 +165,50 @@ export default function CanvasManager() {
   } = useLayers(savedState);
 
   // Enable persistence (auto-save)
-  const persistence = useCanvasPersistence(layers, canvasHeight, selectedLayerId, nextId);
-  
+  const persistence = useCanvasPersistence(
+    layers,
+    canvasHeight,
+    selectedLayerId,
+    nextId
+  );
+
   // Log printer state changes (only when they actually change)
   useEffect(() => {
     logger.logState("CanvasManager", "Printer connection state", {
       isConnected,
       isPrinting,
-      source: "usePrinterContext (shared)"
+      source: "usePrinterContext (shared)",
     });
   }, [isConnected, isPrinting]);
 
   const handleImageProcessed = useCallback(
-    (canvas: HTMLCanvasElement, binaryData: boolean[][], originalImageData: string, ditherMethod: string, threshold: number, invert: boolean) => {
+    (
+      canvas: HTMLCanvasElement,
+      binaryData: boolean[][],
+      originalImageData: string,
+      ditherMethod: string,
+      threshold: number,
+      invert: boolean
+    ) => {
       // Add image as a new layer (non-destructive!)
       const layerName = `Image ${layers.length + 1}`;
-      addImageLayer(canvas, originalImageData, ditherMethod, threshold, invert, {
-        name: layerName,
-        x: 0,
-        y: 0,
-      });
+      addImageLayer(
+        canvas,
+        originalImageData,
+        ditherMethod,
+        threshold,
+        invert,
+        {
+          name: layerName,
+          x: 0,
+          y: 0,
+        }
+      );
 
-      logger.success("CanvasManager", "Image added as layer with original data");
+      logger.success(
+        "CanvasManager",
+        "Image added as layer with original data"
+      );
       // No toast notification - visual feedback is the layer appearing
       setShowImageUploader(false);
     },
@@ -131,28 +218,37 @@ export default function CanvasManager() {
   const handlePrint = useCallback(async () => {
     logger.separator("HANDLE PRINT");
     logger.info("CanvasManager", "handlePrint() called");
-    
+
     // Export canvas from Fabric.js
     const canvas = fabricCanvasRef.current?.exportToCanvas();
     if (!canvas) {
       logger.error("CanvasManager", "Canvas not available");
-      toast.error("Canvas not available", "Please refresh the page and try again.");
+      toast.error(
+        "Canvas not available",
+        "Please refresh the page and try again."
+      );
       return;
     }
-    
+
     logger.debug("CanvasManager", "Canvas exported from Fabric.js", {
       width: canvas.width,
       height: canvas.height,
     });
 
-    logger.info("CanvasManager", "Checking connection status", { 
+    logger.info("CanvasManager", "Checking connection status", {
       isConnected,
-      isPrinting
+      isPrinting,
     });
-    
+
     if (!isConnected) {
-      logger.error("CanvasManager", "Printer not connected! isConnected = false");
-      toast.warning("Printer not connected", "Please connect to your thermal printer first.");
+      logger.error(
+        "CanvasManager",
+        "Printer not connected! isConnected = false"
+      );
+      toast.warning(
+        "Printer not connected",
+        "Please connect to your thermal printer first."
+      );
       return;
     }
 
@@ -162,14 +258,17 @@ export default function CanvasManager() {
         brightness: 128,
         intensity: 93,
       };
-      
+
       logger.info("CanvasManager", "Calling printCanvas()", printOptions);
-      
+
       // Print the canvas directly using the official method
       await printCanvas(canvas, printOptions);
-      
+
       logger.success("CanvasManager", "Print completed!");
-      toast.success("Print completed!", "Your design has been sent to the printer.");
+      toast.success(
+        "Print completed!",
+        "Your design has been sent to the printer."
+      );
     } catch (error) {
       logger.error("CanvasManager", "Print failed", error);
       toast.error("Print failed", (error as Error).message);
@@ -187,53 +286,117 @@ export default function CanvasManager() {
     }
   }, []);
 
-  const handleAddText = useCallback((text: string, options: any) => {
-    // Add text as a new layer (non-destructive!)
-    const layerName = `Text ${layers.length + 1}`;
-    addTextLayer(text, {
-      name: layerName,
-      x: options.x || 50,
-      y: options.y || 50,
-      fontSize: options.fontSize || 24,
-      fontFamily: options.fontFamily || 'Inter',
-      bold: options.bold || false,
-      italic: options.italic || false,
-      align: options.align || 'left',
-      color: '#000000',
-    });
+  const handleAddText = useCallback(
+    (text: string, options: any) => {
+      // Add text as a new layer (non-destructive!)
+      const layerName = `Text ${layers.length + 1}`;
+      addTextLayer(text, {
+        name: layerName,
+        x: options.x || 50,
+        y: options.y || 50,
+        fontSize: options.fontSize || 24,
+        fontFamily: options.fontFamily || "Inter",
+        bold: options.bold || false,
+        italic: options.italic || false,
+        align: options.align || "left",
+        color: "#000000",
+      });
 
-    logger.success("CanvasManager", "Text added as layer");
-    toast.success("Text added!", `${layerName} has been added to the canvas.`);
-    setShowTextTool(false);
-  }, [addTextLayer, layers.length, toast]);
+      logger.success("CanvasManager", "Text added as layer");
+      toast.success(
+        "Text added!",
+        `${layerName} has been added to the canvas.`
+      );
+      setShowTextTool(false);
+    },
+    [addTextLayer, layers.length, toast]
+  );
 
   // Handle layer updates from Fabric.js
-  const handleLayerUpdate = useCallback((layerId: string, updates: any) => {
-    updateLayer(layerId, updates);
-  }, [updateLayer]);
+  const handleLayerUpdate = useCallback(
+    async (layerId: string, updates: any, wasScaled?: boolean) => {
+      updateLayer(layerId, updates);
+
+      // If an image was scaled, reprocess it with the new dimensions
+      if (wasScaled) {
+        const layer = layers.find((l) => l.id === layerId);
+        if (layer?.type === "image") {
+          const imageLayer = layer as ImageLayer;
+          logger.info("CanvasManager", "Image scaled, reprocessing...", {
+            layerId,
+            newSize: { width: updates.width, height: updates.height },
+          });
+
+          try {
+            const { reprocessImage } = await import(
+              "../utils/imageReprocessor"
+            );
+            const result = await reprocessImage(
+              imageLayer.originalImageData,
+              imageLayer.ditherMethod as any,
+              {
+                threshold: imageLayer.threshold,
+                invert: imageLayer.invert,
+                targetWidth: Math.round(updates.width),
+                targetHeight: Math.round(updates.height),
+              }
+            );
+
+            // Update layer with reprocessed image
+            reprocessImageLayer(layerId, result.canvas, {
+              ditherMethod: imageLayer.ditherMethod,
+              threshold: imageLayer.threshold,
+              invert: imageLayer.invert,
+            });
+
+            logger.success("CanvasManager", "Image reprocessed after scaling");
+          } catch (error) {
+            logger.error(
+              "CanvasManager",
+              "Failed to reprocess scaled image",
+              error
+            );
+          }
+        }
+      }
+    },
+    [updateLayer, layers, reprocessImageLayer]
+  );
 
   // Handle layer selection from Fabric.js
-  const handleLayerSelect = useCallback((layerId: string | null) => {
-    selectLayer(layerId);
-  }, [selectLayer]);
+  const handleLayerSelect = useCallback(
+    (layerId: string | null) => {
+      selectLayer(layerId);
+    },
+    [selectLayer]
+  );
 
   // Handle canvas height change
   const handleCanvasHeightChange = useCallback((height: number) => {
     setCanvasHeight(height);
-    logger.info('CanvasManager', 'Canvas height changed', { height });
+    logger.info("CanvasManager", "Canvas height changed", { height });
   }, []);
 
   // Handle image reprocessing with new filter
-  const handleReprocessImageLayer = useCallback((layerId: string, newImageData: HTMLCanvasElement, updates: { ditherMethod?: string; threshold?: number; invert?: boolean }) => {
-    reprocessImageLayer(layerId, newImageData, updates);
-    
-    const changes = [];
-    if (updates.ditherMethod) changes.push(`Dither: ${updates.ditherMethod}`);
-    if (updates.threshold !== undefined) changes.push(`Threshold: ${updates.threshold}`);
-    if (updates.invert !== undefined) changes.push(`Invert: ${updates.invert ? 'ON' : 'OFF'}`);
-    
-    toast.success("Image reprocessed!", changes.join(', '));
-  }, [reprocessImageLayer, toast]);
+  const handleReprocessImageLayer = useCallback(
+    (
+      layerId: string,
+      newImageData: HTMLCanvasElement,
+      updates: { ditherMethod?: string; threshold?: number; invert?: boolean }
+    ) => {
+      reprocessImageLayer(layerId, newImageData, updates);
+
+      const changes = [];
+      if (updates.ditherMethod) changes.push(`Dither: ${updates.ditherMethod}`);
+      if (updates.threshold !== undefined)
+        changes.push(`Threshold: ${updates.threshold}`);
+      if (updates.invert !== undefined)
+        changes.push(`Invert: ${updates.invert ? "ON" : "OFF"}`);
+
+      toast.success("Image reprocessed!", changes.join(", "));
+    },
+    [reprocessImageLayer, toast]
+  );
 
   // Handle new canvas (clear all layers)
   const handleNewCanvas = useCallback(() => {
@@ -242,12 +405,14 @@ export default function CanvasManager() {
       return;
     }
 
-    const confirmed = confirm("Are you sure you want to start a new canvas? This will remove all layers.");
+    const confirmed = confirm(
+      "Are you sure you want to start a new canvas? This will remove all layers."
+    );
     if (confirmed) {
       clearLayers();
       persistence.clearSavedState();
       toast.success("New canvas created!", "All layers have been cleared.");
-      logger.info('CanvasManager', 'New canvas created - all layers cleared');
+      logger.info("CanvasManager", "New canvas created - all layers cleared");
     }
   }, [layers.length, clearLayers, persistence, toast]);
 
