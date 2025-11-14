@@ -536,7 +536,10 @@ export default function CanvasManager() {
     if (confirmed) {
       clearLayers();
       persistence.clearSavedState();
-      toast.success("¡Nuevo canvas creado!", "Todas las capas han sido eliminadas.");
+      toast.success(
+        "¡Nuevo canvas creado!",
+        "Todas las capas han sido eliminadas."
+      );
       logger.info("CanvasManager", "New canvas created - all layers cleared");
     }
   }, [layers.length, clearLayers, persistence, toast]);
@@ -598,136 +601,135 @@ export default function CanvasManager() {
         {/* Left Sidebar - Canva style */}
         <Sidebar activeTool={activeTool} onToolSelect={handleToolSelect} />
 
-      {/* Left Panel - Dynamic content based on active tool and context */}
-      <div className="left-panel-container">
-        {/* Advanced panel from context bar */}
-        {advancedPanel === "font" && selectedLayer?.type === "text" && (
-          <div className="panel">
-            <div className="panel-header">
-              <h3>Fuente</h3>
-              <button
-                className="close-btn"
-                onClick={() => setAdvancedPanel(null)}
-              >
-                ×
-              </button>
+        {/* Left Panel - Dynamic content based on active tool and context */}
+        <div className="left-panel-container">
+          {/* Advanced panel from context bar */}
+          {advancedPanel === "font" && selectedLayer?.type === "text" && (
+            <div className="panel">
+              <div className="panel-header">
+                <h3>Fuente</h3>
+                <button
+                  className="close-btn"
+                  onClick={() => setAdvancedPanel(null)}
+                >
+                  ×
+                </button>
+              </div>
+              <FontPanel
+                textLayer={selectedLayer as TextLayer}
+                onUpdateTextLayer={updateTextLayer}
+              />
             </div>
-            <FontPanel
-              textLayer={selectedLayer as TextLayer}
-              onUpdateTextLayer={updateTextLayer}
-            />
-          </div>
-        )}
+          )}
 
-        {advancedPanel === "filter" && selectedLayer?.type === "image" && (
-          <div className="panel">
-            <div className="panel-header">
-              <h3>Filtros</h3>
-              <button
-                className="close-btn"
-                onClick={() => setAdvancedPanel(null)}
-              >
-                ×
-              </button>
+          {advancedPanel === "filter" && selectedLayer?.type === "image" && (
+            <div className="panel">
+              <div className="panel-header">
+                <h3>Filtros</h3>
+                <button
+                  className="close-btn"
+                  onClick={() => setAdvancedPanel(null)}
+                >
+                  ×
+                </button>
+              </div>
+              <FilterPanel
+                imageLayer={selectedLayer as ImageLayer}
+                onUpdateImageLayer={updateImageLayer}
+                onReprocessImageLayer={handleReprocessImageLayer}
+              />
             </div>
-            <FilterPanel
-              imageLayer={selectedLayer as ImageLayer}
-              onUpdateImageLayer={updateImageLayer}
-              onReprocessImageLayer={handleReprocessImageLayer}
-            />
-          </div>
-        )}
+          )}
 
-        {advancedPanel === "position" && selectedLayer && (
-          <div className="panel">
-            <div className="panel-header">
-              <h3>Posición y Capas</h3>
-              <button
-                className="close-btn"
-                onClick={() => setAdvancedPanel(null)}
-              >
-                ×
-              </button>
+          {advancedPanel === "position" && selectedLayer && (
+            <div className="panel">
+              <div className="panel-header">
+                <h3>Posición y Capas</h3>
+                <button
+                  className="close-btn"
+                  onClick={() => setAdvancedPanel(null)}
+                >
+                  ×
+                </button>
+              </div>
+              <PositionLayersPanel
+                selectedLayer={selectedLayer}
+                layers={layers}
+                onUpdateLayer={updateLayer}
+                onSelectLayer={selectLayer}
+                onToggleVisibility={toggleVisibility}
+                onToggleLock={toggleLock}
+                onRemoveLayer={removeLayer}
+                onMoveLayer={handleMoveLayerByDirection}
+              />
             </div>
-            <PositionLayersPanel
-              selectedLayer={selectedLayer}
-              layers={layers}
-              onUpdateLayer={updateLayer}
-              onSelectLayer={selectLayer}
-              onToggleVisibility={toggleVisibility}
-              onToggleLock={toggleLock}
-              onRemoveLayer={removeLayer}
-              onMoveLayer={handleMoveLayerByDirection}
-            />
-          </div>
-        )}
+          )}
 
-        {advancedPanel === "printer" && (
-          <div className="panel">
-            <div className="panel-header">
-              <h3>Impresora</h3>
-              <button
-                className="close-btn"
-                onClick={() => setAdvancedPanel(null)}
-              >
-                ×
-              </button>
+          {advancedPanel === "printer" && (
+            <div className="panel">
+              <div className="panel-header">
+                <h3>Impresora</h3>
+                <button
+                  className="close-btn"
+                  onClick={() => setAdvancedPanel(null)}
+                >
+                  ×
+                </button>
+              </div>
+              <PrinterConnection onPrint={handlePrint} />
             </div>
-            <PrinterConnection onPrint={handlePrint} />
-          </div>
-        )}
+          )}
 
-        {/* Image Uploader (when image tool is active) */}
-        {showImageUploader && !advancedPanel && (
-          <div className="panel">
-            <div className="panel-header">
-              <h3>Subir Imagen</h3>
-              <button
-                className="close-btn"
-                onClick={() => setShowImageUploader(false)}
-              >
-                ×
-              </button>
+          {/* Image Uploader (when image tool is active) */}
+          {showImageUploader && !advancedPanel && (
+            <div className="panel">
+              <div className="panel-header">
+                <h3>Subir Imagen</h3>
+                <button
+                  className="close-btn"
+                  onClick={() => setShowImageUploader(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <ImageUploader onImageProcessed={handleImageProcessed} />
             </div>
-            <ImageUploader onImageProcessed={handleImageProcessed} />
-          </div>
-        )}
+          )}
 
-        {/* Text Tool (when text tool is active) */}
-        {showTextTool && !advancedPanel && (
-          <div className="panel">
-            <TextTool
-              onAddText={handleAddText}
-              onClose={() => setShowTextTool(false)}
-            />
-          </div>
-        )}
-
-      </div>
-
-      {/* Canvas Section with Context Bar */}
-      <div className="canvas-container">
-        {/* Context Bar - appears when element is selected */}
-        <ContextBar
-          selectedLayer={selectedLayer}
-          onUpdateLayer={updateLayer}
-          onUpdateTextLayer={updateTextLayer}
-          onUpdateImageLayer={updateImageLayer}
-          onOpenAdvancedPanel={handleOpenAdvancedPanel}
-        />
-
-        {/* Canvas */}
-        <div className="canvas-section">
-          <FabricCanvas
-            ref={fabricCanvasRef}
-            width={CANVAS_WIDTH}
-            height={canvasHeight}
-            layers={layers}
-            selectedLayerId={selectedLayerId}
-            onLayerUpdate={handleLayerUpdate}
-            onLayerSelect={handleLayerSelect}
-          />
+          {/* Text Tool (when text tool is active) */}
+          {showTextTool && !advancedPanel && (
+            <div className="panel">
+              <TextTool
+                onAddText={handleAddText}
+                onClose={() => setShowTextTool(false)}
+              />
+            </div>
+          )}
         </div>
+
+        {/* Canvas Section with Context Bar */}
+        <div className="canvas-container">
+          {/* Context Bar - appears when element is selected */}
+          <ContextBar
+            selectedLayer={selectedLayer}
+            onUpdateLayer={updateLayer}
+            onUpdateTextLayer={updateTextLayer}
+            onUpdateImageLayer={updateImageLayer}
+            onOpenAdvancedPanel={handleOpenAdvancedPanel}
+          />
+
+          {/* Canvas */}
+          <div className="canvas-section">
+            <FabricCanvas
+              ref={fabricCanvasRef}
+              width={CANVAS_WIDTH}
+              height={canvasHeight}
+              layers={layers}
+              selectedLayerId={selectedLayerId}
+              onLayerUpdate={handleLayerUpdate}
+              onLayerSelect={handleLayerSelect}
+            />
+          </div>
         </div>
       </div>
 
