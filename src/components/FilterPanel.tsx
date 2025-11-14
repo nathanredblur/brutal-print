@@ -19,6 +19,7 @@ interface FilterPanelProps {
 const FilterPanel: FC<FilterPanelProps> = ({
   imageLayer,
   onUpdateImageLayer,
+  onReprocessImageLayer,
 }) => {
   const ditherMethods = [
     { id: 'threshold', name: 'Threshold', description: 'Simple black & white' },
@@ -28,20 +29,52 @@ const FilterPanel: FC<FilterPanelProps> = ({
     { id: 'halftone', name: 'Halftone', description: 'Dot pattern' },
   ];
 
+  // Helper to trigger reprocessing with updated parameters
+  const reprocessWithUpdates = async (updates: any) => {
+    // Import reprocessor
+    const { reprocessImage } = await import('../utils/imageReprocessor');
+    
+    // Merge current values with updates
+    const params = {
+      ditherMethod: updates.ditherMethod || imageLayer.ditherMethod,
+      threshold: updates.threshold !== undefined ? updates.threshold : imageLayer.threshold,
+      invert: updates.invert !== undefined ? updates.invert : imageLayer.invert,
+      brightness: updates.brightness !== undefined ? updates.brightness : (imageLayer.brightness ?? 128),
+      contrast: updates.contrast !== undefined ? updates.contrast : (imageLayer.contrast ?? 100),
+      bayerMatrixSize: imageLayer.bayerMatrixSize ?? 4,
+      halftoneCellSize: imageLayer.halftoneCellSize ?? 4,
+      targetWidth: imageLayer.width,
+      targetHeight: imageLayer.height,
+    };
+
+    try {
+      const result = await reprocessImage(
+        imageLayer.originalImageData,
+        params.ditherMethod as any,
+        params
+      );
+
+      // Update the layer with new processed image
+      onReprocessImageLayer(imageLayer.id, result.canvas, updates);
+    } catch (error) {
+      console.error('Failed to reprocess image:', error);
+    }
+  };
+
   const handleDitherChange = (method: string) => {
-    onUpdateImageLayer(imageLayer.id, { ditherMethod: method });
+    reprocessWithUpdates({ ditherMethod: method });
   };
 
   const handleThresholdChange = (value: number) => {
-    onUpdateImageLayer(imageLayer.id, { threshold: value });
+    reprocessWithUpdates({ threshold: value });
   };
 
   const handleBrightnessChange = (value: number) => {
-    onUpdateImageLayer(imageLayer.id, { brightness: value });
+    reprocessWithUpdates({ brightness: value });
   };
 
   const handleContrastChange = (value: number) => {
-    onUpdateImageLayer(imageLayer.id, { contrast: value });
+    reprocessWithUpdates({ contrast: value });
   };
 
   return (
@@ -110,7 +143,7 @@ const FilterPanel: FC<FilterPanelProps> = ({
       <div className="filter-section">
         <button
           className="filter-toggle"
-          onClick={() => onUpdateImageLayer(imageLayer.id, { invert: !imageLayer.invert })}
+          onClick={() => reprocessWithUpdates({ invert: !imageLayer.invert })}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="12" cy="12" r="10" />
