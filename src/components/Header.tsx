@@ -46,7 +46,7 @@ const Header: FC<HeaderProps> = ({
             className="menu-button"
             onClick={() => setShowFileMenu(!showFileMenu)}
           >
-            <span>Archivo</span>
+            <span>File</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="6 9 12 15 18 9" />
             </svg>
@@ -67,7 +67,7 @@ const Header: FC<HeaderProps> = ({
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
                   </svg>
-                  <span>Nuevo</span>
+                  <span>New</span>
                   <span className="menu-shortcut">Ctrl+N</span>
                 </button>
 
@@ -85,7 +85,7 @@ const Header: FC<HeaderProps> = ({
                     <polyline points="17 21 17 13 7 13 7 21" />
                     <polyline points="7 3 7 8 15 8" />
                   </svg>
-                  <span>Guardar</span>
+                  <span>Save</span>
                   <span className="menu-shortcut">Ctrl+S</span>
                 </button>
 
@@ -101,7 +101,7 @@ const Header: FC<HeaderProps> = ({
                     <polyline points="7 10 12 15 17 10" />
                     <line x1="12" y1="15" x2="12" y2="3" />
                   </svg>
-                  <span>Exportar</span>
+                  <span>Export</span>
                   <span className="menu-shortcut">Ctrl+E</span>
                 </button>
               </div>
@@ -142,7 +142,7 @@ const Header: FC<HeaderProps> = ({
         {isConnected && (
           <div className="connection-status">
             <div className="status-dot" />
-            <span>Impresora conectada</span>
+            <span>Printer connected</span>
           </div>
         )}
 
@@ -151,14 +151,14 @@ const Header: FC<HeaderProps> = ({
           className="btn-print"
           onClick={onPrint}
           disabled={isPrinting}
-          title={isConnected ? "Imprimir" : "Conectar impresora"}
+          title={isConnected ? "Print" : "Connect printer"}
         >
           {isPrinting ? (
             <>
               <svg className="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 12a9 9 0 11-6.219-8.56" />
               </svg>
-              <span>Imprimiendo...</span>
+              <span>Printing...</span>
             </>
           ) : (
             <>
@@ -167,7 +167,7 @@ const Header: FC<HeaderProps> = ({
                 <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
                 <rect x="6" y="14" width="12" height="8" />
               </svg>
-              <span>{isConnected ? 'Imprimir' : 'Conectar'}</span>
+              <span>{isConnected ? 'Print' : 'Connect'}</span>
             </>
           )}
         </button>

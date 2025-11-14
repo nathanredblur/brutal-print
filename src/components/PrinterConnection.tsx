@@ -221,6 +221,53 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
           gap: 0.5rem;
         }
 
+        .connection-actions button {
+          flex: 1;
+          padding: 0.75rem 1rem;
+          border-radius: var(--radius-md);
+          font-weight: 600;
+          font-size: 0.875rem;
+          border: none;
+          cursor: pointer;
+          transition: all var(--transition-normal);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+        }
+
+        .btn-primary {
+          background: linear-gradient(135deg, var(--color-purple-dark) 0%, var(--color-blue-dark) 100%);
+          color: var(--color-text-primary);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: var(--glow-purple);
+        }
+
+        .btn-primary:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .btn-secondary {
+          background: var(--color-bg-tertiary);
+          color: var(--color-text-secondary);
+          border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+          border-color: var(--color-purple-primary);
+          color: var(--color-text-primary);
+          background: rgba(167, 139, 250, 0.1);
+        }
+
+        .btn-secondary:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
         .connect-btn {
           width: 100%;
         }

@@ -10,6 +10,7 @@ import ContextBar from "./ContextBar";
 import FontPanel from "./FontPanel";
 import FilterPanel from "./FilterPanel";
 import PositionLayersPanel from "./PositionLayersPanel";
+import CanvasSettingsPanel from "./CanvasSettingsPanel";
 import ImageUploader from "./ImageUploader";
 import PrinterConnection from "./PrinterConnection";
 import TextTool from "./TextTool";
@@ -19,7 +20,7 @@ import { logger } from "../lib/logger";
 import type { Layer, ImageLayer, TextLayer } from "../types/layer";
 
 type Tool = "select" | "image" | "text" | "draw" | "shape" | "icon";
-type AdvancedPanel = "font" | "filter" | "position" | "printer" | null;
+type AdvancedPanel = "font" | "filter" | "position" | "printer" | "canvas" | null;
 
 // Helper function to load state from localStorage (outside component)
 async function loadSavedState() {
@@ -310,6 +311,14 @@ export default function CanvasManager() {
     setAdvancedPanel(panelType);
   }, []);
 
+  // Handle opening canvas settings
+  const handleOpenCanvasSettings = useCallback(() => {
+    setAdvancedPanel("canvas");
+    setActiveTool("select");
+    setShowImageUploader(false);
+    setShowTextTool(false);
+  }, []);
+
   // Handle layer movement with direction (up/down)
   const handleMoveLayerByDirection = useCallback(
     (layerId: string, direction: "up" | "down") => {
@@ -553,17 +562,26 @@ export default function CanvasManager() {
 
   // Handle export
   const handleExport = useCallback(async () => {
-    const canvas = fabricCanvasRef.current?.exportToCanvas();
-    if (!canvas) {
-      toast.error("Error al exportar", "Canvas no disponible.");
-      return;
-    }
-
     try {
+      // Deselect any active element before exporting
+      const wasSelected = selectedLayerId;
+      if (wasSelected) {
+        selectLayer(null);
+        logger.info("CanvasManager", "Deselected layer before export");
+        // Wait a bit for the deselection to take effect
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      const canvas = fabricCanvasRef.current?.exportToCanvas();
+      if (!canvas) {
+        toast.error("Export error", "Canvas not available.");
+        return;
+      }
+
       // Export as PNG
       canvas.toBlob((blob) => {
         if (!blob) {
-          toast.error("Error al exportar", "No se pudo crear la imagen.");
+          toast.error("Export error", "Could not create image.");
           return;
         }
 
@@ -574,14 +592,19 @@ export default function CanvasManager() {
         link.click();
         URL.revokeObjectURL(url);
 
-        toast.success("¡Exportado!", "Tu diseño ha sido descargado.");
+        toast.success("Exported!", "Your design has been downloaded.");
         logger.info("CanvasManager", "Canvas exported as PNG");
+
+        // Restore selection if needed
+        if (wasSelected) {
+          setTimeout(() => selectLayer(wasSelected), 200);
+        }
       });
     } catch (error) {
       logger.error("CanvasManager", "Export failed", error);
-      toast.error("Error al exportar", (error as Error).message);
+      toast.error("Export error", (error as Error).message);
     }
-  }, [toast]);
+  }, [toast, selectedLayerId, selectLayer]);
 
   return (
     <div className="canvas-manager-wrapper">
@@ -599,7 +622,11 @@ export default function CanvasManager() {
 
       <div className="canvas-manager">
         {/* Left Sidebar - Canva style */}
-        <Sidebar activeTool={activeTool} onToolSelect={handleToolSelect} />
+        <Sidebar
+          activeTool={activeTool}
+          onToolSelect={handleToolSelect}
+          onOpenCanvasSettings={handleOpenCanvasSettings}
+        />
 
         {/* Left Panel - Dynamic content based on active tool and context */}
         <div className="left-panel-container">
@@ -665,20 +692,38 @@ export default function CanvasManager() {
             </div>
           )}
 
-          {advancedPanel === "printer" && (
-            <div className="panel">
-              <div className="panel-header">
-                <h3>Impresora</h3>
-                <button
-                  className="close-btn"
-                  onClick={() => setAdvancedPanel(null)}
-                >
-                  ×
-                </button>
-              </div>
-              <PrinterConnection onPrint={handlePrint} />
+        {advancedPanel === "printer" && (
+          <div className="panel">
+            <div className="panel-header">
+              <h3>Printer</h3>
+              <button
+                className="close-btn"
+                onClick={() => setAdvancedPanel(null)}
+              >
+                ×
+              </button>
             </div>
-          )}
+            <PrinterConnection onPrint={handlePrint} />
+          </div>
+        )}
+
+        {advancedPanel === "canvas" && (
+          <div className="panel">
+            <div className="panel-header">
+              <h3>Canvas Settings</h3>
+              <button
+                className="close-btn"
+                onClick={() => setAdvancedPanel(null)}
+              >
+                ×
+              </button>
+            </div>
+            <CanvasSettingsPanel
+              canvasHeight={canvasHeight}
+              onCanvasHeightChange={handleCanvasHeightChange}
+            />
+          </div>
+        )}
 
           {/* Image Uploader (when image tool is active) */}
           {showImageUploader && !advancedPanel && (
@@ -774,6 +819,12 @@ export default function CanvasManager() {
           justify-content: center;
           overflow: auto;
           padding: 2rem;
+        }
+
+        .canvas-section > div {
+          display: flex;
+          justify-content: center;
+          align-items: center;
         }
 
         .panel {

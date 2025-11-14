@@ -10,9 +10,10 @@ type Tool = 'select' | 'image' | 'text' | 'draw' | 'shape' | 'icon';
 interface SidebarProps {
   activeTool: Tool;
   onToolSelect: (tool: Tool) => void;
+  onOpenCanvasSettings?: () => void;
 }
 
-const Sidebar: FC<SidebarProps> = ({ activeTool, onToolSelect }) => {
+const Sidebar: FC<SidebarProps> = ({ activeTool, onToolSelect, onOpenCanvasSettings }) => {
   const tools = [
     {
       id: 'select' as Tool,
@@ -91,6 +92,30 @@ const Sidebar: FC<SidebarProps> = ({ activeTool, onToolSelect }) => {
         ))}
       </nav>
 
+      {/* Canvas Settings Button at bottom */}
+      <div className="sidebar-footer">
+        <button
+          className="sidebar-tool"
+          onClick={onOpenCanvasSettings}
+          title="Canvas Settings"
+        >
+          <div className="sidebar-tool-icon">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M3 9h18M9 21V9" />
+            </svg>
+          </div>
+          <span className="sidebar-tool-label">Canvas</span>
+        </button>
+      </div>
+
       <style>{`
         .sidebar {
           width: 240px;
@@ -99,7 +124,6 @@ const Sidebar: FC<SidebarProps> = ({ activeTool, onToolSelect }) => {
           border-right: 1px solid var(--color-border);
           display: flex;
           flex-direction: column;
-          gap: 1rem;
           padding: 1.5rem 1rem;
         }
 
@@ -120,6 +144,13 @@ const Sidebar: FC<SidebarProps> = ({ activeTool, onToolSelect }) => {
           display: flex;
           flex-direction: column;
           gap: 0.5rem;
+          flex: 1;
+        }
+
+        .sidebar-footer {
+          margin-top: auto;
+          padding-top: 1rem;
+          border-top: 1px solid var(--color-border);
         }
 
         .sidebar-tool {

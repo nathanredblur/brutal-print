@@ -225,22 +225,38 @@ const ContextBar: FC<ContextBarProps> = ({
 
       <style>{`
         .context-bar {
-          height: 56px;
+          min-height: 56px;
           background: linear-gradient(135deg, rgba(21, 24, 54, 0.6) 0%, rgba(12, 15, 38, 0.8) 100%);
           backdrop-filter: blur(10px);
           border-bottom: 1px solid var(--color-border);
           display: flex;
           align-items: center;
-          padding: 0 1.5rem;
+          padding: 0.5rem 1.5rem;
           animation: slideIn 0.2s ease-out;
           z-index: 9;
+          overflow-x: auto;
+          overflow-y: hidden;
+        }
+
+        .context-bar::-webkit-scrollbar {
+          height: 4px;
+        }
+
+        .context-bar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .context-bar::-webkit-scrollbar-thumb {
+          background: var(--color-slate-dark);
+          border-radius: 2px;
         }
 
         .context-bar-content {
           display: flex;
           align-items: center;
           gap: 0.75rem;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
+          min-width: min-content;
         }
 
         .context-group {
