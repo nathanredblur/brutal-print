@@ -78,7 +78,7 @@ const FilterPanel: FC<FilterPanelProps> = ({
     },
     { id: "atkinson", name: "Atkinson", description: "Smooth gradients" },
     { id: "bayer", name: "Bayer", description: "Ordered pattern" },
-    { id: "halftone", name: "Halftone", description: "Dot pattern" },
+    { id: "pattern", name: "Halftone", description: "Dot pattern" },
   ];
 
   // Helper to trigger reprocessing with updated parameters
@@ -361,7 +361,7 @@ const FilterPanel: FC<FilterPanelProps> = ({
       )}
 
       {/* Halftone cell size control */}
-      {imageLayer.ditherMethod === "halftone" && (
+      {imageLayer.ditherMethod === "pattern" && (
         <div className="filter-section">
           <label className="filter-label">
             Cell Size
