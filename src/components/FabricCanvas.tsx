@@ -43,6 +43,11 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fabricRef = useRef<fabric.Canvas | null>(null);
     const layerObjectsRef = useRef<Map<string, fabric.FabricObject>>(new Map());
+    
+    // Throttling refs for real-time scaling
+    const scalingThrottleRef = useRef<NodeJS.Timeout | null>(null);
+    const lastScaleProcessRef = useRef<number>(0);
+    const pendingScaleRef = useRef<{ layerId: string; updates: Partial<Layer>; wasScaled: boolean } | null>(null);
 
     // Initialize Fabric canvas
     useEffect(() => {
@@ -85,8 +90,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
         onLayerSelect?.(null);
       });
 
-      // Handle object modifications (drag, resize, rotate)
-      fabricCanvas.on("object:modified", (e: any) => {
+      // Handle real-time scaling (while dragging)
+      fabricCanvas.on("object:scaling", (e: any) => {
         const obj = e.target as FabricObjectWithData;
         if (obj?.data?.layerId) {
           const finalWidth = (obj.width || 0) * (obj.scaleX || 1);
@@ -100,21 +105,102 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
             rotation: obj.angle || 0,
           };
 
-          // Detect scaling by checking if scale is not 1:1
-          // This is more reliable than checking transform.action
           const wasScaled = obj.scaleX !== 1 || obj.scaleY !== 1;
 
-          logger.info("FabricCanvas", "🔍 Object modified EVENT [v2]", {
+          // Throttle the processing
+          const now = Date.now();
+          const timeSinceLastProcess = now - lastScaleProcessRef.current;
+          const THROTTLE_MS = 150; // Process at most every 150ms
+
+          pendingScaleRef.current = { layerId: obj.data.layerId, updates, wasScaled };
+
+          if (timeSinceLastProcess >= THROTTLE_MS) {
+            lastScaleProcessRef.current = now;
+            onLayerUpdate?.(obj.data.layerId, updates, wasScaled);
+            pendingScaleRef.current = null;
+          } else {
+            if (scalingThrottleRef.current) {
+              clearTimeout(scalingThrottleRef.current);
+            }
+
+            const delay = THROTTLE_MS - timeSinceLastProcess;
+            scalingThrottleRef.current = setTimeout(() => {
+              if (pendingScaleRef.current) {
+                lastScaleProcessRef.current = Date.now();
+                onLayerUpdate?.(
+                  pendingScaleRef.current.layerId,
+                  pendingScaleRef.current.updates,
+                  pendingScaleRef.current.wasScaled
+                );
+                pendingScaleRef.current = null;
+              }
+            }, delay);
+          }
+        }
+      });
+
+      // Handle object modifications (drag, resize, rotate) - FINAL value
+      fabricCanvas.on("object:modified", (e: any) => {
+        const obj = e.target as FabricObjectWithData;
+        if (obj?.data?.layerId) {
+          // Clear any pending scaling throttle
+          if (scalingThrottleRef.current) {
+            clearTimeout(scalingThrottleRef.current);
+            scalingThrottleRef.current = null;
+          }
+
+          // Detect scaling by checking if scale is not 1:1
+          const wasScaled = obj.scaleX !== 1 || obj.scaleY !== 1;
+
+          // Special handling for text: update fontSize when scaled
+          if (obj instanceof fabric.FabricText && wasScaled) {
+            const avgScale = ((obj.scaleX || 1) + (obj.scaleY || 1)) / 2;
+            const currentFontSize = obj.fontSize || 24;
+            const newFontSize = Math.round(currentFontSize * avgScale);
+            
+            // Update the text object with new fontSize and reset scale
+            obj.set({
+              fontSize: newFontSize,
+              scaleX: 1,
+              scaleY: 1,
+            });
+            obj.setCoords();
+            fabricCanvas.renderAll();
+
+            logger.info("FabricCanvas", "📝 Text scaled - fontSize updated", {
+              layerId: obj.data.layerId,
+              currentFontSize,
+              newFontSize,
+              avgScale,
+              newDimensions: {
+                width: obj.width,
+                height: obj.height,
+              },
+            });
+          }
+
+          // Calculate final dimensions AFTER fontSize update
+          const finalWidth = (obj.width || 0) * (obj.scaleX || 1);
+          const finalHeight = (obj.height || 0) * (obj.scaleY || 1);
+
+          const updates: Partial<Layer> = {
+            x: obj.left || 0,
+            y: obj.top || 0,
+            width: finalWidth,
+            height: finalHeight,
+            rotation: obj.angle || 0,
+          };
+
+          // Add fontSize to updates for text layers
+          if (obj instanceof fabric.FabricText) {
+            (updates as any).fontSize = obj.fontSize;
+          }
+
+          logger.info("FabricCanvas", "🔍 Object modified EVENT [FINAL]", {
             layerId: obj.data.layerId,
             wasScaled,
+            type: obj.type,
             scaleValues: {
-              scaleX: obj.scaleX,
-              scaleY: obj.scaleY,
-              isScaled: obj.scaleX !== 1 || obj.scaleY !== 1,
-            },
-            objectDimensions: {
-              width: obj.width,
-              height: obj.height,
               scaleX: obj.scaleX,
               scaleY: obj.scaleY,
             },
@@ -122,14 +208,21 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
               width: finalWidth,
               height: finalHeight,
             },
-            updates,
+            fontSize: obj instanceof fabric.FabricText ? obj.fontSize : undefined,
           });
 
+          // Process the final value
+          lastScaleProcessRef.current = Date.now();
           onLayerUpdate?.(obj.data.layerId, updates, wasScaled);
+          pendingScaleRef.current = null;
         }
       });
 
       return () => {
+        // Clean up throttle timers
+        if (scalingThrottleRef.current) {
+          clearTimeout(scalingThrottleRef.current);
+        }
         fabricCanvas.dispose();
         fabricRef.current = null;
       };

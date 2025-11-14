@@ -1,11 +1,11 @@
 /**
  * Layer System Types
- * 
+ *
  * Defines the structure for canvas layers (images, text, shapes)
  * This allows non-destructive editing and proper layer management
  */
 
-export type LayerType = 'image' | 'text' | 'shape';
+export type LayerType = "image" | "text" | "shape";
 
 export interface BaseLayer {
   id: string;
@@ -22,28 +22,32 @@ export interface BaseLayer {
 }
 
 export interface ImageLayer extends BaseLayer {
-  type: 'image';
+  type: "image";
   imageData: HTMLCanvasElement; // Processed 1-bit image ready to render
   originalImageData: string; // Base64 of original image for reprocessing
   ditherMethod: string; // Current dithering method applied
   threshold: number; // Threshold value (0-255)
   invert: boolean; // Whether image is inverted
+  brightness?: number; // Brightness (0-255, default 128)
+  contrast?: number; // Contrast (0-200, default 100)
+  bayerMatrixSize?: number; // Bayer matrix size (2-16, default 4)
+  halftoneCellSize?: number; // Halftone cell size (2-16, default 4)
 }
 
 export interface TextLayer extends BaseLayer {
-  type: 'text';
+  type: "text";
   text: string;
   fontSize: number;
   fontFamily: string;
   bold: boolean;
   italic: boolean;
-  align: 'left' | 'center' | 'right';
+  align: "left" | "center" | "right";
   color: string;
 }
 
 export interface ShapeLayer extends BaseLayer {
-  type: 'shape';
-  shape: 'rectangle' | 'circle' | 'line';
+  type: "shape";
+  shape: "rectangle" | "circle" | "line";
   fillColor?: string;
   strokeColor?: string;
   strokeWidth?: number;
@@ -56,4 +60,3 @@ export interface LayerState {
   selectedLayerId: string | null;
   nextId: number;
 }
-

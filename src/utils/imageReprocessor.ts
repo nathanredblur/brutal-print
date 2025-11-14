@@ -16,6 +16,8 @@ export interface ReprocessOptions {
   invert?: boolean;
   targetWidth?: number;
   targetHeight?: number;
+  bayerMatrixSize?: number;
+  halftoneCellSize?: number;
 }
 
 export async function reprocessImage(
@@ -84,6 +86,8 @@ export async function reprocessImage(
           brightness: options?.brightness ?? 128,
           contrast: options?.contrast ?? 100,
           invert: options?.invert ?? false,
+          bayerMatrixSize: options?.bayerMatrixSize ?? 4,
+          halftoneCellSize: options?.halftoneCellSize ?? 4,
         });
 
         // Create 1-bit dithered canvas for display

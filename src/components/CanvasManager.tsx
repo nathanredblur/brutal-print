@@ -330,12 +330,8 @@ export default function CanvasManager() {
         layersAvailable: layersRef.current.length,
       });
 
-      // Always update position/rotation immediately for smooth interaction
-      updateLayer(layerId, {
-        x: updates.x,
-        y: updates.y,
-        rotation: updates.rotation,
-      });
+      // Always update position/rotation/dimensions immediately for smooth interaction
+      updateLayer(layerId, updates);
 
       // If an image was scaled, reprocess it asynchronously
       if (wasScaled) {
@@ -377,9 +373,6 @@ export default function CanvasManager() {
           );
 
           try {
-            // Show loading state with toast
-            toast.info("Processing image...", "Applying dithering at new size");
-
             logger.info("CanvasManager", "🔄 Starting reprocess...", {
               layerId,
               targetSize: { width: targetWidth, height: targetHeight },
@@ -398,6 +391,10 @@ export default function CanvasManager() {
                 invert: imageLayer.invert,
                 targetWidth,
                 targetHeight,
+                brightness: imageLayer.brightness ?? 128,
+                contrast: imageLayer.contrast ?? 100,
+                bayerMatrixSize: imageLayer.bayerMatrixSize ?? 4,
+                halftoneCellSize: imageLayer.halftoneCellSize ?? 4,
               }
             );
 
@@ -433,15 +430,12 @@ export default function CanvasManager() {
                 },
               }
             );
-
-            toast.success("Image processed!", "Dithering applied at new size");
           } catch (error) {
             logger.error(
               "CanvasManager",
               "Failed to reprocess scaled image",
               error
             );
-            toast.error("Processing failed", "Could not apply dithering");
             // Fallback: update with scaled dimensions
             updateLayer(layerId, {
               width: targetWidth,
@@ -482,22 +476,20 @@ export default function CanvasManager() {
     (
       layerId: string,
       newImageData: HTMLCanvasElement,
-      updates: { ditherMethod?: string; threshold?: number; invert?: boolean }
+      updates: { 
+        ditherMethod?: string; 
+        threshold?: number; 
+        invert?: boolean;
+        brightness?: number;
+        contrast?: number;
+        bayerMatrixSize?: number;
+        halftoneCellSize?: number;
+      }
     ) => {
       reprocessImageLayer(layerId, newImageData, updates);
-
-      // Only show toast for method or invert changes, not threshold (too frequent)
-      if (updates.ditherMethod || updates.invert !== undefined) {
-        const changes = [];
-        if (updates.ditherMethod)
-          changes.push(`Dither: ${updates.ditherMethod}`);
-        if (updates.invert !== undefined)
-          changes.push(`Invert: ${updates.invert ? "ON" : "OFF"}`);
-
-        toast.success("Image reprocessed!", changes.join(", "));
-      }
+      // No toasts - keep UI clean and non-intrusive
     },
-    [reprocessImageLayer, toast]
+    [reprocessImageLayer]
   );
 
   // Handle new canvas (clear all layers)

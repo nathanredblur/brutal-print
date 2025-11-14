@@ -254,7 +254,15 @@ export function useLayers(initialState?: Partial<LayerState>) {
   const reprocessImageLayer = useCallback(async (
     id: string, 
     newImageData: HTMLCanvasElement,
-    updates: { ditherMethod?: string; threshold?: number; invert?: boolean }
+    updates: { 
+      ditherMethod?: string; 
+      threshold?: number; 
+      invert?: boolean;
+      brightness?: number;
+      contrast?: number;
+      bayerMatrixSize?: number;
+      halftoneCellSize?: number;
+    }
   ) => {
     logger.info('useLayers', '🔧 Reprocessing layer...', { 
       id, 
@@ -278,12 +286,17 @@ export function useLayers(initialState?: Partial<LayerState>) {
         ...prev,
         layers: prev.layers.map(layer => {
           if (layer.id === id && layer.type === 'image') {
+            const imageLayer = layer as ImageLayer;
             const updatedLayer = {
               ...layer,
               imageData: newImageData,
-              ditherMethod: updates.ditherMethod ?? layer.ditherMethod,
-              threshold: updates.threshold ?? (layer as ImageLayer).threshold,
-              invert: updates.invert ?? (layer as ImageLayer).invert,
+              ditherMethod: updates.ditherMethod ?? imageLayer.ditherMethod,
+              threshold: updates.threshold ?? imageLayer.threshold,
+              invert: updates.invert ?? imageLayer.invert,
+              brightness: updates.brightness ?? imageLayer.brightness ?? 128,
+              contrast: updates.contrast ?? imageLayer.contrast ?? 100,
+              bayerMatrixSize: updates.bayerMatrixSize ?? imageLayer.bayerMatrixSize ?? 4,
+              halftoneCellSize: updates.halftoneCellSize ?? imageLayer.halftoneCellSize ?? 4,
               // Update to match the new canvas dimensions (already scaled during reprocessing)
               width: newImageData.width,
               height: newImageData.height,

@@ -155,7 +155,13 @@ export function processImageForPrinter(
   ctx.putImageData(imageData, 0, 0);
 
   // Step 6: Apply dithering
-  const binaryData = applyDithering(imageData, opts.ditherMethod, opts.threshold);
+  const binaryData = applyDithering(
+    imageData, 
+    opts.ditherMethod, 
+    opts.threshold,
+    opts.bayerMatrixSize,
+    opts.halftoneCellSize
+  );
 
   return { canvas, binaryData };
 }

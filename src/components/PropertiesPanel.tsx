@@ -18,7 +18,15 @@ interface PropertiesPanelProps {
   onReprocessImageLayer: (
     layerId: string,
     newImageData: HTMLCanvasElement,
-    updates: { ditherMethod?: string; threshold?: number; invert?: boolean }
+    updates: {
+      ditherMethod?: string;
+      threshold?: number;
+      invert?: boolean;
+      brightness?: number;
+      contrast?: number;
+      bayerMatrixSize?: number;
+      halftoneCellSize?: number;
+    }
   ) => void;
   onCanvasHeightChange: (height: number) => void;
 }
@@ -44,6 +52,12 @@ export default function PropertiesPanel({
   const [localCanvasHeight, setLocalCanvasHeight] = useState(canvasHeight);
   const [isReprocessing, setIsReprocessing] = useState(false);
 
+  // Additional parameters for different dithering methods
+  const [bayerMatrixSize, setBayerMatrixSize] = useState(4);
+  const [halftoneCellSize, setHalftoneCellSize] = useState(4);
+  const [brightness, setBrightness] = useState(128);
+  const [contrast, setContrast] = useState(100);
+
   // Throttle threshold changes for real-time feedback
   const thresholdThrottleRef = useRef<NodeJS.Timeout | null>(null);
   const lastThresholdProcessRef = useRef<number>(0);
@@ -64,6 +78,10 @@ export default function PropertiesPanel({
       setDitherMethod(imageLayer.ditherMethod || "steinberg");
       setThreshold(imageLayer.threshold ?? 128);
       setInvertImage(imageLayer.invert ?? false);
+      setBrightness(imageLayer.brightness ?? 128);
+      setContrast(imageLayer.contrast ?? 100);
+      setBayerMatrixSize(imageLayer.bayerMatrixSize ?? 4);
+      setHalftoneCellSize(imageLayer.halftoneCellSize ?? 4);
     }
   }, [selectedLayer]);
 
@@ -131,6 +149,8 @@ export default function PropertiesPanel({
       ditherMethod?: string;
       threshold?: number;
       invert?: boolean;
+      brightness?: number;
+      contrast?: number;
     }) => {
       if (selectedLayer?.type !== "image") return;
 
@@ -147,6 +167,11 @@ export default function PropertiesPanel({
             invert: updates.invert ?? imageLayer.invert,
             targetWidth: Math.round(selectedLayer.width),
             targetHeight: Math.round(selectedLayer.height),
+            // Pass algorithm-specific parameters
+            bayerMatrixSize,
+            halftoneCellSize,
+            brightness: updates.brightness ?? brightness,
+            contrast: updates.contrast ?? contrast,
           }
         );
 
@@ -155,6 +180,10 @@ export default function PropertiesPanel({
           ditherMethod: updates.ditherMethod,
           threshold: updates.threshold,
           invert: updates.invert,
+          brightness: updates.brightness ?? brightness,
+          contrast: updates.contrast ?? contrast,
+          bayerMatrixSize,
+          halftoneCellSize,
         });
       } catch (error) {
         console.error("Failed to reprocess image:", error);
@@ -167,7 +196,14 @@ export default function PropertiesPanel({
         setIsReprocessing(false);
       }
     },
-    [selectedLayer, onReprocessImageLayer]
+    [
+      selectedLayer,
+      onReprocessImageLayer,
+      bayerMatrixSize,
+      halftoneCellSize,
+      brightness,
+      contrast,
+    ]
   );
 
   const handleDitherMethodChange = async (method: string) => {
@@ -225,6 +261,38 @@ export default function PropertiesPanel({
     const newValue = !invertImage;
     setInvertImage(newValue);
     await reprocessCurrentImage({ invert: newValue });
+  };
+
+  const handleBayerMatrixSizeChange = (value: number) => {
+    setBayerMatrixSize(value);
+  };
+
+  const handleBayerMatrixSizeRelease = () => {
+    reprocessCurrentImage({ ditherMethod: "bayer" });
+  };
+
+  const handleHalftoneCellSizeChange = (value: number) => {
+    setHalftoneCellSize(value);
+  };
+
+  const handleHalftoneCellSizeRelease = () => {
+    reprocessCurrentImage({ ditherMethod: "pattern" });
+  };
+
+  const handleBrightnessChange = (value: number) => {
+    setBrightness(value);
+  };
+
+  const handleBrightnessRelease = () => {
+    reprocessCurrentImage({ brightness });
+  };
+
+  const handleContrastChange = (value: number) => {
+    setContrast(value);
+  };
+
+  const handleContrastRelease = () => {
+    reprocessCurrentImage({ contrast });
   };
 
   const handleCanvasHeightChange = (height: number) => {
@@ -403,7 +471,6 @@ export default function PropertiesPanel({
                   className="property-select"
                   value={ditherMethod}
                   onChange={(e) => handleDitherMethodChange(e.target.value)}
-                  disabled={isReprocessing}
                 >
                   <option value="steinberg">Floyd-Steinberg</option>
                   <option value="atkinson">Atkinson</option>
@@ -413,55 +480,176 @@ export default function PropertiesPanel({
                 </select>
               </div>
 
-              <div className="property-group">
-                <label className="property-label">
-                  Threshold: {threshold}
-                  {isReprocessing && (
-                    <span className="processing-indicator"> ⏳</span>
-                  )}
-                </label>
-                <input
-                  type="range"
-                  className="property-slider"
-                  value={threshold}
-                  onChange={(e) =>
-                    handleThresholdChange(Number(e.target.value))
-                  }
-                  onPointerUp={handleThresholdRelease}
-                  onMouseUp={handleThresholdRelease}
-                  onTouchEnd={handleThresholdRelease}
-                  min={0}
-                  max={255}
-                  step={1}
-                />
-                <div className="property-info-inline">
-                  <span className="info-text-small">
-                    0 (black) ← {threshold} → 255 (white)
-                  </span>
+              {/* Show threshold for methods that use it */}
+              {(ditherMethod === "threshold" ||
+                ditherMethod === "steinberg" ||
+                ditherMethod === "atkinson") && (
+                <div className="property-group">
+                  <label className="property-label">
+                    Threshold: {threshold}
+                  </label>
+                  <input
+                    type="range"
+                    className="property-slider"
+                    value={threshold}
+                    onChange={(e) =>
+                      handleThresholdChange(Number(e.target.value))
+                    }
+                    onPointerUp={handleThresholdRelease}
+                    onMouseUp={handleThresholdRelease}
+                    onTouchEnd={handleThresholdRelease}
+                    min={0}
+                    max={255}
+                    step={1}
+                  />
+                  <div className="property-info-inline">
+                    <span className="info-text-small">
+                      0 (black) ← {threshold} → 255 (white)
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Bayer matrix size control */}
+              {ditherMethod === "bayer" && (
+                <>
+                  <div className="property-group">
+                    <label className="property-label">
+                      Threshold: {threshold}
+                    </label>
+                    <input
+                      type="range"
+                      className="property-slider"
+                      value={threshold}
+                      onChange={(e) =>
+                        handleThresholdChange(Number(e.target.value))
+                      }
+                      onPointerUp={handleThresholdRelease}
+                      onMouseUp={handleThresholdRelease}
+                      onTouchEnd={handleThresholdRelease}
+                      min={0}
+                      max={255}
+                      step={1}
+                    />
+                    <div className="property-info-inline">
+                      <span className="info-text-small">
+                        0 (black) ← {threshold} → 255 (white)
+                      </span>
+                    </div>
+                  </div>
+                  <div className="property-group">
+                    <label className="property-label">
+                      Matrix Size: {bayerMatrixSize}x{bayerMatrixSize}
+                    </label>
+                    <input
+                      type="range"
+                      className="property-slider"
+                      value={bayerMatrixSize}
+                      onChange={(e) =>
+                        handleBayerMatrixSizeChange(Number(e.target.value))
+                      }
+                      onPointerUp={handleBayerMatrixSizeRelease}
+                      onMouseUp={handleBayerMatrixSizeRelease}
+                      onTouchEnd={handleBayerMatrixSizeRelease}
+                      min={2}
+                      max={16}
+                      step={1}
+                    />
+                    <div className="property-info-inline">
+                      <span className="info-text-small">
+                        2 (coarse) ← {bayerMatrixSize} → 16 (fine)
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Halftone cell size control */}
+              {ditherMethod === "pattern" && (
+                <>
+                  <div className="property-group">
+                    <label className="property-label">
+                      Cell Size: {halftoneCellSize}px
+                    </label>
+                    <input
+                      type="range"
+                      className="property-slider"
+                      value={halftoneCellSize}
+                      onChange={(e) =>
+                        handleHalftoneCellSizeChange(Number(e.target.value))
+                      }
+                      onPointerUp={handleHalftoneCellSizeRelease}
+                      onMouseUp={handleHalftoneCellSizeRelease}
+                      onTouchEnd={handleHalftoneCellSizeRelease}
+                      min={2}
+                      max={16}
+                      step={1}
+                    />
+                    <div className="property-info-inline">
+                      <span className="info-text-small">
+                        2 (fine) ← {halftoneCellSize} → 16 (bold)
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="property-group">
                 <label className="property-label">Invert Colors</label>
                 <button
                   className={`toggle-btn ${invertImage ? "active" : ""}`}
                   onClick={handleInvertToggle}
-                  disabled={isReprocessing}
                 >
                   {invertImage ? "ON" : "OFF"}
                 </button>
               </div>
 
-              {isReprocessing && (
-                <div className="property-info processing">
-                  <p className="info-text">⏳ Reprocessing image...</p>
+              {/* Brightness control */}
+              <div className="property-group">
+                <label className="property-label">
+                  Brightness: {brightness}
+                </label>
+                <input
+                  type="range"
+                  className="property-slider"
+                  value={brightness}
+                  onChange={(e) =>
+                    handleBrightnessChange(Number(e.target.value))
+                  }
+                  onPointerUp={handleBrightnessRelease}
+                  onMouseUp={handleBrightnessRelease}
+                  onTouchEnd={handleBrightnessRelease}
+                  min={0}
+                  max={255}
+                  step={1}
+                />
+                <div className="property-info-inline">
+                  <span className="info-text-small">
+                    0 (dark) ← {brightness} → 255 (bright)
+                  </span>
                 </div>
-              )}
+              </div>
 
-              <div className="property-info">
-                <p className="info-text">
-                  ℹ️ All changes apply instantly. Original quality is preserved.
-                </p>
+              {/* Contrast control */}
+              <div className="property-group">
+                <label className="property-label">Contrast: {contrast}%</label>
+                <input
+                  type="range"
+                  className="property-slider"
+                  value={contrast}
+                  onChange={(e) => handleContrastChange(Number(e.target.value))}
+                  onPointerUp={handleContrastRelease}
+                  onMouseUp={handleContrastRelease}
+                  onTouchEnd={handleContrastRelease}
+                  min={0}
+                  max={200}
+                  step={1}
+                />
+                <div className="property-info-inline">
+                  <span className="info-text-small">
+                    0 (flat) ← {contrast} → 200 (high)
+                  </span>
+                </div>
               </div>
             </div>
           )}
@@ -560,7 +748,8 @@ export default function PropertiesPanel({
         }
 
         .style-btn,
-        .align-btn {
+        .align-btn,
+        .option-btn {
           flex: 1;
           padding: 0.5rem;
           font-size: 0.875rem;
@@ -573,14 +762,16 @@ export default function PropertiesPanel({
         }
 
         .style-btn:hover,
-        .align-btn:hover {
+        .align-btn:hover,
+        .option-btn:hover {
           background: rgba(167, 139, 250, 0.1);
           border-color: var(--color-purple-primary);
           color: var(--color-purple-primary);
         }
 
         .style-btn.active,
-        .align-btn.active {
+        .align-btn.active,
+        .option-btn.active {
           background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
           border-color: var(--color-purple-primary);
           color: var(--color-purple-primary);
