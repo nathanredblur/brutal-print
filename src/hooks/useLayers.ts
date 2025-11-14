@@ -256,31 +256,58 @@ export function useLayers(initialState?: Partial<LayerState>) {
     newImageData: HTMLCanvasElement,
     updates: { ditherMethod?: string; threshold?: number; invert?: boolean }
   ) => {
-    setState(prev => ({
-      ...prev,
-      layers: prev.layers.map(layer => {
-        if (layer.id === id && layer.type === 'image') {
-          // Preserve current width/height (scaled dimensions)
-          // Only update if they don't exist (first time)
-          const currentWidth = layer.width;
-          const currentHeight = layer.height;
-          
-          return {
-            ...layer,
-            imageData: newImageData,
-            ditherMethod: updates.ditherMethod ?? layer.ditherMethod,
-            threshold: updates.threshold ?? (layer as ImageLayer).threshold,
-            invert: updates.invert ?? (layer as ImageLayer).invert,
-            // Keep the current scaled dimensions instead of resetting to canvas size
-            width: currentWidth,
-            height: currentHeight,
-          };
-        }
-        return layer;
-      }),
-    }));
+    logger.info('useLayers', '🔧 Reprocessing layer...', { 
+      id, 
+      newCanvasSize: { width: newImageData.width, height: newImageData.height },
+      updates,
+    });
+    
+    setState(prev => {
+      const oldLayer = prev.layers.find(l => l.id === id && l.type === 'image') as ImageLayer | undefined;
+      
+      if (oldLayer) {
+        logger.info('useLayers', '📊 Layer state BEFORE update', {
+          id,
+          oldDimensions: { width: oldLayer.width, height: oldLayer.height },
+          oldCanvas: { width: oldLayer.imageData.width, height: oldLayer.imageData.height },
+          oldCanvasElement: oldLayer.imageData,
+        });
+      }
+      
+      return {
+        ...prev,
+        layers: prev.layers.map(layer => {
+          if (layer.id === id && layer.type === 'image') {
+            const updatedLayer = {
+              ...layer,
+              imageData: newImageData,
+              ditherMethod: updates.ditherMethod ?? layer.ditherMethod,
+              threshold: updates.threshold ?? (layer as ImageLayer).threshold,
+              invert: updates.invert ?? (layer as ImageLayer).invert,
+              // Update to match the new canvas dimensions (already scaled during reprocessing)
+              width: newImageData.width,
+              height: newImageData.height,
+            };
+            
+            logger.info('useLayers', '📊 Layer state AFTER update', {
+              id,
+              newDimensions: { width: updatedLayer.width, height: updatedLayer.height },
+              newCanvas: { width: newImageData.width, height: newImageData.height },
+              newCanvasElement: newImageData,
+              canvasChanged: (layer as ImageLayer).imageData !== newImageData,
+            });
+            
+            return updatedLayer;
+          }
+          return layer;
+        }),
+      };
+    });
 
-    logger.info('useLayers', 'Image layer reprocessed', { id, updates });
+    logger.success('useLayers', '✅ Image layer reprocessed and state updated', { 
+      id, 
+      finalSize: { width: newImageData.width, height: newImageData.height } 
+    });
   }, []);
 
   // Rename layer

@@ -12,7 +12,7 @@ import PropertiesPanel from "./PropertiesPanel";
 import FabricCanvas, { type FabricCanvasRef } from "./FabricCanvas";
 import { PRINTER_WIDTH } from "../lib/dithering";
 import { logger } from "../lib/logger";
-import type { ImageLayer } from "../types/layer";
+import type { Layer, ImageLayer } from "../types/layer";
 
 type Tool = "select" | "image" | "text" | "draw" | "shape" | "icon";
 
@@ -115,6 +115,9 @@ export default function CanvasManager() {
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [showTextTool, setShowTextTool] = useState(false);
 
+  // Keep a ref to always have fresh layers data
+  const layersRef = useRef<Layer[]>([]);
+
   // Initialize with null to match server render, load after hydration
   const [savedState, setSavedState] = useState<any>(null);
 
@@ -163,6 +166,11 @@ export default function CanvasManager() {
     reprocessImageLayer,
     clearLayers,
   } = useLayers(savedState);
+
+  // Keep layersRef updated with the latest layers
+  useEffect(() => {
+    layersRef.current = layers;
+  }, [layers]);
 
   // Enable persistence (auto-save)
   const persistence = useCanvasPersistence(
@@ -315,19 +323,70 @@ export default function CanvasManager() {
   // Handle layer updates from Fabric.js
   const handleLayerUpdate = useCallback(
     async (layerId: string, updates: any, wasScaled?: boolean) => {
-      updateLayer(layerId, updates);
+      logger.info("CanvasManager", "🎯 handleLayerUpdate called", {
+        layerId,
+        wasScaled,
+        updates,
+        layersAvailable: layersRef.current.length,
+      });
 
-      // If an image was scaled, reprocess it with the new dimensions
+      // Always update position/rotation immediately for smooth interaction
+      updateLayer(layerId, {
+        x: updates.x,
+        y: updates.y,
+        rotation: updates.rotation,
+      });
+
+      // If an image was scaled, reprocess it asynchronously
       if (wasScaled) {
-        const layer = layers.find((l) => l.id === layerId);
+        logger.info(
+          "CanvasManager",
+          "✅ wasScaled is TRUE, checking layer type..."
+        );
+
+        // IMPORTANT: Use layersRef.current to get fresh data
+        // The layers array in closure is stale
+        const currentLayers = layersRef.current;
+        logger.info("CanvasManager", "Current layers array (from ref):", {
+          currentLayers,
+          layersCount: currentLayers.length,
+          searchingFor: layerId,
+        });
+
+        const layer = currentLayers.find((l) => l.id === layerId);
+        logger.info("CanvasManager", "Layer found:", {
+          layer,
+          type: layer?.type,
+          allLayerIds: currentLayers.map((l) => l.id),
+        });
+
         if (layer?.type === "image") {
           const imageLayer = layer as ImageLayer;
-          logger.info("CanvasManager", "Image scaled, reprocessing...", {
-            layerId,
-            newSize: { width: updates.width, height: updates.height },
-          });
+
+          const targetWidth = Math.round(updates.width);
+          const targetHeight = Math.round(updates.height);
+
+          logger.info(
+            "CanvasManager",
+            "Image scaling completed, reprocesing...",
+            {
+              layerId,
+              oldSize: { width: layer.width, height: layer.height },
+              newSize: { width: targetWidth, height: targetHeight },
+            }
+          );
 
           try {
+            // Show loading state with toast
+            toast.info("Processing image...", "Applying dithering at new size");
+
+            logger.info("CanvasManager", "🔄 Starting reprocess...", {
+              layerId,
+              targetSize: { width: targetWidth, height: targetHeight },
+              originalImageData:
+                imageLayer.originalImageData.substring(0, 50) + "...",
+            });
+
             const { reprocessImage } = await import(
               "../utils/imageReprocessor"
             );
@@ -337,30 +396,71 @@ export default function CanvasManager() {
               {
                 threshold: imageLayer.threshold,
                 invert: imageLayer.invert,
-                targetWidth: Math.round(updates.width),
-                targetHeight: Math.round(updates.height),
+                targetWidth,
+                targetHeight,
+              }
+            );
+
+            logger.info(
+              "CanvasManager",
+              "✅ Reprocess completed, updating layer...",
+              {
+                layerId,
+                resultCanvasSize: {
+                  width: result.canvas.width,
+                  height: result.canvas.height,
+                },
+                canvasElement: result.canvas,
               }
             );
 
             // Update layer with reprocessed image
+            // This will trigger Fabric to update with the new canvas at 1:1 scale
             reprocessImageLayer(layerId, result.canvas, {
               ditherMethod: imageLayer.ditherMethod,
               threshold: imageLayer.threshold,
               invert: imageLayer.invert,
             });
 
-            logger.success("CanvasManager", "Image reprocessed after scaling");
+            logger.success(
+              "CanvasManager",
+              "✨ Layer updated with new canvas",
+              {
+                layerId,
+                finalSize: {
+                  width: result.canvas.width,
+                  height: result.canvas.height,
+                },
+              }
+            );
+
+            toast.success("Image processed!", "Dithering applied at new size");
           } catch (error) {
             logger.error(
               "CanvasManager",
               "Failed to reprocess scaled image",
               error
             );
+            toast.error("Processing failed", "Could not apply dithering");
+            // Fallback: update with scaled dimensions
+            updateLayer(layerId, {
+              width: targetWidth,
+              height: targetHeight,
+            });
           }
+          return;
         }
       }
+
+      // For non-image layers or non-scaled updates, update dimensions normally
+      if (updates.width !== undefined || updates.height !== undefined) {
+        updateLayer(layerId, {
+          width: updates.width,
+          height: updates.height,
+        });
+      }
     },
-    [updateLayer, layers, reprocessImageLayer]
+    [updateLayer, reprocessImageLayer, toast] // Removed 'layers' - using layersRef instead
   );
 
   // Handle layer selection from Fabric.js
