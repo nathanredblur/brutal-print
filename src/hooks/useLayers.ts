@@ -221,7 +221,7 @@ export function useLayers(initialState?: Partial<LayerState>) {
     setState((prev) => ({
       ...prev,
       layers: prev.layers.map((layer) =>
-        layer.id === id ? { ...layer, ...updates } : layer
+        layer.id === id ? ({ ...layer, ...updates } as Layer) : layer
       ),
     }));
 
