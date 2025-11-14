@@ -21,6 +21,7 @@ interface FabricCanvasProps {
     wasScaled?: boolean
   ) => void;
   onLayerSelect?: (layerId: string | null) => void;
+  onCanvasSelect?: () => void;
 }
 
 export interface FabricCanvasRef {
@@ -37,7 +38,7 @@ interface FabricObjectWithData extends fabric.FabricObject {
 
 const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
   (
-    { width, height, layers, selectedLayerId, onLayerUpdate, onLayerSelect },
+    { width, height, layers, selectedLayerId, onLayerUpdate, onLayerSelect, onCanvasSelect },
     ref
   ) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);

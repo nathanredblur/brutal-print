@@ -20,8 +20,17 @@ import { PRINTER_WIDTH } from "../lib/dithering";
 import { logger } from "../lib/logger";
 import type { Layer, ImageLayer, TextLayer } from "../types/layer";
 
-type Tool = "select" | "image" | "text" | "draw" | "shape" | "icon";
-type AdvancedPanel = "font" | "filter" | "position" | "printer" | "canvas" | null;
+type Tool = "image" | "text";
+type AdvancedPanel =
+  | "font"
+  | "filter"
+  | "position"
+  | "printer"
+  | "canvas"
+  | null;
+
+// Special selection state for canvas itself
+type SelectionType = "layer" | "canvas" | null;
 
 // Helper function to load state from localStorage (outside component)
 async function loadSavedState() {
@@ -120,10 +129,12 @@ async function loadSavedState() {
 
 export default function CanvasManager() {
   const fabricCanvasRef = useRef<FabricCanvasRef>(null);
-  const [activeTool, setActiveTool] = useState<Tool>("select");
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const [activeTool, setActiveTool] = useState<Tool | null>(null);
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [showTextTool, setShowTextTool] = useState(false);
   const [advancedPanel, setAdvancedPanel] = useState<AdvancedPanel>(null);
+  const [selectionType, setSelectionType] = useState<SelectionType>(null);
 
   // Keep a ref to always have fresh layers data
   const layersRef = useRef<Layer[]>([]);
@@ -241,7 +252,7 @@ export default function CanvasManager() {
     if (!isConnected) {
       logger.info("CanvasManager", "Opening printer connection panel");
       setAdvancedPanel("printer");
-      setActiveTool("select");
+      setActiveTool(null);
       setShowImageUploader(false);
       setShowTextTool(false);
       toast.info(
@@ -315,7 +326,7 @@ export default function CanvasManager() {
   // Handle opening canvas settings
   const handleOpenCanvasSettings = useCallback(() => {
     setAdvancedPanel("canvas");
-    setActiveTool("select");
+    setActiveTool(null);
     setShowImageUploader(false);
     setShowTextTool(false);
   }, []);
@@ -546,10 +557,7 @@ export default function CanvasManager() {
     if (confirmed) {
       clearLayers();
       persistence.clearSavedState();
-      toast.success(
-        "New canvas created!",
-        "All layers have been deleted."
-      );
+      toast.success("New canvas created!", "All layers have been deleted.");
       logger.info("CanvasManager", "New canvas created - all layers cleared");
     }
   }, [layers.length, clearLayers, persistence, toast]);
@@ -570,7 +578,7 @@ export default function CanvasManager() {
         selectLayer(null);
         logger.info("CanvasManager", "Deselected layer before export");
         // Wait a bit for the deselection to take effect
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
       const canvas = fabricCanvasRef.current?.exportToCanvas();
@@ -614,64 +622,101 @@ export default function CanvasManager() {
     }
     removeLayer(selectedLayerId);
     toast.info("Element deleted", "The selected element has been removed.");
-    logger.info("CanvasManager", "Element deleted via keyboard shortcut", { layerId: selectedLayerId });
+    logger.info("CanvasManager", "Element deleted via keyboard shortcut", {
+      layerId: selectedLayerId,
+    });
   }, [selectedLayerId, removeLayer, toast]);
 
   // Handle element movement with arrow keys
-  const handleMoveElement = useCallback((direction: 'up' | 'down' | 'left' | 'right', amount: number = 1) => {
-    if (!selectedLayerId || !selectedLayer) {
-      return;
-    }
+  const handleMoveElement = useCallback(
+    (direction: "up" | "down" | "left" | "right", amount: number = 1) => {
+      if (!selectedLayerId || !selectedLayer) {
+        return;
+      }
 
-    const updates: Partial<Layer> = {};
+      const updates: Partial<Layer> = {};
+
+      switch (direction) {
+        case "up":
+          updates.y = selectedLayer.y - amount;
+          break;
+        case "down":
+          updates.y = selectedLayer.y + amount;
+          break;
+        case "left":
+          updates.x = selectedLayer.x - amount;
+          break;
+        case "right":
+          updates.x = selectedLayer.x + amount;
+          break;
+      }
+
+      updateLayer(selectedLayerId, updates);
+    },
+    [selectedLayerId, selectedLayer, updateLayer]
+  );
+
+  // Handle canvas selection (when clicking on empty canvas area)
+  const handleCanvasSelect = useCallback(() => {
+    selectLayer(null);
+    setSelectionType("canvas");
+    setActiveTool(null);
+    setShowImageUploader(false);
+    setShowTextTool(false);
+    setAdvancedPanel(null);
+    logger.info("CanvasManager", "Canvas selected");
+  }, [selectLayer]);
+
+  // Handle click outside canvas (deselect everything)
+  const handleClickOutside = useCallback((e: MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const canvasContainer = canvasContainerRef.current;
     
-    switch (direction) {
-      case 'up':
-        updates.y = selectedLayer.y - amount;
-        break;
-      case 'down':
-        updates.y = selectedLayer.y + amount;
-        break;
-      case 'left':
-        updates.x = selectedLayer.x - amount;
-        break;
-      case 'right':
-        updates.x = selectedLayer.x + amount;
-        break;
+    // Check if click is outside the canvas container
+    if (canvasContainer && !canvasContainer.contains(target)) {
+      // Also check if it's not in a sidebar/panel/header
+      const isInPanel = target.closest('.sidebar, .left-panel-container, .header, .context-bar');
+      if (!isInPanel) {
+        selectLayer(null);
+        setSelectionType(null);
+        logger.info("CanvasManager", "Clicked outside - deselected");
+      }
     }
+  }, [selectLayer]);
 
-    updateLayer(selectedLayerId, updates);
-  }, [selectedLayerId, selectedLayer, updateLayer]);
+  // Setup click outside listener
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [handleClickOutside]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
-    // Tool shortcuts
-    onSelectTool: () => {
-      setActiveTool('select');
-      setShowImageUploader(false);
-      setShowTextTool(false);
-      setAdvancedPanel(null);
-    },
+    // Tool shortcuts (removed onSelectTool - selection is always available)
     onImageTool: () => {
-      setActiveTool('image');
+      setActiveTool("image");
       setShowImageUploader(true);
       setShowTextTool(false);
       setAdvancedPanel(null);
+      setSelectionType(null);
     },
     onTextTool: () => {
-      setActiveTool('text');
+      setActiveTool("text");
       setShowImageUploader(false);
       setShowTextTool(true);
       setAdvancedPanel(null);
+      setSelectionType(null);
     },
-    
+
     // Element actions
     onDeleteElement: handleDeleteElement,
-    onMoveUp: (amount) => handleMoveElement('up', amount),
-    onMoveDown: (amount) => handleMoveElement('down', amount),
-    onMoveLeft: (amount) => handleMoveElement('left', amount),
-    onMoveRight: (amount) => handleMoveElement('right', amount),
-    
+    onMoveUp: (amount) => handleMoveElement("up", amount),
+    onMoveDown: (amount) => handleMoveElement("down", amount),
+    onMoveLeft: (amount) => handleMoveElement("left", amount),
+    onMoveRight: (amount) => handleMoveElement("right", amount),
+
     // Document actions
     onUndo: () => {
       // TODO: Implement undo/redo system
@@ -772,38 +817,38 @@ export default function CanvasManager() {
             </div>
           )}
 
-        {advancedPanel === "printer" && (
-          <div className="panel">
-            <div className="panel-header">
-              <h3>Printer</h3>
-              <button
-                className="close-btn"
-                onClick={() => setAdvancedPanel(null)}
-              >
-                ×
-              </button>
+          {advancedPanel === "printer" && (
+            <div className="panel">
+              <div className="panel-header">
+                <h3>Printer</h3>
+                <button
+                  className="close-btn"
+                  onClick={() => setAdvancedPanel(null)}
+                >
+                  ×
+                </button>
+              </div>
+              <PrinterConnection onPrint={handlePrint} />
             </div>
-            <PrinterConnection onPrint={handlePrint} />
-          </div>
-        )}
+          )}
 
-        {advancedPanel === "canvas" && (
-          <div className="panel">
-            <div className="panel-header">
-              <h3>Canvas Settings</h3>
-              <button
-                className="close-btn"
-                onClick={() => setAdvancedPanel(null)}
-              >
-                ×
-              </button>
+          {advancedPanel === "canvas" && (
+            <div className="panel">
+              <div className="panel-header">
+                <h3>Canvas Settings</h3>
+                <button
+                  className="close-btn"
+                  onClick={() => setAdvancedPanel(null)}
+                >
+                  ×
+                </button>
+              </div>
+              <CanvasSettingsPanel
+                canvasHeight={canvasHeight}
+                onCanvasHeightChange={handleCanvasHeightChange}
+              />
             </div>
-            <CanvasSettingsPanel
-              canvasHeight={canvasHeight}
-              onCanvasHeightChange={handleCanvasHeightChange}
-            />
-          </div>
-        )}
+          )}
 
           {/* Image Uploader (when image tool is active) */}
           {showImageUploader && !advancedPanel && (
@@ -837,6 +882,7 @@ export default function CanvasManager() {
           {/* Context Bar - appears when element is selected */}
           <ContextBar
             selectedLayer={selectedLayer}
+            selectionType={selectionType}
             onUpdateLayer={updateLayer}
             onUpdateTextLayer={updateTextLayer}
             onUpdateImageLayer={updateImageLayer}
@@ -844,7 +890,7 @@ export default function CanvasManager() {
           />
 
           {/* Canvas */}
-          <div className="canvas-section">
+          <div className="canvas-section" ref={canvasContainerRef}>
             <FabricCanvas
               ref={fabricCanvasRef}
               width={CANVAS_WIDTH}
@@ -853,6 +899,7 @@ export default function CanvasManager() {
               selectedLayerId={selectedLayerId}
               onLayerUpdate={handleLayerUpdate}
               onLayerSelect={handleLayerSelect}
+              onCanvasSelect={handleCanvasSelect}
             />
           </div>
         </div>

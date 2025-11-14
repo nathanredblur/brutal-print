@@ -7,21 +7,177 @@
 import type { FC } from 'react';
 import type { Layer, TextLayer, ImageLayer } from '../types/layer';
 
+type SelectionType = "layer" | "canvas" | null;
+
 interface ContextBarProps {
   selectedLayer: Layer | null;
+  selectionType: SelectionType;
   onUpdateLayer: (layerId: string, updates: any) => void;
   onUpdateTextLayer: (layerId: string, updates: any) => void;
   onUpdateImageLayer: (layerId: string, updates: any) => void;
-  onOpenAdvancedPanel: (panelType: 'font' | 'filter' | 'position') => void;
+  onOpenAdvancedPanel: (panelType: 'font' | 'filter' | 'position' | 'canvas') => void;
 }
+
+// Shared styles for the context bar
+const getStyles = () => `
+  .context-bar {
+    min-height: 56px;
+    background: linear-gradient(135deg, rgba(21, 24, 54, 0.6) 0%, rgba(12, 15, 38, 0.8) 100%);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1.5rem;
+    animation: slideIn 0.2s ease-out;
+    z-index: 9;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .context-bar::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .context-bar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .context-bar::-webkit-scrollbar-thumb {
+    background: var(--color-slate-dark);
+    border-radius: 2px;
+  }
+
+  .context-bar-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+    min-width: min-content;
+  }
+
+  .context-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .context-separator {
+    width: 1px;
+    height: 24px;
+    background: var(--color-border);
+  }
+
+  .context-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    padding: 0 0.5rem;
+  }
+
+  .context-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    min-width: 32px;
+    text-align: center;
+  }
+
+  .context-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .context-btn:hover {
+    background: rgba(167, 139, 250, 0.1);
+    border-color: var(--color-purple-primary);
+    color: var(--color-purple-primary);
+  }
+
+  .context-btn.active {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+    border-color: var(--color-purple-primary);
+    color: var(--color-purple-primary);
+    box-shadow: 0 0 10px rgba(167, 139, 250, 0.3);
+  }
+
+  .context-btn svg {
+    flex-shrink: 0;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+`;
 
 const ContextBar: FC<ContextBarProps> = ({
   selectedLayer,
+  selectionType,
   onUpdateLayer,
   onUpdateTextLayer,
   onUpdateImageLayer,
   onOpenAdvancedPanel,
 }) => {
+  // Show canvas controls when canvas is selected
+  if (selectionType === "canvas") {
+    return (
+      <div className="context-bar">
+        <div className="context-bar-content">
+          <div className="context-group">
+            <span className="context-label">Canvas</span>
+          </div>
+
+          <div className="context-separator" />
+
+          <div className="context-group">
+            <button
+              className="context-btn"
+              onClick={() => onOpenAdvancedPanel('canvas')}
+              title="Canvas settings"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M3 9h18M9 21V9" />
+              </svg>
+              <span>Size</span>
+            </button>
+
+            <button
+              className="context-btn"
+              onClick={() => onOpenAdvancedPanel('position')}
+              title="Layers"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <rect x="7" y="7" width="3" height="9" />
+                <rect x="14" y="7" width="3" height="5" />
+              </svg>
+              <span>Layers</span>
+            </button>
+          </div>
+        </div>
+        <style>{getStyles()}</style>
+      </div>
+    );
+  }
+
+  // Don't show anything if nothing is selected
   if (!selectedLayer) return null;
 
   const isText = selectedLayer.type === 'text';
@@ -223,121 +379,9 @@ const ContextBar: FC<ContextBarProps> = ({
         </div>
       </div>
 
-      <style>{`
-        .context-bar {
-          min-height: 56px;
-          background: linear-gradient(135deg, rgba(21, 24, 54, 0.6) 0%, rgba(12, 15, 38, 0.8) 100%);
-          backdrop-filter: blur(10px);
-          border-bottom: 1px solid var(--color-border);
-          display: flex;
-          align-items: center;
-          padding: 0.5rem 1.5rem;
-          animation: slideIn 0.2s ease-out;
-          z-index: 9;
-          overflow-x: auto;
-          overflow-y: hidden;
-        }
-
-        .context-bar::-webkit-scrollbar {
-          height: 4px;
-        }
-
-        .context-bar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        .context-bar::-webkit-scrollbar-thumb {
-          background: var(--color-slate-dark);
-          border-radius: 2px;
-        }
-
-        .context-bar-content {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          flex-wrap: nowrap;
-          min-width: min-content;
-        }
-
-        .context-group {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .context-separator {
-          width: 1px;
-          height: 24px;
-          background: var(--color-border);
-        }
-
-        .context-label {
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: var(--color-text-primary);
-          padding: 0 0.5rem;
-        }
-
-        .context-value {
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: var(--color-text-secondary);
-          min-width: 32px;
-          text-align: center;
-        }
-
-        .context-btn {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.5rem 0.75rem;
-          background: var(--color-bg-tertiary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          color: var(--color-text-secondary);
-          font-size: 0.875rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .context-btn.icon-only {
-          padding: 0.5rem;
-          width: 32px;
-          height: 32px;
-          justify-content: center;
-        }
-
-        .context-btn:hover {
-          background: rgba(167, 139, 250, 0.1);
-          border-color: var(--color-purple-primary);
-          color: var(--color-purple-primary);
-        }
-
-        .context-btn.active {
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
-          border-color: var(--color-purple-primary);
-          color: var(--color-purple-primary);
-        }
-
-        .context-btn svg {
-          flex-shrink: 0;
-        }
-
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
+      <style>{getStyles()}</style>
     </div>
   );
 };
 
 export default ContextBar;
-

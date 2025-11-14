@@ -5,33 +5,16 @@
 
 import type { FC } from 'react';
 
-type Tool = 'select' | 'image' | 'text' | 'draw' | 'shape' | 'icon';
+type Tool = 'image' | 'text';
 
 interface SidebarProps {
-  activeTool: Tool;
+  activeTool: Tool | null;
   onToolSelect: (tool: Tool) => void;
   onOpenCanvasSettings?: () => void;
 }
 
 const Sidebar: FC<SidebarProps> = ({ activeTool, onToolSelect, onOpenCanvasSettings }) => {
   const tools = [
-    {
-      id: 'select' as Tool,
-      icon: (
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" />
-        </svg>
-      ),
-      label: 'Select',
-      shortcut: 'V',
-    },
     {
       id: 'image' as Tool,
       icon: (
