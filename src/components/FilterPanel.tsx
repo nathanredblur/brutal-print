@@ -3,8 +3,9 @@
  * Shown in left panel when clicking "Filters" button in context bar
  */
 
-import type { FC } from 'react';
-import type { ImageLayer } from '../types/layer';
+import { useState, useRef, useEffect } from "react";
+import type { FC } from "react";
+import type { ImageLayer } from "../types/layer";
 
 interface FilterPanelProps {
   imageLayer: ImageLayer;
@@ -21,26 +22,74 @@ const FilterPanel: FC<FilterPanelProps> = ({
   onUpdateImageLayer,
   onReprocessImageLayer,
 }) => {
+  // Local state for immediate UI feedback
+  const [threshold, setThreshold] = useState(imageLayer.threshold || 128);
+  const [brightness, setBrightness] = useState(imageLayer.brightness ?? 128);
+  const [contrast, setContrast] = useState(imageLayer.contrast ?? 100);
+
+  // Throttle refs to process every 100ms while dragging
+  const throttleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastProcessTimeRef = useRef<number>(0);
+  const pendingThresholdRef = useRef<number | null>(null);
+  const pendingBrightnessRef = useRef<number | null>(null);
+  const pendingContrastRef = useRef<number | null>(null);
+
+  // Update local state when switching to a different image
+  useEffect(() => {
+    setThreshold(imageLayer.threshold || 128);
+    setBrightness(imageLayer.brightness ?? 128);
+    setContrast(imageLayer.contrast ?? 100);
+    // Clear any pending values when switching images
+    pendingThresholdRef.current = null;
+    pendingBrightnessRef.current = null;
+    pendingContrastRef.current = null;
+    if (throttleTimerRef.current) {
+      clearTimeout(throttleTimerRef.current);
+    }
+  }, [imageLayer.id]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (throttleTimerRef.current) {
+        clearTimeout(throttleTimerRef.current);
+      }
+    };
+  }, []);
+
   const ditherMethods = [
-    { id: 'threshold', name: 'Threshold', description: 'Simple black & white' },
-    { id: 'steinberg', name: 'Floyd-Steinberg', description: 'Classic dithering' },
-    { id: 'atkinson', name: 'Atkinson', description: 'Smooth gradients' },
-    { id: 'bayer', name: 'Bayer', description: 'Ordered pattern' },
-    { id: 'halftone', name: 'Halftone', description: 'Dot pattern' },
+    { id: "threshold", name: "Threshold", description: "Simple black & white" },
+    {
+      id: "steinberg",
+      name: "Floyd-Steinberg",
+      description: "Classic dithering",
+    },
+    { id: "atkinson", name: "Atkinson", description: "Smooth gradients" },
+    { id: "bayer", name: "Bayer", description: "Ordered pattern" },
+    { id: "halftone", name: "Halftone", description: "Dot pattern" },
   ];
 
   // Helper to trigger reprocessing with updated parameters
   const reprocessWithUpdates = async (updates: any) => {
     // Import reprocessor
-    const { reprocessImage } = await import('../utils/imageReprocessor');
-    
+    const { reprocessImage } = await import("../utils/imageReprocessor");
+
     // Merge current values with updates
     const params = {
       ditherMethod: updates.ditherMethod || imageLayer.ditherMethod,
-      threshold: updates.threshold !== undefined ? updates.threshold : imageLayer.threshold,
+      threshold:
+        updates.threshold !== undefined
+          ? updates.threshold
+          : imageLayer.threshold,
       invert: updates.invert !== undefined ? updates.invert : imageLayer.invert,
-      brightness: updates.brightness !== undefined ? updates.brightness : (imageLayer.brightness ?? 128),
-      contrast: updates.contrast !== undefined ? updates.contrast : (imageLayer.contrast ?? 100),
+      brightness:
+        updates.brightness !== undefined
+          ? updates.brightness
+          : imageLayer.brightness ?? 128,
+      contrast:
+        updates.contrast !== undefined
+          ? updates.contrast
+          : imageLayer.contrast ?? 100,
       bayerMatrixSize: imageLayer.bayerMatrixSize ?? 4,
       halftoneCellSize: imageLayer.halftoneCellSize ?? 4,
       targetWidth: imageLayer.width,
@@ -57,7 +106,7 @@ const FilterPanel: FC<FilterPanelProps> = ({
       // Update the layer with new processed image
       onReprocessImageLayer(imageLayer.id, result.canvas, updates);
     } catch (error) {
-      console.error('Failed to reprocess image:', error);
+      console.error("Failed to reprocess image:", error);
     }
   };
 
@@ -65,16 +114,107 @@ const FilterPanel: FC<FilterPanelProps> = ({
     reprocessWithUpdates({ ditherMethod: method });
   };
 
+  // Throttled processing - processes updates every 100ms while dragging
+  const processThrottled = (updates: any) => {
+    const now = Date.now();
+    const timeSinceLastProcess = now - lastProcessTimeRef.current;
+    const THROTTLE_MS = 100; // Process every 100ms for smooth real-time feedback
+
+    if (timeSinceLastProcess >= THROTTLE_MS) {
+      // Process immediately if enough time has passed
+      lastProcessTimeRef.current = now;
+      reprocessWithUpdates(updates);
+      // Clear pending value for this specific update
+      if (updates.threshold !== undefined) pendingThresholdRef.current = null;
+      if (updates.brightness !== undefined) pendingBrightnessRef.current = null;
+      if (updates.contrast !== undefined) pendingContrastRef.current = null;
+    } else {
+      // Schedule processing for later
+      if (throttleTimerRef.current) {
+        clearTimeout(throttleTimerRef.current);
+      }
+
+      const delay = THROTTLE_MS - timeSinceLastProcess;
+      throttleTimerRef.current = setTimeout(() => {
+        lastProcessTimeRef.current = Date.now();
+
+        // Process all pending values
+        const pendingUpdates: any = {};
+        if (pendingThresholdRef.current !== null) {
+          pendingUpdates.threshold = pendingThresholdRef.current;
+          pendingThresholdRef.current = null;
+        }
+        if (pendingBrightnessRef.current !== null) {
+          pendingUpdates.brightness = pendingBrightnessRef.current;
+          pendingBrightnessRef.current = null;
+        }
+        if (pendingContrastRef.current !== null) {
+          pendingUpdates.contrast = pendingContrastRef.current;
+          pendingContrastRef.current = null;
+        }
+
+        if (Object.keys(pendingUpdates).length > 0) {
+          reprocessWithUpdates(pendingUpdates);
+        }
+      }, delay);
+    }
+  };
+
+  // Threshold handlers - update UI immediately, throttle processing
   const handleThresholdChange = (value: number) => {
-    reprocessWithUpdates({ threshold: value });
+    setThreshold(value);
+    pendingThresholdRef.current = value;
+    processThrottled({ threshold: value });
   };
 
+  const handleThresholdRelease = () => {
+    // Process final value immediately if pending
+    if (pendingThresholdRef.current !== null) {
+      if (throttleTimerRef.current) {
+        clearTimeout(throttleTimerRef.current);
+      }
+      reprocessWithUpdates({ threshold: pendingThresholdRef.current });
+      pendingThresholdRef.current = null;
+      lastProcessTimeRef.current = Date.now();
+    }
+  };
+
+  // Brightness handlers - update UI immediately, throttle processing
   const handleBrightnessChange = (value: number) => {
-    reprocessWithUpdates({ brightness: value });
+    setBrightness(value);
+    pendingBrightnessRef.current = value;
+    processThrottled({ brightness: value });
   };
 
+  const handleBrightnessRelease = () => {
+    // Process final value immediately if pending
+    if (pendingBrightnessRef.current !== null) {
+      if (throttleTimerRef.current) {
+        clearTimeout(throttleTimerRef.current);
+      }
+      reprocessWithUpdates({ brightness: pendingBrightnessRef.current });
+      pendingBrightnessRef.current = null;
+      lastProcessTimeRef.current = Date.now();
+    }
+  };
+
+  // Contrast handlers - update UI immediately, throttle processing
   const handleContrastChange = (value: number) => {
-    reprocessWithUpdates({ contrast: value });
+    setContrast(value);
+    pendingContrastRef.current = value;
+    processThrottled({ contrast: value });
+  };
+
+  const handleContrastRelease = () => {
+    // Process final value immediately if pending
+    if (pendingContrastRef.current !== null) {
+      if (throttleTimerRef.current) {
+        clearTimeout(throttleTimerRef.current);
+      }
+      reprocessWithUpdates({ contrast: pendingContrastRef.current });
+      pendingContrastRef.current = null;
+      lastProcessTimeRef.current = Date.now();
+    }
   };
 
   return (
@@ -85,7 +225,9 @@ const FilterPanel: FC<FilterPanelProps> = ({
           {ditherMethods.map((method) => (
             <button
               key={method.id}
-              className={`dither-item ${imageLayer.ditherMethod === method.id ? 'active' : ''}`}
+              className={`dither-item ${
+                imageLayer.ditherMethod === method.id ? "active" : ""
+              }`}
               onClick={() => handleDitherChange(method.id)}
             >
               <span className="dither-name">{method.name}</span>
@@ -98,14 +240,17 @@ const FilterPanel: FC<FilterPanelProps> = ({
       <div className="filter-section">
         <label className="filter-label">
           Threshold
-          <span className="filter-value">{imageLayer.threshold || 128}</span>
+          <span className="filter-value">{threshold}</span>
         </label>
         <input
           type="range"
           min="0"
           max="255"
-          value={imageLayer.threshold || 128}
+          value={threshold}
           onChange={(e) => handleThresholdChange(parseInt(e.target.value))}
+          onPointerUp={handleThresholdRelease}
+          onMouseUp={handleThresholdRelease}
+          onTouchEnd={handleThresholdRelease}
           className="filter-slider"
         />
       </div>
@@ -113,14 +258,17 @@ const FilterPanel: FC<FilterPanelProps> = ({
       <div className="filter-section">
         <label className="filter-label">
           Brightness
-          <span className="filter-value">{imageLayer.brightness || 128}</span>
+          <span className="filter-value">{brightness}</span>
         </label>
         <input
           type="range"
           min="0"
           max="255"
-          value={imageLayer.brightness || 128}
+          value={brightness}
           onChange={(e) => handleBrightnessChange(parseInt(e.target.value))}
+          onPointerUp={handleBrightnessRelease}
+          onMouseUp={handleBrightnessRelease}
+          onTouchEnd={handleBrightnessRelease}
           className="filter-slider"
         />
       </div>
@@ -128,14 +276,17 @@ const FilterPanel: FC<FilterPanelProps> = ({
       <div className="filter-section">
         <label className="filter-label">
           Contrast
-          <span className="filter-value">{imageLayer.contrast || 100}%</span>
+          <span className="filter-value">{contrast}%</span>
         </label>
         <input
           type="range"
           min="0"
           max="200"
-          value={imageLayer.contrast || 100}
+          value={contrast}
           onChange={(e) => handleContrastChange(parseInt(e.target.value))}
+          onPointerUp={handleContrastRelease}
+          onMouseUp={handleContrastRelease}
+          onTouchEnd={handleContrastRelease}
           className="filter-slider"
         />
       </div>
@@ -145,12 +296,19 @@ const FilterPanel: FC<FilterPanelProps> = ({
           className="filter-toggle"
           onClick={() => reprocessWithUpdates({ invert: !imageLayer.invert })}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <circle cx="12" cy="12" r="10" />
             <path d="M12 2a10 10 0 0 0 0 20z" fill="currentColor" />
           </svg>
           <span>Invert Colors</span>
-          <div className={`toggle-switch ${imageLayer.invert ? 'active' : ''}`}>
+          <div className={`toggle-switch ${imageLayer.invert ? "active" : ""}`}>
             <div className="toggle-handle" />
           </div>
         </button>
@@ -328,4 +486,3 @@ const FilterPanel: FC<FilterPanelProps> = ({
 };
 
 export default FilterPanel;
-
