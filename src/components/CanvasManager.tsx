@@ -5,6 +5,7 @@ import { useToastContext } from "../contexts/ToastContext";
 import { useLayers } from "../hooks/useLayers";
 import { useCanvasPersistence } from "../hooks/useCanvasPersistence";
 import Sidebar from "./Sidebar";
+import ContextBar from "./ContextBar";
 import ImageUploader from "./ImageUploader";
 import PrinterConnection from "./PrinterConnection";
 import TextTool from "./TextTool";
@@ -16,6 +17,7 @@ import { logger } from "../lib/logger";
 import type { Layer, ImageLayer } from "../types/layer";
 
 type Tool = "select" | "image" | "text" | "draw" | "shape" | "icon";
+type AdvancedPanel = "font" | "filter" | "position" | null;
 
 // Helper function to load state from localStorage (outside component)
 async function loadSavedState() {
@@ -117,6 +119,7 @@ export default function CanvasManager() {
   const [activeTool, setActiveTool] = useState<Tool>("select");
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [showTextTool, setShowTextTool] = useState(false);
+  const [advancedPanel, setAdvancedPanel] = useState<AdvancedPanel>(null);
 
   // Keep a ref to always have fresh layers data
   const layersRef = useRef<Layer[]>([]);
@@ -291,10 +294,21 @@ export default function CanvasManager() {
     if (tool === "image") {
       setShowImageUploader(true);
       setShowTextTool(false);
+      setAdvancedPanel(null);
     } else if (tool === "text") {
       setShowTextTool(true);
       setShowImageUploader(false);
+      setAdvancedPanel(null);
+    } else if (tool === "select") {
+      setShowImageUploader(false);
+      setShowTextTool(false);
+      setAdvancedPanel(null);
     }
+  }, []);
+
+  // Handle opening advanced panels from context bar
+  const handleOpenAdvancedPanel = useCallback((panelType: AdvancedPanel) => {
+    setAdvancedPanel(panelType);
   }, []);
 
   const handleAddText = useCallback(
@@ -520,6 +534,24 @@ export default function CanvasManager() {
 
       {/* Left Panel - Dynamic content based on active tool (Phase 3) */}
       <div className="left-panel-container">
+        {/* Advanced panel from context bar */}
+        {advancedPanel && (
+          <div className="panel">
+            <div className="panel-header">
+              <h3>{advancedPanel === 'font' ? 'Font' : advancedPanel === 'filter' ? 'Filters' : 'Position & Layers'}</h3>
+              <button
+                className="close-btn"
+                onClick={() => setAdvancedPanel(null)}
+              >
+                ×
+              </button>
+            </div>
+            {/* Content will be implemented in Phase 3 */}
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+              Advanced {advancedPanel} panel (coming in Phase 3)
+            </p>
+          </div>
+        )}
         {/* Temporary: keep panels visible for Phase 1 */}
         {/* Image Uploader (conditionally shown) */}
         {showImageUploader && (
@@ -602,17 +634,29 @@ export default function CanvasManager() {
         </div>
       </div>
 
-      {/* Canvas */}
-      <div className="canvas-section">
-        <FabricCanvas
-          ref={fabricCanvasRef}
-          width={CANVAS_WIDTH}
-          height={canvasHeight}
-          layers={layers}
-          selectedLayerId={selectedLayerId}
-          onLayerUpdate={handleLayerUpdate}
-          onLayerSelect={handleLayerSelect}
+      {/* Canvas Section with Context Bar */}
+      <div className="canvas-container">
+        {/* Context Bar - appears when element is selected */}
+        <ContextBar
+          selectedLayer={selectedLayer}
+          onUpdateLayer={updateLayer}
+          onUpdateTextLayer={updateTextLayer}
+          onUpdateImageLayer={updateImageLayer}
+          onOpenAdvancedPanel={handleOpenAdvancedPanel}
         />
+
+        {/* Canvas */}
+        <div className="canvas-section">
+          <FabricCanvas
+            ref={fabricCanvasRef}
+            width={CANVAS_WIDTH}
+            height={canvasHeight}
+            layers={layers}
+            selectedLayerId={selectedLayerId}
+            onLayerUpdate={handleLayerUpdate}
+            onLayerSelect={handleLayerSelect}
+          />
+        </div>
       </div>
 
       <style>{`
@@ -632,6 +676,13 @@ export default function CanvasManager() {
           display: flex;
           flex-direction: column;
           gap: 1rem;
+        }
+
+        .canvas-container {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
         }
 
         .canvas-section {
