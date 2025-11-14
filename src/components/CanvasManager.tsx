@@ -6,15 +6,16 @@ import { useLayers } from "../hooks/useLayers";
 import { useCanvasPersistence } from "../hooks/useCanvasPersistence";
 import Sidebar from "./Sidebar";
 import ContextBar from "./ContextBar";
+import FontPanel from "./FontPanel";
+import FilterPanel from "./FilterPanel";
+import PositionLayersPanel from "./PositionLayersPanel";
 import ImageUploader from "./ImageUploader";
 import PrinterConnection from "./PrinterConnection";
 import TextTool from "./TextTool";
-import LayerPanel from "./LayerPanel";
-import PropertiesPanel from "./PropertiesPanel";
 import FabricCanvas, { type FabricCanvasRef } from "./FabricCanvas";
 import { PRINTER_WIDTH } from "../lib/dithering";
 import { logger } from "../lib/logger";
-import type { Layer, ImageLayer } from "../types/layer";
+import type { Layer, ImageLayer, TextLayer } from "../types/layer";
 
 type Tool = "select" | "image" | "text" | "draw" | "shape" | "icon";
 type AdvancedPanel = "font" | "filter" | "position" | null;
@@ -311,6 +312,21 @@ export default function CanvasManager() {
     setAdvancedPanel(panelType);
   }, []);
 
+  // Handle layer movement with direction (up/down)
+  const handleMoveLayerByDirection = useCallback(
+    (layerId: string, direction: "up" | "down") => {
+      const currentIndex = layers.findIndex((l) => l.id === layerId);
+      if (currentIndex === -1) return;
+
+      if (direction === "up" && currentIndex < layers.length - 1) {
+        moveLayer(currentIndex, currentIndex + 1);
+      } else if (direction === "down" && currentIndex > 0) {
+        moveLayer(currentIndex, currentIndex - 1);
+      }
+    },
+    [layers, moveLayer]
+  );
+
   const handleAddText = useCallback(
     (text: string, options: any) => {
       // Add text as a new layer (non-destructive!)
@@ -532,13 +548,13 @@ export default function CanvasManager() {
       {/* Left Sidebar - Canva style */}
       <Sidebar activeTool={activeTool} onToolSelect={handleToolSelect} />
 
-      {/* Left Panel - Dynamic content based on active tool (Phase 3) */}
+      {/* Left Panel - Dynamic content based on active tool and context */}
       <div className="left-panel-container">
         {/* Advanced panel from context bar */}
-        {advancedPanel && (
+        {advancedPanel === "font" && selectedLayer?.type === "text" && (
           <div className="panel">
             <div className="panel-header">
-              <h3>{advancedPanel === 'font' ? 'Font' : advancedPanel === 'filter' ? 'Filters' : 'Position & Layers'}</h3>
+              <h3>Fuente</h3>
               <button
                 className="close-btn"
                 onClick={() => setAdvancedPanel(null)}
@@ -546,18 +562,61 @@ export default function CanvasManager() {
                 ×
               </button>
             </div>
-            {/* Content will be implemented in Phase 3 */}
-            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
-              Advanced {advancedPanel} panel (coming in Phase 3)
-            </p>
+            <FontPanel
+              textLayer={selectedLayer as TextLayer}
+              onUpdateTextLayer={updateTextLayer}
+            />
           </div>
         )}
-        {/* Temporary: keep panels visible for Phase 1 */}
-        {/* Image Uploader (conditionally shown) */}
-        {showImageUploader && (
+
+        {advancedPanel === "filter" && selectedLayer?.type === "image" && (
           <div className="panel">
             <div className="panel-header">
-              <h3>Image Upload</h3>
+              <h3>Filtros</h3>
+              <button
+                className="close-btn"
+                onClick={() => setAdvancedPanel(null)}
+              >
+                ×
+              </button>
+            </div>
+            <FilterPanel
+              imageLayer={selectedLayer as ImageLayer}
+              onUpdateImageLayer={updateImageLayer}
+              onReprocessImageLayer={handleReprocessImageLayer}
+            />
+          </div>
+        )}
+
+        {advancedPanel === "position" && selectedLayer && (
+          <div className="panel">
+            <div className="panel-header">
+              <h3>Posición y Capas</h3>
+              <button
+                className="close-btn"
+                onClick={() => setAdvancedPanel(null)}
+              >
+                ×
+              </button>
+            </div>
+            <PositionLayersPanel
+              selectedLayer={selectedLayer}
+              layers={layers}
+              onUpdateLayer={updateLayer}
+              onSelectLayer={selectLayer}
+              onToggleVisibility={toggleVisibility}
+              onToggleLock={toggleLock}
+              onRemoveLayer={removeLayer}
+              onMoveLayer={handleMoveLayerByDirection}
+            />
+          </div>
+        )}
+
+        {/* Image Uploader (when image tool is active) */}
+        {showImageUploader && !advancedPanel && (
+          <div className="panel">
+            <div className="panel-header">
+              <h3>Subir Imagen</h3>
               <button
                 className="close-btn"
                 onClick={() => setShowImageUploader(false)}
@@ -569,8 +628,8 @@ export default function CanvasManager() {
           </div>
         )}
 
-        {/* Text Tool (conditionally shown) */}
-        {showTextTool && (
+        {/* Text Tool (when text tool is active) */}
+        {showTextTool && !advancedPanel && (
           <div className="panel">
             <TextTool
               onAddText={handleAddText}
@@ -579,59 +638,37 @@ export default function CanvasManager() {
           </div>
         )}
 
-        {/* Properties Panel */}
-        <div className="panel">
-          <PropertiesPanel
-            selectedLayer={selectedLayer}
-            canvasHeight={canvasHeight}
-            onUpdateLayer={updateLayer}
-            onUpdateTextLayer={updateTextLayer}
-            onUpdateImageLayer={updateImageLayer}
-            onReprocessImageLayer={handleReprocessImageLayer}
-            onCanvasHeightChange={handleCanvasHeightChange}
-          />
-        </div>
+        {/* Printer Connection (temporary - will move in Phase 5) */}
+        {!advancedPanel && !showImageUploader && !showTextTool && (
+          <>
+            <div className="panel">
+              <h3 className="panel-title">Impresora</h3>
+              <PrinterConnection onPrint={handlePrint} />
+            </div>
 
-        {/* Layer Panel */}
-        <div className="panel">
-          <LayerPanel
-            layers={layers}
-            selectedLayerId={selectedLayerId}
-            onSelectLayer={selectLayer}
-            onToggleVisibility={toggleVisibility}
-            onToggleLock={toggleLock}
-            onRemoveLayer={removeLayer}
-            onMoveLayer={moveLayer}
-          />
-        </div>
-
-        {/* Printer Connection */}
-        <div className="panel">
-          <h3 className="panel-title">Printer</h3>
-          <PrinterConnection onPrint={handlePrint} />
-        </div>
-
-        {/* Canvas Actions */}
-        <div className="panel">
-          <h3 className="panel-title">Canvas</h3>
-          <button
-            className="action-btn new-canvas-btn"
-            onClick={handleNewCanvas}
-            title="Clear all layers and start fresh"
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            New Canvas
-          </button>
-        </div>
+            {/* Canvas Actions */}
+            <div className="panel">
+              <h3 className="panel-title">Canvas</h3>
+              <button
+                className="action-btn new-canvas-btn"
+                onClick={handleNewCanvas}
+                title="Limpiar todas las capas y empezar de nuevo"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Nuevo Canvas
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Canvas Section with Context Bar */}
