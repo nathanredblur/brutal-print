@@ -618,6 +618,7 @@ export default function CanvasManager() {
           <PropertiesPanel
             selectedLayer={selectedLayer}
             canvasHeight={canvasHeight}
+            onUpdateLayer={updateLayer}
             onUpdateTextLayer={updateTextLayer}
             onUpdateImageLayer={updateImageLayer}
             onReprocessImageLayer={handleReprocessImageLayer}

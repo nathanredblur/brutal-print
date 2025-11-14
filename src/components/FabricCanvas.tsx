@@ -43,11 +43,15 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fabricRef = useRef<fabric.Canvas | null>(null);
     const layerObjectsRef = useRef<Map<string, fabric.FabricObject>>(new Map());
-    
+
     // Throttling refs for real-time scaling
     const scalingThrottleRef = useRef<NodeJS.Timeout | null>(null);
     const lastScaleProcessRef = useRef<number>(0);
-    const pendingScaleRef = useRef<{ layerId: string; updates: Partial<Layer>; wasScaled: boolean } | null>(null);
+    const pendingScaleRef = useRef<{
+      layerId: string;
+      updates: Partial<Layer>;
+      wasScaled: boolean;
+    } | null>(null);
 
     // Initialize Fabric canvas
     useEffect(() => {
@@ -112,7 +116,11 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           const timeSinceLastProcess = now - lastScaleProcessRef.current;
           const THROTTLE_MS = 150; // Process at most every 150ms
 
-          pendingScaleRef.current = { layerId: obj.data.layerId, updates, wasScaled };
+          pendingScaleRef.current = {
+            layerId: obj.data.layerId,
+            updates,
+            wasScaled,
+          };
 
           if (timeSinceLastProcess >= THROTTLE_MS) {
             lastScaleProcessRef.current = now;
@@ -152,12 +160,15 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           // Detect scaling by checking if scale is not 1:1
           const wasScaled = obj.scaleX !== 1 || obj.scaleY !== 1;
 
+          const layerId = (obj as FabricObjectWithData).data?.layerId;
+          if (!layerId) return;
+
           // Special handling for text: update fontSize when scaled
           if (obj instanceof fabric.FabricText && wasScaled) {
             const avgScale = ((obj.scaleX || 1) + (obj.scaleY || 1)) / 2;
             const currentFontSize = obj.fontSize || 24;
             const newFontSize = Math.round(currentFontSize * avgScale);
-            
+
             // Update the text object with new fontSize and reset scale
             obj.set({
               fontSize: newFontSize,
@@ -168,7 +179,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
             fabricCanvas.renderAll();
 
             logger.info("FabricCanvas", "📝 Text scaled - fontSize updated", {
-              layerId: obj.data.layerId,
+              layerId,
               currentFontSize,
               newFontSize,
               avgScale,
@@ -197,7 +208,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           }
 
           logger.info("FabricCanvas", "🔍 Object modified EVENT [FINAL]", {
-            layerId: obj.data.layerId,
+            layerId,
             wasScaled,
             type: obj.type,
             scaleValues: {
@@ -208,12 +219,13 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
               width: finalWidth,
               height: finalHeight,
             },
-            fontSize: obj instanceof fabric.FabricText ? obj.fontSize : undefined,
+            fontSize:
+              obj instanceof fabric.FabricText ? obj.fontSize : undefined,
           });
 
           // Process the final value
           lastScaleProcessRef.current = Date.now();
-          onLayerUpdate?.(obj.data.layerId, updates, wasScaled);
+          onLayerUpdate?.(layerId, updates, wasScaled);
           pendingScaleRef.current = null;
         }
       });
@@ -429,20 +441,55 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
             }
           );
 
+          // Check if rotation changed
+          const rotationChanged =
+            Math.abs((obj.angle || 0) - layer.rotation) > 0.01;
+
           obj.setElement(imageLayer.imageData);
-          obj.set({
-            left: layer.x,
-            top: layer.y,
-            angle: layer.rotation,
-            scaleX: 1,
-            scaleY: 1,
-            width: imageLayer.imageData.width,
-            height: imageLayer.imageData.height,
-            selectable: !layer.locked,
-            visible: layer.visible,
-            opacity: layer.opacity,
-            dirty: true, // Force Fabric to re-render
-          });
+
+          if (rotationChanged) {
+            // For rotation changes, maintain center position
+            const center = obj.getCenterPoint();
+
+            obj.set({
+              angle: layer.rotation,
+              scaleX: 1,
+              scaleY: 1,
+              width: imageLayer.imageData.width,
+              height: imageLayer.imageData.height,
+              selectable: !layer.locked,
+              visible: layer.visible,
+              opacity: layer.opacity,
+              dirty: true, // Force Fabric to re-render
+            });
+
+            // Restore center position
+            obj.setPositionByOrigin(center, "center", "center");
+
+            // Update layer state with new coordinates (after rotation adjustment)
+            const newX = obj.left || 0;
+            const newY = obj.top || 0;
+            if (
+              Math.abs(newX - layer.x) > 0.01 ||
+              Math.abs(newY - layer.y) > 0.01
+            ) {
+              onLayerUpdate?.(layer.id, { x: newX, y: newY });
+            }
+          } else {
+            obj.set({
+              left: layer.x,
+              top: layer.y,
+              angle: layer.rotation,
+              scaleX: 1,
+              scaleY: 1,
+              width: imageLayer.imageData.width,
+              height: imageLayer.imageData.height,
+              selectable: !layer.locked,
+              visible: layer.visible,
+              opacity: layer.opacity,
+              dirty: true, // Force Fabric to re-render
+            });
+          }
 
           // Force update coordinates
           obj.setCoords();
@@ -461,48 +508,182 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
             }
           );
         } else {
-          logger.debug("FabricCanvas", "No reprocess, just updating props", {
-            layerId: layer.id,
-          });
-          // Just update position/rotation/visibility
-          obj.set({
-            left: layer.x,
-            top: layer.y,
-            angle: layer.rotation,
-            selectable: !layer.locked,
-            visible: layer.visible,
-            opacity: layer.opacity,
-          });
+          logger.debug(
+            "FabricCanvas",
+            "No reprocess, updating props and scale",
+            {
+              layerId: layer.id,
+              currentSize: { width: obj.width, height: obj.height },
+              targetSize: { width: layer.width, height: layer.height },
+            }
+          );
+
+          // Calculate scale to match target size
+          const targetScaleX = layer.width / (obj.width || 1);
+          const targetScaleY = layer.height / (obj.height || 1);
+
+          // Check if rotation changed
+          const rotationChanged =
+            Math.abs((obj.angle || 0) - layer.rotation) > 0.01;
+
+          if (rotationChanged) {
+            // For rotation changes, maintain center position
+            // Get current center
+            const center = obj.getCenterPoint();
+
+            // Update properties
+            obj.set({
+              angle: layer.rotation,
+              scaleX: targetScaleX,
+              scaleY: targetScaleY,
+              selectable: !layer.locked,
+              visible: layer.visible,
+              opacity: layer.opacity,
+            });
+
+            // Restore center position (this will adjust left/top)
+            obj.setPositionByOrigin(center, "center", "center");
+
+            // Update layer state with new coordinates (after rotation adjustment)
+            const newX = obj.left || 0;
+            const newY = obj.top || 0;
+            if (
+              Math.abs(newX - layer.x) > 0.01 ||
+              Math.abs(newY - layer.y) > 0.01
+            ) {
+              onLayerUpdate?.(layer.id, { x: newX, y: newY });
+            }
+          } else {
+            // For other changes, use direct position
+            obj.set({
+              left: layer.x,
+              top: layer.y,
+              angle: layer.rotation,
+              scaleX: targetScaleX,
+              scaleY: targetScaleY,
+              selectable: !layer.locked,
+              visible: layer.visible,
+              opacity: layer.opacity,
+            });
+          }
+
           obj.setCoords();
         }
       } else if (layer.type === "text" && obj instanceof fabric.FabricText) {
         const textLayer = layer as TextLayer;
-        obj.set({
-          left: layer.x,
-          top: layer.y,
-          angle: layer.rotation,
-          text: textLayer.text,
-          fontSize: textLayer.fontSize,
-          fontFamily: textLayer.fontFamily,
-          fontWeight: textLayer.bold ? "bold" : "normal",
-          fontStyle: textLayer.italic ? "italic" : "normal",
-          textAlign: textLayer.align,
-          fill: textLayer.color,
-          selectable: !layer.locked,
-          visible: layer.visible,
-          opacity: layer.opacity,
-        });
+
+        // Calculate scale to match target size (after fontSize is applied)
+        const currentWidth = obj.width || 1;
+        const currentHeight = obj.height || 1;
+        const targetScaleX = layer.width / currentWidth;
+        const targetScaleY = layer.height / currentHeight;
+
+        // Check if rotation changed
+        const rotationChanged =
+          Math.abs((obj.angle || 0) - layer.rotation) > 0.01;
+
+        if (rotationChanged) {
+          // For rotation changes, maintain center position
+          const center = obj.getCenterPoint();
+
+          obj.set({
+            angle: layer.rotation,
+            text: textLayer.text,
+            fontSize: textLayer.fontSize,
+            fontFamily: textLayer.fontFamily,
+            fontWeight: textLayer.bold ? "bold" : "normal",
+            fontStyle: textLayer.italic ? "italic" : "normal",
+            textAlign: textLayer.align,
+            fill: textLayer.color,
+            scaleX: targetScaleX,
+            scaleY: targetScaleY,
+            selectable: !layer.locked,
+            visible: layer.visible,
+            opacity: layer.opacity,
+          });
+
+          // Restore center position
+          obj.setPositionByOrigin(center, "center", "center");
+
+          // Update layer state with new coordinates (after rotation adjustment)
+          const newX = obj.left || 0;
+          const newY = obj.top || 0;
+          if (
+            Math.abs(newX - layer.x) > 0.01 ||
+            Math.abs(newY - layer.y) > 0.01
+          ) {
+            onLayerUpdate?.(layer.id, { x: newX, y: newY });
+          }
+        } else {
+          obj.set({
+            left: layer.x,
+            top: layer.y,
+            angle: layer.rotation,
+            text: textLayer.text,
+            fontSize: textLayer.fontSize,
+            fontFamily: textLayer.fontFamily,
+            fontWeight: textLayer.bold ? "bold" : "normal",
+            fontStyle: textLayer.italic ? "italic" : "normal",
+            textAlign: textLayer.align,
+            fill: textLayer.color,
+            scaleX: targetScaleX,
+            scaleY: targetScaleY,
+            selectable: !layer.locked,
+            visible: layer.visible,
+            opacity: layer.opacity,
+          });
+        }
+
         obj.setCoords();
       } else {
         // Other types
-        obj.set({
-          left: layer.x,
-          top: layer.y,
-          angle: layer.rotation,
-          selectable: !layer.locked,
-          visible: layer.visible,
-          opacity: layer.opacity,
-        });
+        const currentWidth = obj.width || 1;
+        const currentHeight = obj.height || 1;
+        const targetScaleX = layer.width / currentWidth;
+        const targetScaleY = layer.height / currentHeight;
+
+        // Check if rotation changed
+        const rotationChanged =
+          Math.abs((obj.angle || 0) - layer.rotation) > 0.01;
+
+        if (rotationChanged) {
+          // For rotation changes, maintain center position
+          const center = obj.getCenterPoint();
+
+          obj.set({
+            angle: layer.rotation,
+            scaleX: targetScaleX,
+            scaleY: targetScaleY,
+            selectable: !layer.locked,
+            visible: layer.visible,
+            opacity: layer.opacity,
+          });
+
+          // Restore center position
+          obj.setPositionByOrigin(center, "center", "center");
+
+          // Update layer state with new coordinates (after rotation adjustment)
+          const newX = obj.left || 0;
+          const newY = obj.top || 0;
+          if (
+            Math.abs(newX - layer.x) > 0.01 ||
+            Math.abs(newY - layer.y) > 0.01
+          ) {
+            onLayerUpdate?.(layer.id, { x: newX, y: newY });
+          }
+        } else {
+          obj.set({
+            left: layer.x,
+            top: layer.y,
+            angle: layer.rotation,
+            scaleX: targetScaleX,
+            scaleY: targetScaleY,
+            selectable: !layer.locked,
+            visible: layer.visible,
+            opacity: layer.opacity,
+          });
+        }
+
         obj.setCoords();
       }
     };

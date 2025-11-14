@@ -13,6 +13,7 @@ import type { DitherMethod } from "../lib/dithering";
 interface PropertiesPanelProps {
   selectedLayer: Layer | null;
   canvasHeight: number;
+  onUpdateLayer: (layerId: string, updates: Partial<Layer>) => void;
   onUpdateTextLayer: (layerId: string, updates: Partial<TextLayer>) => void;
   onUpdateImageLayer: (layerId: string, updates: Partial<ImageLayer>) => void;
   onReprocessImageLayer: (
@@ -34,18 +35,30 @@ interface PropertiesPanelProps {
 export default function PropertiesPanel({
   selectedLayer,
   canvasHeight,
+  onUpdateLayer,
   onUpdateTextLayer,
   onUpdateImageLayer,
   onReprocessImageLayer,
   onCanvasHeightChange,
 }: PropertiesPanelProps) {
   // Local state for form inputs
+  // Base layer properties
+  const [layerName, setLayerName] = useState("");
+  const [layerX, setLayerX] = useState(0);
+  const [layerY, setLayerY] = useState(0);
+  const [layerWidth, setLayerWidth] = useState(0);
+  const [layerHeight, setLayerHeight] = useState(0);
+  const [layerRotation, setLayerRotation] = useState(0);
+
+  // Text layer properties
   const [text, setText] = useState("");
   const [fontSize, setFontSize] = useState(24);
   const [fontFamily, setFontFamily] = useState("Inter");
   const [bold, setBold] = useState(false);
   const [italic, setItalic] = useState(false);
   const [align, setAlign] = useState<"left" | "center" | "right">("left");
+
+  // Image layer properties
   const [ditherMethod, setDitherMethod] = useState("steinberg");
   const [threshold, setThreshold] = useState(128);
   const [invertImage, setInvertImage] = useState(false);
@@ -65,23 +78,33 @@ export default function PropertiesPanel({
 
   // Update local state when selected layer changes
   useEffect(() => {
-    if (selectedLayer?.type === "text") {
-      const textLayer = selectedLayer as TextLayer;
-      setText(textLayer.text);
-      setFontSize(textLayer.fontSize);
-      setFontFamily(textLayer.fontFamily);
-      setBold(textLayer.bold);
-      setItalic(textLayer.italic);
-      setAlign(textLayer.align);
-    } else if (selectedLayer?.type === "image") {
-      const imageLayer = selectedLayer as ImageLayer;
-      setDitherMethod(imageLayer.ditherMethod || "steinberg");
-      setThreshold(imageLayer.threshold ?? 128);
-      setInvertImage(imageLayer.invert ?? false);
-      setBrightness(imageLayer.brightness ?? 128);
-      setContrast(imageLayer.contrast ?? 100);
-      setBayerMatrixSize(imageLayer.bayerMatrixSize ?? 4);
-      setHalftoneCellSize(imageLayer.halftoneCellSize ?? 4);
+    if (selectedLayer) {
+      // Load base properties for all layer types
+      setLayerName(selectedLayer.name);
+      setLayerX(selectedLayer.x);
+      setLayerY(selectedLayer.y);
+      setLayerWidth(selectedLayer.width);
+      setLayerHeight(selectedLayer.height);
+      setLayerRotation(selectedLayer.rotation);
+
+      if (selectedLayer.type === "text") {
+        const textLayer = selectedLayer as TextLayer;
+        setText(textLayer.text);
+        setFontSize(textLayer.fontSize);
+        setFontFamily(textLayer.fontFamily);
+        setBold(textLayer.bold);
+        setItalic(textLayer.italic);
+        setAlign(textLayer.align);
+      } else if (selectedLayer.type === "image") {
+        const imageLayer = selectedLayer as ImageLayer;
+        setDitherMethod(imageLayer.ditherMethod || "steinberg");
+        setThreshold(imageLayer.threshold ?? 128);
+        setInvertImage(imageLayer.invert ?? false);
+        setBrightness(imageLayer.brightness ?? 128);
+        setContrast(imageLayer.contrast ?? 100);
+        setBayerMatrixSize(imageLayer.bayerMatrixSize ?? 4);
+        setHalftoneCellSize(imageLayer.halftoneCellSize ?? 4);
+      }
     }
   }, [selectedLayer]);
 
@@ -98,6 +121,49 @@ export default function PropertiesPanel({
       }
     };
   }, []);
+
+  // Handle base layer property updates
+  const handleLayerNameChange = (newName: string) => {
+    setLayerName(newName);
+    if (selectedLayer) {
+      onUpdateLayer(selectedLayer.id, { name: newName });
+    }
+  };
+
+  const handleLayerXChange = (newX: number) => {
+    setLayerX(newX);
+    if (selectedLayer) {
+      onUpdateLayer(selectedLayer.id, { x: newX });
+    }
+  };
+
+  const handleLayerYChange = (newY: number) => {
+    setLayerY(newY);
+    if (selectedLayer) {
+      onUpdateLayer(selectedLayer.id, { y: newY });
+    }
+  };
+
+  const handleLayerWidthChange = (newWidth: number) => {
+    setLayerWidth(newWidth);
+    if (selectedLayer) {
+      onUpdateLayer(selectedLayer.id, { width: newWidth });
+    }
+  };
+
+  const handleLayerHeightChange = (newHeight: number) => {
+    setLayerHeight(newHeight);
+    if (selectedLayer) {
+      onUpdateLayer(selectedLayer.id, { height: newHeight });
+    }
+  };
+
+  const handleLayerRotationChange = (newRotation: number) => {
+    setLayerRotation(newRotation);
+    if (selectedLayer) {
+      onUpdateLayer(selectedLayer.id, { rotation: newRotation });
+    }
+  };
 
   // Handle text updates
   const handleTextChange = (newText: string) => {
@@ -338,29 +404,107 @@ export default function PropertiesPanel({
             {/* Common properties */}
             <div className="property-group">
               <label className="property-label">Layer Name</label>
-              <div className="property-value">{selectedLayer.name}</div>
+              <input
+                type="text"
+                className="property-input"
+                value={layerName}
+                onChange={(e) => handleLayerNameChange(e.target.value)}
+              />
             </div>
 
             <div className="property-group">
               <label className="property-label">Position</label>
-              <div className="property-value">
-                X: {Math.round(selectedLayer.x)}px, Y:{" "}
-                {Math.round(selectedLayer.y)}px
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <div style={{ flex: 1 }}>
+                  <label
+                    className="property-label"
+                    style={{ fontSize: "0.7rem" }}
+                  >
+                    X
+                  </label>
+                  <input
+                    type="number"
+                    className="property-input"
+                    value={Math.round(layerX)}
+                    onChange={(e) => handleLayerXChange(Number(e.target.value))}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label
+                    className="property-label"
+                    style={{ fontSize: "0.7rem" }}
+                  >
+                    Y
+                  </label>
+                  <input
+                    type="number"
+                    className="property-input"
+                    value={Math.round(layerY)}
+                    onChange={(e) => handleLayerYChange(Number(e.target.value))}
+                  />
+                </div>
               </div>
             </div>
 
             <div className="property-group">
               <label className="property-label">Size</label>
-              <div className="property-value">
-                {Math.round(selectedLayer.width)} ×{" "}
-                {Math.round(selectedLayer.height)}px
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <div style={{ flex: 1 }}>
+                  <label
+                    className="property-label"
+                    style={{ fontSize: "0.7rem" }}
+                  >
+                    Width
+                  </label>
+                  <input
+                    type="number"
+                    className="property-input"
+                    value={Math.round(layerWidth)}
+                    onChange={(e) =>
+                      handleLayerWidthChange(Number(e.target.value))
+                    }
+                    min={1}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label
+                    className="property-label"
+                    style={{ fontSize: "0.7rem" }}
+                  >
+                    Height
+                  </label>
+                  <input
+                    type="number"
+                    className="property-input"
+                    value={Math.round(layerHeight)}
+                    onChange={(e) =>
+                      handleLayerHeightChange(Number(e.target.value))
+                    }
+                    min={1}
+                  />
+                </div>
               </div>
             </div>
 
             <div className="property-group">
-              <label className="property-label">Rotation</label>
-              <div className="property-value">
-                {Math.round(selectedLayer.rotation)}°
+              <label className="property-label">
+                Rotation: {Math.round(layerRotation)}°
+              </label>
+              <input
+                type="range"
+                className="property-slider"
+                value={layerRotation}
+                onChange={(e) =>
+                  handleLayerRotationChange(Number(e.target.value))
+                }
+                min={0}
+                max={360}
+                step={1}
+              />
+              <div className="property-info-inline">
+                <span className="info-text-small">
+                  0° ← {Math.round(layerRotation)}° → 360°
+                </span>
               </div>
             </div>
           </div>
