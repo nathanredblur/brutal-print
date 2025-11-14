@@ -26,6 +26,12 @@ const FilterPanel: FC<FilterPanelProps> = ({
   const [threshold, setThreshold] = useState(imageLayer.threshold || 128);
   const [brightness, setBrightness] = useState(imageLayer.brightness ?? 128);
   const [contrast, setContrast] = useState(imageLayer.contrast ?? 100);
+  const [bayerMatrixSize, setBayerMatrixSize] = useState(
+    imageLayer.bayerMatrixSize ?? 4
+  );
+  const [halftoneCellSize, setHalftoneCellSize] = useState(
+    imageLayer.halftoneCellSize ?? 4
+  );
 
   // Throttle refs to process every 100ms while dragging
   const throttleTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -33,16 +39,22 @@ const FilterPanel: FC<FilterPanelProps> = ({
   const pendingThresholdRef = useRef<number | null>(null);
   const pendingBrightnessRef = useRef<number | null>(null);
   const pendingContrastRef = useRef<number | null>(null);
+  const pendingBayerMatrixRef = useRef<number | null>(null);
+  const pendingHalftoneRef = useRef<number | null>(null);
 
   // Update local state when switching to a different image
   useEffect(() => {
     setThreshold(imageLayer.threshold || 128);
     setBrightness(imageLayer.brightness ?? 128);
     setContrast(imageLayer.contrast ?? 100);
+    setBayerMatrixSize(imageLayer.bayerMatrixSize ?? 4);
+    setHalftoneCellSize(imageLayer.halftoneCellSize ?? 4);
     // Clear any pending values when switching images
     pendingThresholdRef.current = null;
     pendingBrightnessRef.current = null;
     pendingContrastRef.current = null;
+    pendingBayerMatrixRef.current = null;
+    pendingHalftoneRef.current = null;
     if (throttleTimerRef.current) {
       clearTimeout(throttleTimerRef.current);
     }
@@ -90,8 +102,14 @@ const FilterPanel: FC<FilterPanelProps> = ({
         updates.contrast !== undefined
           ? updates.contrast
           : imageLayer.contrast ?? 100,
-      bayerMatrixSize: imageLayer.bayerMatrixSize ?? 4,
-      halftoneCellSize: imageLayer.halftoneCellSize ?? 4,
+      bayerMatrixSize:
+        updates.bayerMatrixSize !== undefined
+          ? updates.bayerMatrixSize
+          : imageLayer.bayerMatrixSize ?? 4,
+      halftoneCellSize:
+        updates.halftoneCellSize !== undefined
+          ? updates.halftoneCellSize
+          : imageLayer.halftoneCellSize ?? 4,
       targetWidth: imageLayer.width,
       targetHeight: imageLayer.height,
     };
@@ -128,6 +146,10 @@ const FilterPanel: FC<FilterPanelProps> = ({
       if (updates.threshold !== undefined) pendingThresholdRef.current = null;
       if (updates.brightness !== undefined) pendingBrightnessRef.current = null;
       if (updates.contrast !== undefined) pendingContrastRef.current = null;
+      if (updates.bayerMatrixSize !== undefined)
+        pendingBayerMatrixRef.current = null;
+      if (updates.halftoneCellSize !== undefined)
+        pendingHalftoneRef.current = null;
     } else {
       // Schedule processing for later
       if (throttleTimerRef.current) {
@@ -151,6 +173,14 @@ const FilterPanel: FC<FilterPanelProps> = ({
         if (pendingContrastRef.current !== null) {
           pendingUpdates.contrast = pendingContrastRef.current;
           pendingContrastRef.current = null;
+        }
+        if (pendingBayerMatrixRef.current !== null) {
+          pendingUpdates.bayerMatrixSize = pendingBayerMatrixRef.current;
+          pendingBayerMatrixRef.current = null;
+        }
+        if (pendingHalftoneRef.current !== null) {
+          pendingUpdates.halftoneCellSize = pendingHalftoneRef.current;
+          pendingHalftoneRef.current = null;
         }
 
         if (Object.keys(pendingUpdates).length > 0) {
@@ -217,6 +247,42 @@ const FilterPanel: FC<FilterPanelProps> = ({
     }
   };
 
+  // Bayer matrix size handlers
+  const handleBayerMatrixChange = (value: number) => {
+    setBayerMatrixSize(value);
+    pendingBayerMatrixRef.current = value;
+    processThrottled({ bayerMatrixSize: value });
+  };
+
+  const handleBayerMatrixRelease = () => {
+    if (pendingBayerMatrixRef.current !== null) {
+      if (throttleTimerRef.current) {
+        clearTimeout(throttleTimerRef.current);
+      }
+      reprocessWithUpdates({ bayerMatrixSize: pendingBayerMatrixRef.current });
+      pendingBayerMatrixRef.current = null;
+      lastProcessTimeRef.current = Date.now();
+    }
+  };
+
+  // Halftone cell size handlers
+  const handleHalftoneChange = (value: number) => {
+    setHalftoneCellSize(value);
+    pendingHalftoneRef.current = value;
+    processThrottled({ halftoneCellSize: value });
+  };
+
+  const handleHalftoneRelease = () => {
+    if (pendingHalftoneRef.current !== null) {
+      if (throttleTimerRef.current) {
+        clearTimeout(throttleTimerRef.current);
+      }
+      reprocessWithUpdates({ halftoneCellSize: pendingHalftoneRef.current });
+      pendingHalftoneRef.current = null;
+      lastProcessTimeRef.current = Date.now();
+    }
+  };
+
   return (
     <div className="filter-panel">
       <div className="filter-section">
@@ -237,23 +303,88 @@ const FilterPanel: FC<FilterPanelProps> = ({
         </div>
       </div>
 
-      <div className="filter-section">
-        <label className="filter-label">
-          Threshold
-          <span className="filter-value">{threshold}</span>
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="255"
-          value={threshold}
-          onChange={(e) => handleThresholdChange(parseInt(e.target.value))}
-          onPointerUp={handleThresholdRelease}
-          onMouseUp={handleThresholdRelease}
-          onTouchEnd={handleThresholdRelease}
-          className="filter-slider"
-        />
-      </div>
+      {/* Show threshold for methods that use it */}
+      {(imageLayer.ditherMethod === "threshold" ||
+        imageLayer.ditherMethod === "steinberg" ||
+        imageLayer.ditherMethod === "atkinson" ||
+        imageLayer.ditherMethod === "bayer") && (
+        <div className="filter-section">
+          <label className="filter-label">
+            Threshold
+            <span className="filter-value">{threshold}</span>
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="255"
+            value={threshold}
+            onChange={(e) => handleThresholdChange(parseInt(e.target.value))}
+            onPointerUp={handleThresholdRelease}
+            onMouseUp={handleThresholdRelease}
+            onTouchEnd={handleThresholdRelease}
+            className="filter-slider"
+          />
+          <div className="filter-info">
+            <span className="info-text-small">
+              0 (black) ← {threshold} → 255 (white)
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Bayer matrix size control */}
+      {imageLayer.ditherMethod === "bayer" && (
+        <div className="filter-section">
+          <label className="filter-label">
+            Matrix Size
+            <span className="filter-value">
+              {bayerMatrixSize}×{bayerMatrixSize}
+            </span>
+          </label>
+          <input
+            type="range"
+            min="2"
+            max="16"
+            value={bayerMatrixSize}
+            onChange={(e) => handleBayerMatrixChange(parseInt(e.target.value))}
+            onPointerUp={handleBayerMatrixRelease}
+            onMouseUp={handleBayerMatrixRelease}
+            onTouchEnd={handleBayerMatrixRelease}
+            className="filter-slider"
+          />
+          <div className="filter-info">
+            <span className="info-text-small">
+              2 (coarse) ← {bayerMatrixSize} → 16 (fine)
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Halftone cell size control */}
+      {imageLayer.ditherMethod === "halftone" && (
+        <div className="filter-section">
+          <label className="filter-label">
+            Cell Size
+            <span className="filter-value">{halftoneCellSize}px</span>
+          </label>
+          <input
+            type="range"
+            min="2"
+            max="16"
+            value={halftoneCellSize}
+            onChange={(e) => handleHalftoneChange(parseInt(e.target.value))}
+            onPointerUp={handleHalftoneRelease}
+            onMouseUp={handleHalftoneRelease}
+            onTouchEnd={handleHalftoneRelease}
+            className="filter-slider"
+          />
+          <div className="filter-info">
+            <span className="info-text-small">
+              2 (fine) ← {halftoneCellSize} → 16 (bold)
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="filter-section">
         <label className="filter-label">
@@ -271,6 +402,11 @@ const FilterPanel: FC<FilterPanelProps> = ({
           onTouchEnd={handleBrightnessRelease}
           className="filter-slider"
         />
+        <div className="filter-info">
+          <span className="info-text-small">
+            0 (dark) ← {brightness} → 255 (bright)
+          </span>
+        </div>
       </div>
 
       <div className="filter-section">
@@ -289,6 +425,11 @@ const FilterPanel: FC<FilterPanelProps> = ({
           onTouchEnd={handleContrastRelease}
           className="filter-slider"
         />
+        <div className="filter-info">
+          <span className="info-text-small">
+            0 (flat) ← {contrast} → 200 (high)
+          </span>
+        </div>
       </div>
 
       <div className="filter-section">
@@ -427,6 +568,16 @@ const FilterPanel: FC<FilterPanelProps> = ({
         .filter-slider::-moz-range-thumb:hover {
           background: var(--color-purple-accent);
           box-shadow: var(--glow-purple);
+        }
+
+        .filter-info {
+          margin-top: 0.25rem;
+          text-align: center;
+        }
+
+        .info-text-small {
+          font-size: 0.625rem;
+          color: var(--color-text-muted);
         }
 
         .filter-toggle {
