@@ -1,214 +1,232 @@
-// Dithering algorithms based on catprinter implementation
+// Optimized dithering algorithms using TypedArrays and better performance techniques
 
 import type { DitherMethod } from "./types";
 
 /**
- * Apply threshold dithering
- * Simple black/white conversion based on threshold
+ * Convert RGBA imageData to grayscale using weighted luminance formula
+ * Uses TypedArray for better performance
+ */
+function toGrayscale(data: Uint8ClampedArray, width: number, height: number): Uint8Array {
+  const gray = new Uint8Array(width * height);
+  const len = width * height;
+  
+  // Use weighted luminance: 0.299R + 0.587G + 0.114B
+  // Optimized with bit shifts: (77R + 150G + 29B) >> 8
+  for (let i = 0; i < len; i++) {
+    const idx = i * 4;
+    gray[i] = (77 * data[idx] + 150 * data[idx + 1] + 29 * data[idx + 2]) >> 8;
+  }
+  
+  return gray;
+}
+
+/**
+ * Clamp value between 0 and 255
+ */
+function clamp(value: number): number {
+  return value < 0 ? 0 : value > 255 ? 255 : value;
+}
+
+/**
+ * Apply threshold dithering (optimized)
  */
 export function thresholdDither(
   imageData: ImageData,
   threshold: number = 128
 ): boolean[][] {
-  const { width, height, data } = imageData;
-  const result: boolean[][] = [];
-
+  const { width, height } = imageData;
+  const gray = toGrayscale(imageData.data, width, height);
+  const result: boolean[][] = new Array(height);
+  
   for (let y = 0; y < height; y++) {
-    const row: boolean[] = [];
+    const row = new Array(width);
+    const rowOffset = y * width;
     for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 4;
-      // Convert to grayscale
-      const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-      row.push(gray < threshold);
+      row[x] = gray[rowOffset + x] < threshold;
     }
-    result.push(row);
+    result[y] = row;
   }
-
+  
   return result;
 }
 
 /**
- * Floyd-Steinberg dithering
- * Distributes quantization error to neighboring pixels
+ * Floyd-Steinberg dithering (optimized with Float32Array for error diffusion)
  */
 export function floydSteinbergDither(
   imageData: ImageData,
   threshold: number = 128
 ): boolean[][] {
-  const { width, height, data } = imageData;
-  const result: boolean[][] = [];
-
-  // Create a copy of grayscale values
-  const gray: number[][] = [];
+  const { width, height } = imageData;
+  const gray = new Float32Array(toGrayscale(imageData.data, width, height));
+  const result: boolean[][] = new Array(height);
+  
+  // Pre-calculate error fractions
+  const e7_16 = 7 / 16;
+  const e3_16 = 3 / 16;
+  const e5_16 = 5 / 16;
+  const e1_16 = 1 / 16;
+  
   for (let y = 0; y < height; y++) {
-    gray[y] = [];
+    const row = new Array(width);
+    const idx = y * width;
+    const nextRowIdx = idx + width;
+    
     for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 4;
-      gray[y][x] = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-    }
-  }
-
-  // Apply Floyd-Steinberg dithering
-  for (let y = 0; y < height; y++) {
-    const row: boolean[] = [];
-    for (let x = 0; x < width; x++) {
-      const oldPixel = gray[y][x];
+      const i = idx + x;
+      const oldPixel = gray[i];
       const newPixel = oldPixel < threshold ? 0 : 255;
-      row.push(newPixel === 0);
-
+      row[x] = newPixel === 0;
+      
       const error = oldPixel - newPixel;
-
+      
       // Distribute error to neighbors
       if (x + 1 < width) {
-        gray[y][x + 1] += (error * 7) / 16;
+        gray[i + 1] += error * e7_16;
       }
       if (y + 1 < height) {
         if (x > 0) {
-          gray[y + 1][x - 1] += (error * 3) / 16;
+          gray[nextRowIdx + x - 1] += error * e3_16;
         }
-        gray[y + 1][x] += (error * 5) / 16;
+        gray[nextRowIdx + x] += error * e5_16;
         if (x + 1 < width) {
-          gray[y + 1][x + 1] += (error * 1) / 16;
+          gray[nextRowIdx + x + 1] += error * e1_16;
         }
       }
     }
-    result.push(row);
+    result[y] = row;
   }
-
+  
   return result;
 }
 
 /**
- * Atkinson dithering
- * Similar to Floyd-Steinberg but distributes error differently
+ * Atkinson dithering (optimized)
  */
 export function atkinsonDither(
   imageData: ImageData,
   threshold: number = 128
 ): boolean[][] {
-  const { width, height, data } = imageData;
-  const result: boolean[][] = [];
-
-  // Create a copy of grayscale values
-  const gray: number[][] = [];
+  const { width, height } = imageData;
+  const gray = new Float32Array(toGrayscale(imageData.data, width, height));
+  const result: boolean[][] = new Array(height);
+  
+  // Atkinson uses 1/8 of error
+  const errorFraction = 1 / 8;
+  
   for (let y = 0; y < height; y++) {
-    gray[y] = [];
+    const row = new Array(width);
+    const idx = y * width;
+    const nextRowIdx = idx + width;
+    const nextNextRowIdx = idx + width * 2;
+    
     for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 4;
-      gray[y][x] = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-    }
-  }
-
-  // Apply Atkinson dithering
-  for (let y = 0; y < height; y++) {
-    const row: boolean[] = [];
-    for (let x = 0; x < width; x++) {
-      const oldPixel = gray[y][x];
+      const i = idx + x;
+      const oldPixel = gray[i];
       const newPixel = oldPixel < threshold ? 0 : 255;
-      row.push(newPixel === 0);
-
-      const error = (oldPixel - newPixel) / 8; // Atkinson uses 1/8 of error
-
-      // Distribute error to neighbors (Atkinson pattern)
-      if (x + 1 < width) gray[y][x + 1] += error;
-      if (x + 2 < width) gray[y][x + 2] += error;
-
+      row[x] = newPixel === 0;
+      
+      const error = (oldPixel - newPixel) * errorFraction;
+      
+      // Distribute error (Atkinson pattern)
+      if (x + 1 < width) gray[i + 1] += error;
+      if (x + 2 < width) gray[i + 2] += error;
+      
       if (y + 1 < height) {
-        if (x > 0) gray[y + 1][x - 1] += error;
-        gray[y + 1][x] += error;
-        if (x + 1 < width) gray[y + 1][x + 1] += error;
+        if (x > 0) gray[nextRowIdx + x - 1] += error;
+        gray[nextRowIdx + x] += error;
+        if (x + 1 < width) gray[nextRowIdx + x + 1] += error;
       }
-
+      
       if (y + 2 < height) {
-        gray[y + 2][x] += error;
+        gray[nextNextRowIdx + x] += error;
       }
     }
-    result.push(row);
+    result[y] = row;
   }
-
+  
   return result;
 }
 
 /**
- * Ordered (Bayer) dithering
- * Uses a threshold matrix for pattern-based dithering
+ * Ordered (Bayer) dithering (optimized with flat Bayer matrix)
  */
 export function orderedDither(
   imageData: ImageData,
   threshold: number = 128
 ): boolean[][] {
-  const { width, height, data } = imageData;
-  const result: boolean[][] = [];
-
-  // 4x4 Bayer matrix (scaled to 0-255)
-  const bayerMatrix = [
-    [0, 128, 32, 160],
-    [192, 64, 224, 96],
-    [48, 176, 16, 144],
-    [240, 112, 208, 80],
-  ];
-
-  const matrixSize = 4;
-
+  const { width, height } = imageData;
+  const gray = toGrayscale(imageData.data, width, height);
+  const result: boolean[][] = new Array(height);
+  
+  // Flat 4x4 Bayer matrix for better cache performance
+  const bayer = new Uint8Array([
+    0, 128, 32, 160,
+    192, 64, 224, 96,
+    48, 176, 16, 144,
+    240, 112, 208, 80
+  ]);
+  
   for (let y = 0; y < height; y++) {
-    const row: boolean[] = [];
+    const row = new Array(width);
+    const rowOffset = y * width;
+    const bayerRowOffset = (y & 3) << 2; // (y % 4) * 4, optimized with bitwise
+    
     for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 4;
-      const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-
-      const bayerValue = bayerMatrix[y % matrixSize][x % matrixSize];
-      const adjustedThreshold = threshold + (bayerValue - 128) / 2;
-
-      row.push(gray < adjustedThreshold);
+      const grayValue = gray[rowOffset + x];
+      const bayerValue = bayer[bayerRowOffset + (x & 3)]; // x % 4, optimized
+      const adjustedThreshold = threshold + ((bayerValue - 128) >> 1);
+      row[x] = grayValue < adjustedThreshold;
     }
-    result.push(row);
+    result[y] = row;
   }
-
+  
   return result;
 }
 
 /**
- * Halftone dithering
- * Creates a halftone pattern effect
+ * Halftone dithering (optimized with lookup)
  */
 export function halftoneDither(
   imageData: ImageData,
   threshold: number = 128
 ): boolean[][] {
-  const { width, height, data } = imageData;
-  const result: boolean[][] = [];
-
+  const { width, height } = imageData;
+  const gray = toGrayscale(imageData.data, width, height);
+  const result: boolean[][] = new Array(height);
+  
   const cellSize = 4;
-
-  for (let y = 0; y < height; y++) {
-    const row: boolean[] = [];
-    for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 4;
-      const gray = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-
-      // Calculate distance from center of halftone cell
-      const cellX = x % cellSize;
-      const cellY = y % cellSize;
-      const centerX = cellSize / 2;
-      const centerY = cellSize / 2;
-      const distance = Math.sqrt(
-        Math.pow(cellX - centerX, 2) + Math.pow(cellY - centerY, 2)
-      );
-
-      // Normalize distance and compare with gray value
-      const normalizedDistance = (distance / (cellSize / 2)) * 255;
-
-      row.push(gray < normalizedDistance);
+  const halfCell = cellSize / 2;
+  
+  // Pre-calculate distance values for 4x4 cell
+  const distances = new Float32Array(cellSize * cellSize);
+  for (let cy = 0; cy < cellSize; cy++) {
+    for (let cx = 0; cx < cellSize; cx++) {
+      const dx = cx - halfCell;
+      const dy = cy - halfCell;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      distances[cy * cellSize + cx] = (dist / halfCell) * 255;
     }
-    result.push(row);
   }
-
+  
+  for (let y = 0; y < height; y++) {
+    const row = new Array(width);
+    const rowOffset = y * width;
+    const cellY = y % cellSize;
+    
+    for (let x = 0; x < width; x++) {
+      const cellX = x % cellSize;
+      const normalizedDistance = distances[cellY * cellSize + cellX];
+      row[x] = gray[rowOffset + x] < normalizedDistance;
+    }
+    result[y] = row;
+  }
+  
   return result;
 }
 
 /**
- * Apply dithering method to image data
- * Method names match mxw01-thermal-printer library
+ * Apply dithering method to image data (optimized router)
  */
 export function applyDithering(
   imageData: ImageData,
@@ -218,16 +236,16 @@ export function applyDithering(
   switch (method) {
     case "threshold":
       return thresholdDither(imageData, threshold);
-    case "steinberg": // Floyd-Steinberg (official name)
+    case "steinberg":
       return floydSteinbergDither(imageData, threshold);
     case "atkinson":
       return atkinsonDither(imageData, threshold);
-    case "bayer": // Ordered/Bayer (official name)
+    case "bayer":
       return orderedDither(imageData, threshold);
-    case "pattern": // Halftone/Pattern (official name)
+    case "pattern":
       return halftoneDither(imageData, threshold);
     case "none":
-      return thresholdDither(imageData, 128); // Default to threshold
+      return thresholdDither(imageData, 128);
     default:
       return thresholdDither(imageData, threshold);
   }

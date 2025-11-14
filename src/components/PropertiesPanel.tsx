@@ -1,21 +1,25 @@
 /**
  * PropertiesPanel Component
- * 
+ *
  * Displays editable properties for the selected layer
  * Supports text editing, image filters, and canvas settings
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import type { Layer, TextLayer, ImageLayer } from '../types/layer';
-import { reprocessImage } from '../utils/imageReprocessor';
-import type { DitherMethod } from '../lib/dithering';
+import { useState, useEffect, useRef, useCallback } from "react";
+import type { Layer, TextLayer, ImageLayer } from "../types/layer";
+import { reprocessImage } from "../utils/imageReprocessor";
+import type { DitherMethod } from "../lib/dithering";
 
 interface PropertiesPanelProps {
   selectedLayer: Layer | null;
   canvasHeight: number;
   onUpdateTextLayer: (layerId: string, updates: Partial<TextLayer>) => void;
   onUpdateImageLayer: (layerId: string, updates: Partial<ImageLayer>) => void;
-  onReprocessImageLayer: (layerId: string, newImageData: HTMLCanvasElement, updates: { ditherMethod?: string; threshold?: number; invert?: boolean }) => void;
+  onReprocessImageLayer: (
+    layerId: string,
+    newImageData: HTMLCanvasElement,
+    updates: { ditherMethod?: string; threshold?: number; invert?: boolean }
+  ) => void;
   onCanvasHeightChange: (height: number) => void;
 }
 
@@ -28,24 +32,26 @@ export default function PropertiesPanel({
   onCanvasHeightChange,
 }: PropertiesPanelProps) {
   // Local state for form inputs
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
   const [fontSize, setFontSize] = useState(24);
-  const [fontFamily, setFontFamily] = useState('Inter');
+  const [fontFamily, setFontFamily] = useState("Inter");
   const [bold, setBold] = useState(false);
   const [italic, setItalic] = useState(false);
-  const [align, setAlign] = useState<'left' | 'center' | 'right'>('left');
-  const [ditherMethod, setDitherMethod] = useState('steinberg');
+  const [align, setAlign] = useState<"left" | "center" | "right">("left");
+  const [ditherMethod, setDitherMethod] = useState("steinberg");
   const [threshold, setThreshold] = useState(128);
   const [invertImage, setInvertImage] = useState(false);
   const [localCanvasHeight, setLocalCanvasHeight] = useState(canvasHeight);
   const [isReprocessing, setIsReprocessing] = useState(false);
-  
-  // Debounce threshold changes
-  const thresholdDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Throttle threshold changes for real-time feedback
+  const thresholdThrottleRef = useRef<NodeJS.Timeout | null>(null);
+  const lastThresholdProcessRef = useRef<number>(0);
+  const pendingThresholdRef = useRef<number | null>(null);
 
   // Update local state when selected layer changes
   useEffect(() => {
-    if (selectedLayer?.type === 'text') {
+    if (selectedLayer?.type === "text") {
       const textLayer = selectedLayer as TextLayer;
       setText(textLayer.text);
       setFontSize(textLayer.fontSize);
@@ -53,9 +59,9 @@ export default function PropertiesPanel({
       setBold(textLayer.bold);
       setItalic(textLayer.italic);
       setAlign(textLayer.align);
-    } else if (selectedLayer?.type === 'image') {
+    } else if (selectedLayer?.type === "image") {
       const imageLayer = selectedLayer as ImageLayer;
-      setDitherMethod(imageLayer.ditherMethod || 'steinberg');
+      setDitherMethod(imageLayer.ditherMethod || "steinberg");
       setThreshold(imageLayer.threshold ?? 128);
       setInvertImage(imageLayer.invert ?? false);
     }
@@ -65,12 +71,12 @@ export default function PropertiesPanel({
   useEffect(() => {
     setLocalCanvasHeight(canvasHeight);
   }, [canvasHeight]);
-  
-  // Cleanup debounce timeout on unmount
+
+  // Cleanup throttle timeout on unmount
   useEffect(() => {
     return () => {
-      if (thresholdDebounceRef.current) {
-        clearTimeout(thresholdDebounceRef.current);
+      if (thresholdThrottleRef.current) {
+        clearTimeout(thresholdThrottleRef.current);
       }
     };
   }, []);
@@ -78,21 +84,21 @@ export default function PropertiesPanel({
   // Handle text updates
   const handleTextChange = (newText: string) => {
     setText(newText);
-    if (selectedLayer?.type === 'text') {
+    if (selectedLayer?.type === "text") {
       onUpdateTextLayer(selectedLayer.id, { text: newText });
     }
   };
 
   const handleFontSizeChange = (newSize: number) => {
     setFontSize(newSize);
-    if (selectedLayer?.type === 'text') {
+    if (selectedLayer?.type === "text") {
       onUpdateTextLayer(selectedLayer.id, { fontSize: newSize });
     }
   };
 
   const handleFontFamilyChange = (newFamily: string) => {
     setFontFamily(newFamily);
-    if (selectedLayer?.type === 'text') {
+    if (selectedLayer?.type === "text") {
       onUpdateTextLayer(selectedLayer.id, { fontFamily: newFamily });
     }
   };
@@ -100,7 +106,7 @@ export default function PropertiesPanel({
   const handleBoldToggle = () => {
     const newBold = !bold;
     setBold(newBold);
-    if (selectedLayer?.type === 'text') {
+    if (selectedLayer?.type === "text") {
       onUpdateTextLayer(selectedLayer.id, { bold: newBold });
     }
   };
@@ -108,54 +114,61 @@ export default function PropertiesPanel({
   const handleItalicToggle = () => {
     const newItalic = !italic;
     setItalic(newItalic);
-    if (selectedLayer?.type === 'text') {
+    if (selectedLayer?.type === "text") {
       onUpdateTextLayer(selectedLayer.id, { italic: newItalic });
     }
   };
 
-  const handleAlignChange = (newAlign: 'left' | 'center' | 'right') => {
+  const handleAlignChange = (newAlign: "left" | "center" | "right") => {
     setAlign(newAlign);
-    if (selectedLayer?.type === 'text') {
+    if (selectedLayer?.type === "text") {
       onUpdateTextLayer(selectedLayer.id, { align: newAlign });
     }
   };
 
-  const reprocessCurrentImage = useCallback(async (updates: { ditherMethod?: string; threshold?: number; invert?: boolean }) => {
-    if (selectedLayer?.type !== 'image') return;
-    
-    const imageLayer = selectedLayer as ImageLayer;
-    setIsReprocessing(true);
+  const reprocessCurrentImage = useCallback(
+    async (updates: {
+      ditherMethod?: string;
+      threshold?: number;
+      invert?: boolean;
+    }) => {
+      if (selectedLayer?.type !== "image") return;
 
-    try {
-      // Reprocess image with new settings at current scaled dimensions
-      const result = await reprocessImage(
-        imageLayer.originalImageData,
-        (updates.ditherMethod || imageLayer.ditherMethod) as DitherMethod,
-        {
-          threshold: updates.threshold ?? imageLayer.threshold,
-          invert: updates.invert ?? imageLayer.invert,
-          targetWidth: Math.round(selectedLayer.width),
-          targetHeight: Math.round(selectedLayer.height),
-        }
-      );
+      const imageLayer = selectedLayer as ImageLayer;
+      setIsReprocessing(true);
 
-      // Update layer with new processed image
-      onReprocessImageLayer(selectedLayer.id, result.canvas, {
-        ditherMethod: updates.ditherMethod,
-        threshold: updates.threshold,
-        invert: updates.invert,
-      });
-    } catch (error) {
-      console.error('Failed to reprocess image:', error);
-      alert('Failed to reprocess image. Please try again.');
-      // Revert local state
-      if (updates.ditherMethod) setDitherMethod(imageLayer.ditherMethod);
-      if (updates.threshold !== undefined) setThreshold(imageLayer.threshold);
-      if (updates.invert !== undefined) setInvertImage(imageLayer.invert);
-    } finally {
-      setIsReprocessing(false);
-    }
-  }, [selectedLayer, onReprocessImageLayer]);
+      try {
+        // Reprocess image with new settings at current scaled dimensions
+        const result = await reprocessImage(
+          imageLayer.originalImageData,
+          (updates.ditherMethod || imageLayer.ditherMethod) as DitherMethod,
+          {
+            threshold: updates.threshold ?? imageLayer.threshold,
+            invert: updates.invert ?? imageLayer.invert,
+            targetWidth: Math.round(selectedLayer.width),
+            targetHeight: Math.round(selectedLayer.height),
+          }
+        );
+
+        // Update layer with new processed image
+        onReprocessImageLayer(selectedLayer.id, result.canvas, {
+          ditherMethod: updates.ditherMethod,
+          threshold: updates.threshold,
+          invert: updates.invert,
+        });
+      } catch (error) {
+        console.error("Failed to reprocess image:", error);
+        alert("Failed to reprocess image. Please try again.");
+        // Revert local state
+        if (updates.ditherMethod) setDitherMethod(imageLayer.ditherMethod);
+        if (updates.threshold !== undefined) setThreshold(imageLayer.threshold);
+        if (updates.invert !== undefined) setInvertImage(imageLayer.invert);
+      } finally {
+        setIsReprocessing(false);
+      }
+    },
+    [selectedLayer, onReprocessImageLayer]
+  );
 
   const handleDitherMethodChange = async (method: string) => {
     setDitherMethod(method);
@@ -163,17 +176,49 @@ export default function PropertiesPanel({
   };
 
   const handleThresholdChange = (value: number) => {
+    // Update visual immediately for smooth UX
     setThreshold(value);
-    
-    // Clear existing timeout
-    if (thresholdDebounceRef.current) {
-      clearTimeout(thresholdDebounceRef.current);
-    }
-    
-    // Debounce the reprocessing (wait 500ms after user stops dragging)
-    thresholdDebounceRef.current = setTimeout(() => {
+
+    const now = Date.now();
+    const timeSinceLastProcess = now - lastThresholdProcessRef.current;
+    const THROTTLE_MS = 100; // Process every 100ms for smooth real-time feedback
+
+    // Store the pending value
+    pendingThresholdRef.current = value;
+
+    // Don't wait for isReprocessing - let slider move freely
+    if (timeSinceLastProcess >= THROTTLE_MS) {
+      // Process immediately if enough time has passed
+      lastThresholdProcessRef.current = now;
       reprocessCurrentImage({ threshold: value });
-    }, 500);
+      pendingThresholdRef.current = null;
+    } else {
+      // Schedule processing for later
+      if (thresholdThrottleRef.current) {
+        clearTimeout(thresholdThrottleRef.current);
+      }
+
+      const delay = THROTTLE_MS - timeSinceLastProcess;
+      thresholdThrottleRef.current = setTimeout(() => {
+        if (pendingThresholdRef.current !== null) {
+          lastThresholdProcessRef.current = Date.now();
+          reprocessCurrentImage({ threshold: pendingThresholdRef.current });
+          pendingThresholdRef.current = null;
+        }
+      }, delay);
+    }
+  };
+
+  const handleThresholdRelease = () => {
+    // When user releases slider, process final value if there's a pending one
+    if (pendingThresholdRef.current !== null) {
+      if (thresholdThrottleRef.current) {
+        clearTimeout(thresholdThrottleRef.current);
+      }
+      reprocessCurrentImage({ threshold: pendingThresholdRef.current });
+      pendingThresholdRef.current = null;
+      lastThresholdProcessRef.current = Date.now();
+    }
   };
 
   const handleInvertToggle = async () => {
@@ -194,7 +239,7 @@ export default function PropertiesPanel({
       {/* Canvas Settings - Always visible */}
       <div className="property-section">
         <h4 className="section-subtitle">Canvas</h4>
-        
+
         <div className="property-group">
           <label className="property-label">Height (px)</label>
           <input
@@ -219,7 +264,7 @@ export default function PropertiesPanel({
         <>
           <div className="property-section">
             <h4 className="section-subtitle">
-              {selectedLayer.type === 'text' ? 'Text Layer' : 'Image Layer'}
+              {selectedLayer.type === "text" ? "Text Layer" : "Image Layer"}
             </h4>
 
             {/* Common properties */}
@@ -231,25 +276,29 @@ export default function PropertiesPanel({
             <div className="property-group">
               <label className="property-label">Position</label>
               <div className="property-value">
-                X: {Math.round(selectedLayer.x)}px, Y: {Math.round(selectedLayer.y)}px
+                X: {Math.round(selectedLayer.x)}px, Y:{" "}
+                {Math.round(selectedLayer.y)}px
               </div>
             </div>
 
             <div className="property-group">
               <label className="property-label">Size</label>
               <div className="property-value">
-                {Math.round(selectedLayer.width)} × {Math.round(selectedLayer.height)}px
+                {Math.round(selectedLayer.width)} ×{" "}
+                {Math.round(selectedLayer.height)}px
               </div>
             </div>
 
             <div className="property-group">
               <label className="property-label">Rotation</label>
-              <div className="property-value">{Math.round(selectedLayer.rotation)}°</div>
+              <div className="property-value">
+                {Math.round(selectedLayer.rotation)}°
+              </div>
             </div>
           </div>
 
           {/* Text-specific properties */}
-          {selectedLayer.type === 'text' && (
+          {selectedLayer.type === "text" && (
             <div className="property-section">
               <h4 className="section-subtitle">Text Content</h4>
 
@@ -296,14 +345,14 @@ export default function PropertiesPanel({
                 <label className="property-label">Style</label>
                 <div className="button-group">
                   <button
-                    className={`style-btn ${bold ? 'active' : ''}`}
+                    className={`style-btn ${bold ? "active" : ""}`}
                     onClick={handleBoldToggle}
                     title="Bold"
                   >
                     <strong>B</strong>
                   </button>
                   <button
-                    className={`style-btn ${italic ? 'active' : ''}`}
+                    className={`style-btn ${italic ? "active" : ""}`}
                     onClick={handleItalicToggle}
                     title="Italic"
                   >
@@ -316,22 +365,24 @@ export default function PropertiesPanel({
                 <label className="property-label">Align</label>
                 <div className="button-group">
                   <button
-                    className={`align-btn ${align === 'left' ? 'active' : ''}`}
-                    onClick={() => handleAlignChange('left')}
+                    className={`align-btn ${align === "left" ? "active" : ""}`}
+                    onClick={() => handleAlignChange("left")}
                     title="Left"
                   >
                     ⬅
                   </button>
                   <button
-                    className={`align-btn ${align === 'center' ? 'active' : ''}`}
-                    onClick={() => handleAlignChange('center')}
+                    className={`align-btn ${
+                      align === "center" ? "active" : ""
+                    }`}
+                    onClick={() => handleAlignChange("center")}
                     title="Center"
                   >
                     ↔
                   </button>
                   <button
-                    className={`align-btn ${align === 'right' ? 'active' : ''}`}
-                    onClick={() => handleAlignChange('right')}
+                    className={`align-btn ${align === "right" ? "active" : ""}`}
+                    onClick={() => handleAlignChange("right")}
                     title="Right"
                   >
                     ➡
@@ -342,7 +393,7 @@ export default function PropertiesPanel({
           )}
 
           {/* Image-specific properties */}
-          {selectedLayer.type === 'image' && (
+          {selectedLayer.type === "image" && (
             <div className="property-section">
               <h4 className="section-subtitle">Image Processing</h4>
 
@@ -363,38 +414,47 @@ export default function PropertiesPanel({
               </div>
 
               <div className="property-group">
-                <label className="property-label">Threshold: {threshold}</label>
+                <label className="property-label">
+                  Threshold: {threshold}
+                  {isReprocessing && (
+                    <span className="processing-indicator"> ⏳</span>
+                  )}
+                </label>
                 <input
                   type="range"
                   className="property-slider"
                   value={threshold}
-                  onChange={(e) => handleThresholdChange(Number(e.target.value))}
+                  onChange={(e) =>
+                    handleThresholdChange(Number(e.target.value))
+                  }
+                  onPointerUp={handleThresholdRelease}
+                  onMouseUp={handleThresholdRelease}
+                  onTouchEnd={handleThresholdRelease}
                   min={0}
                   max={255}
                   step={1}
-                  disabled={isReprocessing}
                 />
                 <div className="property-info-inline">
-                  <span className="info-text-small">0 (black) ← {threshold} → 255 (white)</span>
+                  <span className="info-text-small">
+                    0 (black) ← {threshold} → 255 (white)
+                  </span>
                 </div>
               </div>
 
               <div className="property-group">
                 <label className="property-label">Invert Colors</label>
                 <button
-                  className={`toggle-btn ${invertImage ? 'active' : ''}`}
+                  className={`toggle-btn ${invertImage ? "active" : ""}`}
                   onClick={handleInvertToggle}
                   disabled={isReprocessing}
                 >
-                  {invertImage ? 'ON' : 'OFF'}
+                  {invertImage ? "ON" : "OFF"}
                 </button>
               </div>
 
               {isReprocessing && (
                 <div className="property-info processing">
-                  <p className="info-text">
-                    ⏳ Reprocessing image...
-                  </p>
+                  <p className="info-text">⏳ Reprocessing image...</p>
                 </div>
               )}
 
@@ -651,4 +711,3 @@ export default function PropertiesPanel({
     </div>
   );
 }
-

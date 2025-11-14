@@ -486,14 +486,16 @@ export default function CanvasManager() {
     ) => {
       reprocessImageLayer(layerId, newImageData, updates);
 
-      const changes = [];
-      if (updates.ditherMethod) changes.push(`Dither: ${updates.ditherMethod}`);
-      if (updates.threshold !== undefined)
-        changes.push(`Threshold: ${updates.threshold}`);
-      if (updates.invert !== undefined)
-        changes.push(`Invert: ${updates.invert ? "ON" : "OFF"}`);
+      // Only show toast for method or invert changes, not threshold (too frequent)
+      if (updates.ditherMethod || updates.invert !== undefined) {
+        const changes = [];
+        if (updates.ditherMethod)
+          changes.push(`Dither: ${updates.ditherMethod}`);
+        if (updates.invert !== undefined)
+          changes.push(`Invert: ${updates.invert ? "ON" : "OFF"}`);
 
-      toast.success("Image reprocessed!", changes.join(", "));
+        toast.success("Image reprocessed!", changes.join(", "));
+      }
     },
     [reprocessImageLayer, toast]
   );
