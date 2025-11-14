@@ -4,6 +4,7 @@ import { usePrinterContext } from "../contexts/PrinterContext";
 import { useToastContext } from "../contexts/ToastContext";
 import { useLayers } from "../hooks/useLayers";
 import { useCanvasPersistence } from "../hooks/useCanvasPersistence";
+import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import ContextBar from "./ContextBar";
@@ -244,8 +245,8 @@ export default function CanvasManager() {
       setShowImageUploader(false);
       setShowTextTool(false);
       toast.info(
-        "Conectar impresora",
-        "Por favor, conecta tu impresora térmica primero."
+        "Connect printer",
+        "Please connect your thermal printer first."
       );
       return;
     }
@@ -535,19 +536,19 @@ export default function CanvasManager() {
   // Handle new canvas (clear all layers)
   const handleNewCanvas = useCallback(() => {
     if (layers.length === 0) {
-      toast.info("Canvas vacío", "No hay capas para limpiar.");
+      toast.info("Empty canvas", "There are no layers to clear.");
       return;
     }
 
     const confirmed = confirm(
-      "¿Estás seguro de que quieres crear un nuevo canvas? Esto eliminará todas las capas."
+      "Are you sure you want to create a new canvas? This will delete all layers."
     );
     if (confirmed) {
       clearLayers();
       persistence.clearSavedState();
       toast.success(
-        "¡Nuevo canvas creado!",
-        "Todas las capas han sido eliminadas."
+        "New canvas created!",
+        "All layers have been deleted."
       );
       logger.info("CanvasManager", "New canvas created - all layers cleared");
     }
@@ -556,7 +557,7 @@ export default function CanvasManager() {
   // Handle save
   const handleSave = useCallback(() => {
     // Save is automatic via persistence, just show confirmation
-    toast.success("¡Guardado!", "Tu trabajo se guarda automáticamente.");
+    toast.success("Saved!", "Your work is automatically saved.");
     logger.info("CanvasManager", "Manual save triggered");
   }, [toast]);
 
@@ -605,6 +606,85 @@ export default function CanvasManager() {
       toast.error("Export error", (error as Error).message);
     }
   }, [toast, selectedLayerId, selectLayer]);
+
+  // Handle delete element
+  const handleDeleteElement = useCallback(() => {
+    if (!selectedLayerId) {
+      return;
+    }
+    removeLayer(selectedLayerId);
+    toast.info("Element deleted", "The selected element has been removed.");
+    logger.info("CanvasManager", "Element deleted via keyboard shortcut", { layerId: selectedLayerId });
+  }, [selectedLayerId, removeLayer, toast]);
+
+  // Handle element movement with arrow keys
+  const handleMoveElement = useCallback((direction: 'up' | 'down' | 'left' | 'right', amount: number = 1) => {
+    if (!selectedLayerId || !selectedLayer) {
+      return;
+    }
+
+    const updates: Partial<Layer> = {};
+    
+    switch (direction) {
+      case 'up':
+        updates.y = selectedLayer.y - amount;
+        break;
+      case 'down':
+        updates.y = selectedLayer.y + amount;
+        break;
+      case 'left':
+        updates.x = selectedLayer.x - amount;
+        break;
+      case 'right':
+        updates.x = selectedLayer.x + amount;
+        break;
+    }
+
+    updateLayer(selectedLayerId, updates);
+  }, [selectedLayerId, selectedLayer, updateLayer]);
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    // Tool shortcuts
+    onSelectTool: () => {
+      setActiveTool('select');
+      setShowImageUploader(false);
+      setShowTextTool(false);
+      setAdvancedPanel(null);
+    },
+    onImageTool: () => {
+      setActiveTool('image');
+      setShowImageUploader(true);
+      setShowTextTool(false);
+      setAdvancedPanel(null);
+    },
+    onTextTool: () => {
+      setActiveTool('text');
+      setShowImageUploader(false);
+      setShowTextTool(true);
+      setAdvancedPanel(null);
+    },
+    
+    // Element actions
+    onDeleteElement: handleDeleteElement,
+    onMoveUp: () => handleMoveElement('up', 1),
+    onMoveDown: () => handleMoveElement('down', 1),
+    onMoveLeft: () => handleMoveElement('left', 1),
+    onMoveRight: () => handleMoveElement('right', 1),
+    
+    // Document actions
+    onUndo: () => {
+      // TODO: Implement undo/redo system
+      toast.info("Coming soon", "Undo/Redo will be available soon.");
+    },
+    onRedo: () => {
+      // TODO: Implement undo/redo system
+      toast.info("Coming soon", "Undo/Redo will be available soon.");
+    },
+    onSave: handleSave,
+    onExport: handleExport,
+    onNewCanvas: handleNewCanvas,
+  });
 
   return (
     <div className="canvas-manager-wrapper">

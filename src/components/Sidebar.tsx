@@ -75,7 +75,7 @@ const Sidebar: FC<SidebarProps> = ({ activeTool, onToolSelect, onOpenCanvasSetti
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <h2 className="sidebar-title">HERRAMIENTAS</h2>
+        <h2 className="sidebar-title">TOOLS</h2>
       </div>
 
       <nav className="sidebar-nav">
