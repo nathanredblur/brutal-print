@@ -4,6 +4,7 @@ import { usePrinterContext } from "../contexts/PrinterContext";
 import { useToastContext } from "../contexts/ToastContext";
 import { useLayers } from "../hooks/useLayers";
 import { useCanvasPersistence } from "../hooks/useCanvasPersistence";
+import Header from "./Header";
 import Sidebar from "./Sidebar";
 import ContextBar from "./ContextBar";
 import FontPanel from "./FontPanel";
@@ -18,7 +19,7 @@ import { logger } from "../lib/logger";
 import type { Layer, ImageLayer, TextLayer } from "../types/layer";
 
 type Tool = "select" | "image" | "text" | "draw" | "shape" | "icon";
-type AdvancedPanel = "font" | "filter" | "position" | null;
+type AdvancedPanel = "font" | "filter" | "position" | "printer" | null;
 
 // Helper function to load state from localStorage (outside component)
 async function loadSavedState() {
@@ -234,6 +235,20 @@ export default function CanvasManager() {
     logger.separator("HANDLE PRINT");
     logger.info("CanvasManager", "handlePrint() called");
 
+    // If printer not connected, open printer panel
+    if (!isConnected) {
+      logger.info("CanvasManager", "Opening printer connection panel");
+      setAdvancedPanel("printer");
+      setActiveTool("select");
+      setShowImageUploader(false);
+      setShowTextTool(false);
+      toast.info(
+        "Conectar impresora",
+        "Por favor, conecta tu impresora térmica primero."
+      );
+      return;
+    }
+
     // Export canvas from Fabric.js
     const canvas = fabricCanvasRef.current?.exportToCanvas();
     if (!canvas) {
@@ -250,23 +265,6 @@ export default function CanvasManager() {
       height: canvas.height,
     });
 
-    logger.info("CanvasManager", "Checking connection status", {
-      isConnected,
-      isPrinting,
-    });
-
-    if (!isConnected) {
-      logger.error(
-        "CanvasManager",
-        "Printer not connected! isConnected = false"
-      );
-      toast.warning(
-        "Printer not connected",
-        "Please connect to your thermal printer first."
-      );
-      return;
-    }
-
     try {
       const printOptions = {
         dither: "steinberg" as const,
@@ -281,12 +279,12 @@ export default function CanvasManager() {
 
       logger.success("CanvasManager", "Print completed!");
       toast.success(
-        "Print completed!",
-        "Your design has been sent to the printer."
+        "¡Impresión completada!",
+        "Tu diseño ha sido enviado a la impresora."
       );
     } catch (error) {
       logger.error("CanvasManager", "Print failed", error);
-      toast.error("Print failed", (error as Error).message);
+      toast.error("Impresión fallida", (error as Error).message);
     }
   }, [isConnected, isPrinting, printCanvas, toast]);
 
@@ -528,25 +526,77 @@ export default function CanvasManager() {
   // Handle new canvas (clear all layers)
   const handleNewCanvas = useCallback(() => {
     if (layers.length === 0) {
-      toast.info("Canvas is empty", "No layers to clear.");
+      toast.info("Canvas vacío", "No hay capas para limpiar.");
       return;
     }
 
     const confirmed = confirm(
-      "Are you sure you want to start a new canvas? This will remove all layers."
+      "¿Estás seguro de que quieres crear un nuevo canvas? Esto eliminará todas las capas."
     );
     if (confirmed) {
       clearLayers();
       persistence.clearSavedState();
-      toast.success("New canvas created!", "All layers have been cleared.");
+      toast.success("¡Nuevo canvas creado!", "Todas las capas han sido eliminadas.");
       logger.info("CanvasManager", "New canvas created - all layers cleared");
     }
   }, [layers.length, clearLayers, persistence, toast]);
 
+  // Handle save
+  const handleSave = useCallback(() => {
+    // Save is automatic via persistence, just show confirmation
+    toast.success("¡Guardado!", "Tu trabajo se guarda automáticamente.");
+    logger.info("CanvasManager", "Manual save triggered");
+  }, [toast]);
+
+  // Handle export
+  const handleExport = useCallback(async () => {
+    const canvas = fabricCanvasRef.current?.exportToCanvas();
+    if (!canvas) {
+      toast.error("Error al exportar", "Canvas no disponible.");
+      return;
+    }
+
+    try {
+      // Export as PNG
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error("Error al exportar", "No se pudo crear la imagen.");
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.download = `thermal-print-${Date.now()}.png`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+
+        toast.success("¡Exportado!", "Tu diseño ha sido descargado.");
+        logger.info("CanvasManager", "Canvas exported as PNG");
+      });
+    } catch (error) {
+      logger.error("CanvasManager", "Export failed", error);
+      toast.error("Error al exportar", (error as Error).message);
+    }
+  }, [toast]);
+
   return (
-    <div className="canvas-manager">
-      {/* Left Sidebar - Canva style */}
-      <Sidebar activeTool={activeTool} onToolSelect={handleToolSelect} />
+    <div className="canvas-manager-wrapper">
+      {/* Header */}
+      <Header
+        onNewCanvas={handleNewCanvas}
+        onSave={handleSave}
+        onExport={handleExport}
+        onPrint={handlePrint}
+        canUndo={false}
+        canRedo={false}
+        isPrinting={isPrinting}
+        isConnected={isConnected}
+      />
+
+      <div className="canvas-manager">
+        {/* Left Sidebar - Canva style */}
+        <Sidebar activeTool={activeTool} onToolSelect={handleToolSelect} />
 
       {/* Left Panel - Dynamic content based on active tool and context */}
       <div className="left-panel-container">
@@ -612,6 +662,21 @@ export default function CanvasManager() {
           </div>
         )}
 
+        {advancedPanel === "printer" && (
+          <div className="panel">
+            <div className="panel-header">
+              <h3>Impresora</h3>
+              <button
+                className="close-btn"
+                onClick={() => setAdvancedPanel(null)}
+              >
+                ×
+              </button>
+            </div>
+            <PrinterConnection onPrint={handlePrint} />
+          </div>
+        )}
+
         {/* Image Uploader (when image tool is active) */}
         {showImageUploader && !advancedPanel && (
           <div className="panel">
@@ -638,37 +703,6 @@ export default function CanvasManager() {
           </div>
         )}
 
-        {/* Printer Connection (temporary - will move in Phase 5) */}
-        {!advancedPanel && !showImageUploader && !showTextTool && (
-          <>
-            <div className="panel">
-              <h3 className="panel-title">Impresora</h3>
-              <PrinterConnection onPrint={handlePrint} />
-            </div>
-
-            {/* Canvas Actions */}
-            <div className="panel">
-              <h3 className="panel-title">Canvas</h3>
-              <button
-                className="action-btn new-canvas-btn"
-                onClick={handleNewCanvas}
-                title="Limpiar todas las capas y empezar de nuevo"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                Nuevo Canvas
-              </button>
-            </div>
-          </>
-        )}
       </div>
 
       {/* Canvas Section with Context Bar */}
@@ -694,12 +728,20 @@ export default function CanvasManager() {
             onLayerSelect={handleLayerSelect}
           />
         </div>
+        </div>
       </div>
 
       <style>{`
+        .canvas-manager-wrapper {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          overflow: hidden;
+        }
+
         .canvas-manager {
           display: flex;
-          height: 100%;
+          flex: 1;
           overflow: hidden;
         }
 
