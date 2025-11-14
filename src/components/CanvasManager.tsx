@@ -667,10 +667,10 @@ export default function CanvasManager() {
     
     // Element actions
     onDeleteElement: handleDeleteElement,
-    onMoveUp: () => handleMoveElement('up', 1),
-    onMoveDown: () => handleMoveElement('down', 1),
-    onMoveLeft: () => handleMoveElement('left', 1),
-    onMoveRight: () => handleMoveElement('right', 1),
+    onMoveUp: (amount) => handleMoveElement('up', amount),
+    onMoveDown: (amount) => handleMoveElement('down', amount),
+    onMoveLeft: (amount) => handleMoveElement('left', amount),
+    onMoveRight: (amount) => handleMoveElement('right', amount),
     
     // Document actions
     onUndo: () => {

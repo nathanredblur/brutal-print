@@ -11,12 +11,12 @@ interface KeyboardShortcutHandlers {
   onImageTool?: () => void;
   onTextTool?: () => void;
   
-  // Element actions
+  // Element actions (amount is the number of pixels to move)
   onDeleteElement?: () => void;
-  onMoveUp?: () => void;
-  onMoveDown?: () => void;
-  onMoveLeft?: () => void;
-  onMoveRight?: () => void;
+  onMoveUp?: (amount: number) => void;
+  onMoveDown?: (amount: number) => void;
+  onMoveLeft?: (amount: number) => void;
+  onMoveRight?: (amount: number) => void;
   
   // Document actions
   onUndo?: () => void;
@@ -85,25 +85,25 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
         
         if (key === 'ArrowUp') {
           e.preventDefault();
-          handlers.onMoveUp?.();
+          handlers.onMoveUp?.(moveAmount);
           return;
         }
         
         if (key === 'ArrowDown') {
           e.preventDefault();
-          handlers.onMoveDown?.();
+          handlers.onMoveDown?.(moveAmount);
           return;
         }
         
         if (key === 'ArrowLeft') {
           e.preventDefault();
-          handlers.onMoveLeft?.();
+          handlers.onMoveLeft?.(moveAmount);
           return;
         }
         
         if (key === 'ArrowRight') {
           e.preventDefault();
-          handlers.onMoveRight?.();
+          handlers.onMoveRight?.(moveAmount);
           return;
         }
       }
