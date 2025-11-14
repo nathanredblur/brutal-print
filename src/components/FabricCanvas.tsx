@@ -70,6 +70,9 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
 
       fabricRef.current = fabricCanvas;
 
+      // Clear any stale object references from previous instance (e.g., after HMR)
+      layerObjectsRef.current.clear();
+
       logger.info("FabricCanvas", "Fabric.js canvas initialized", {
         width,
         height,

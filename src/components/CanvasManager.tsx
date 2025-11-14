@@ -24,10 +24,12 @@ async function loadSavedState() {
   }
 
   try {
+    // Load from localStorage
     const stored = localStorage.getItem("thermal-print-studio-canvas-state");
     if (!stored) return null;
 
     const state = JSON.parse(stored);
+    if (!state.layers || state.layers.length === 0) return null;
 
     // Restore HTMLCanvasElement from base64 (must wait for images to load)
     const restoredLayers = await Promise.all(
@@ -476,9 +478,9 @@ export default function CanvasManager() {
     (
       layerId: string,
       newImageData: HTMLCanvasElement,
-      updates: { 
-        ditherMethod?: string; 
-        threshold?: number; 
+      updates: {
+        ditherMethod?: string;
+        threshold?: number;
         invert?: boolean;
         brightness?: number;
         contrast?: number;
