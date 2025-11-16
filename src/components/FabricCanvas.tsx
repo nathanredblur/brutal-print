@@ -151,6 +151,23 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
         }
       });
 
+      // Handle text editing
+      fabricCanvas.on("text:changed", (e: any) => {
+        const obj = e.target as FabricObjectWithData;
+        if (obj?.data?.layerId && obj instanceof fabric.Textbox) {
+          const layerId = obj.data.layerId;
+          const newText = obj.text || "";
+
+          logger.info("FabricCanvas", "📝 Text changed in canvas", {
+            layerId,
+            newText,
+          });
+
+          // Update the layer with new text content
+          onLayerUpdate?.(layerId, { text: newText } as any);
+        }
+      });
+
       // Handle object modifications (drag, resize, rotate) - FINAL value
       fabricCanvas.on("object:modified", (e: any) => {
         const obj = e.target as FabricObjectWithData;
@@ -167,34 +184,28 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           const layerId = (obj as FabricObjectWithData).data?.layerId;
           if (!layerId) return;
 
-          // Special handling for text: update fontSize when scaled
-          if (obj instanceof fabric.FabricText && wasScaled) {
-            const avgScale = ((obj.scaleX || 1) + (obj.scaleY || 1)) / 2;
-            const currentFontSize = obj.fontSize || 24;
-            const newFontSize = Math.round(currentFontSize * avgScale);
+          // For text: reset scale to 1 and keep dimensions as box size
+          // This allows resizing the text box without changing font size
+          if (obj instanceof fabric.Textbox && wasScaled) {
+            const finalWidth = (obj.width || 0) * (obj.scaleX || 1);
 
-            // Update the text object with new fontSize and reset scale
+            // Update textbox width and reset scale
             obj.set({
-              fontSize: newFontSize,
+              width: finalWidth,
               scaleX: 1,
               scaleY: 1,
             });
             obj.setCoords();
             fabricCanvas.renderAll();
 
-            logger.info("FabricCanvas", "📝 Text scaled - fontSize updated", {
+            logger.info("FabricCanvas", "📝 Text box resized - width updated", {
               layerId,
-              currentFontSize,
-              newFontSize,
-              avgScale,
-              newDimensions: {
-                width: obj.width,
-                height: obj.height,
-              },
+              newWidth: finalWidth,
+              fontSize: obj.fontSize,
             });
           }
 
-          // Calculate final dimensions AFTER fontSize update
+          // Calculate final dimensions AFTER scale reset
           const finalWidth = (obj.width || 0) * (obj.scaleX || 1);
           const finalHeight = (obj.height || 0) * (obj.scaleY || 1);
 
@@ -206,8 +217,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
             rotation: obj.angle || 0,
           };
 
-          // Add fontSize to updates for text layers
-          if (obj instanceof fabric.FabricText) {
+          // Add fontSize to updates for text layers (unchanged)
+          if (obj instanceof fabric.Textbox) {
             (updates as any).fontSize = obj.fontSize;
           }
 
@@ -223,8 +234,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
               width: finalWidth,
               height: finalHeight,
             },
-            fontSize:
-              obj instanceof fabric.FabricText ? obj.fontSize : undefined,
+            fontSize: obj instanceof fabric.Textbox ? obj.fontSize : undefined,
           });
 
           // Process the final value
@@ -358,9 +368,10 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
         obj = img;
       } else if (layer.type === "text") {
         const textLayer = layer as TextLayer;
-        const text = new fabric.FabricText(textLayer.text, {
+        const text = new fabric.Textbox(textLayer.text, {
           left: layer.x,
           top: layer.y,
+          width: layer.width,
           fontSize: textLayer.fontSize,
           fontFamily: textLayer.fontFamily,
           fontWeight: textLayer.bold ? "bold" : "normal",
@@ -369,6 +380,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           fill: textLayer.color,
           angle: layer.rotation,
           selectable: !layer.locked,
+          editable: !layer.locked,
           opacity: layer.opacity,
         }) as FabricObjectWithData;
         obj = text;
@@ -573,14 +585,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
 
           obj.setCoords();
         }
-      } else if (layer.type === "text" && obj instanceof fabric.FabricText) {
+      } else if (layer.type === "text" && obj instanceof fabric.Textbox) {
         const textLayer = layer as TextLayer;
-
-        // Calculate scale to match target size (after fontSize is applied)
-        const currentWidth = obj.width || 1;
-        const currentHeight = obj.height || 1;
-        const targetScaleX = layer.width / currentWidth;
-        const targetScaleY = layer.height / currentHeight;
 
         // Check if rotation changed
         const rotationChanged =
@@ -593,15 +599,17 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           obj.set({
             angle: layer.rotation,
             text: textLayer.text,
+            width: layer.width,
             fontSize: textLayer.fontSize,
             fontFamily: textLayer.fontFamily,
             fontWeight: textLayer.bold ? "bold" : "normal",
             fontStyle: textLayer.italic ? "italic" : "normal",
             textAlign: textLayer.align,
             fill: textLayer.color,
-            scaleX: targetScaleX,
-            scaleY: targetScaleY,
+            scaleX: 1,
+            scaleY: 1,
             selectable: !layer.locked,
+            editable: !layer.locked,
             visible: layer.visible,
             opacity: layer.opacity,
           });
@@ -624,15 +632,17 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
             top: layer.y,
             angle: layer.rotation,
             text: textLayer.text,
+            width: layer.width,
             fontSize: textLayer.fontSize,
             fontFamily: textLayer.fontFamily,
             fontWeight: textLayer.bold ? "bold" : "normal",
             fontStyle: textLayer.italic ? "italic" : "normal",
             textAlign: textLayer.align,
             fill: textLayer.color,
-            scaleX: targetScaleX,
-            scaleY: targetScaleY,
+            scaleX: 1,
+            scaleY: 1,
             selectable: !layer.locked,
+            editable: !layer.locked,
             visible: layer.visible,
             opacity: layer.opacity,
           });
@@ -739,15 +749,18 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
         const fabricCanvas = fabricRef.current;
         if (!fabricCanvas) return;
 
-        const textObj = new fabric.FabricText(text, {
+        const textObj = new fabric.Textbox(text, {
           left: options.x || 50,
           top: options.y || 50,
+          width: 200, // Default width for textbox
           fontSize: options.fontSize || 24,
           fontFamily: options.fontFamily || "Inter",
           fontWeight: options.bold ? "bold" : "normal",
           fontStyle: options.italic ? "italic" : "normal",
+          textAlign: options.align || "left",
           fill: options.color || "#000000",
           selectable: true,
+          editable: true,
         }) as FabricObjectWithData;
         textObj.data = { layerId };
         fabricCanvas.add(textObj);
