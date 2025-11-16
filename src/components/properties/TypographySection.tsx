@@ -9,13 +9,11 @@ import PropertySection from "./PropertySection";
 interface TypographySectionProps {
   layer: TextLayer;
   onUpdate: (layerId: string, updates: Partial<TextLayer>) => void;
-  onOpenAdvancedPanel?: () => void;
 }
 
 const TypographySection: FC<TypographySectionProps> = ({
   layer,
   onUpdate,
-  onOpenAdvancedPanel,
 }) => {
   const handleFontSizeChange = (delta: number) => {
     const newSize = Math.max(8, Math.min(200, (layer.fontSize || 24) + delta));
@@ -149,18 +147,6 @@ const TypographySection: FC<TypographySectionProps> = ({
         </div>
       </div>
 
-      {/* More Options */}
-      {onOpenAdvancedPanel && (
-        <button className="more-options-btn" onClick={onOpenAdvancedPanel}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="1" />
-            <circle cx="19" cy="12" r="1" />
-            <circle cx="5" cy="12" r="1" />
-          </svg>
-          <span>More options</span>
-        </button>
-      )}
-
       <style>{`
         .property-field {
           display: flex;
@@ -254,29 +240,6 @@ const TypographySection: FC<TypographySectionProps> = ({
           border-color: var(--color-purple-primary);
           color: var(--color-purple-primary);
           box-shadow: 0 0 10px rgba(167, 139, 250, 0.3);
-        }
-
-        .more-options-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-          padding: 0.5rem;
-          background: transparent;
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          color: var(--color-text-secondary);
-          font-size: 0.75rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-          margin-top: 0.25rem;
-        }
-
-        .more-options-btn:hover {
-          background: rgba(167, 139, 250, 0.1);
-          border-color: var(--color-purple-primary);
-          color: var(--color-purple-primary);
         }
       `}</style>
     </PropertySection>

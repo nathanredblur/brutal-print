@@ -8,7 +8,7 @@ import type { Layer, TextLayer, ImageLayer } from "../types/layer";
 import PositionSection from "./properties/PositionSection";
 import SizeSection from "./properties/SizeSection";
 import TypographySection from "./properties/TypographySection";
-import ImageSection from "./properties/ImageSection";
+import ImageFiltersSection from "./properties/ImageFiltersSection";
 
 type SelectionType = "layer" | "canvas" | null;
 
@@ -18,6 +18,11 @@ interface PropertiesPanelProps {
   onUpdateLayer: (layerId: string, updates: any) => void;
   onUpdateTextLayer: (layerId: string, updates: any) => void;
   onUpdateImageLayer: (layerId: string, updates: any) => void;
+  onReprocessImageLayer?: (
+    layerId: string,
+    newImageData: HTMLCanvasElement,
+    updates: any
+  ) => void;
   onOpenAdvancedPanel?: (panelType: "font" | "filter" | "canvas") => void;
 }
 
@@ -27,6 +32,7 @@ const PropertiesPanel: FC<PropertiesPanelProps> = ({
   onUpdateLayer,
   onUpdateTextLayer,
   onUpdateImageLayer,
+  onReprocessImageLayer,
   onOpenAdvancedPanel,
 }) => {
   // Show canvas properties when canvas is selected
@@ -102,23 +108,13 @@ const PropertiesPanel: FC<PropertiesPanelProps> = ({
           <TypographySection
             layer={selectedLayer as TextLayer}
             onUpdate={onUpdateTextLayer}
-            onOpenAdvancedPanel={
-              onOpenAdvancedPanel
-                ? () => onOpenAdvancedPanel("font")
-                : undefined
-            }
           />
         )}
 
-        {isImage && (
-          <ImageSection
+        {isImage && onReprocessImageLayer && (
+          <ImageFiltersSection
             layer={selectedLayer as ImageLayer}
-            onUpdate={onUpdateImageLayer}
-            onOpenAdvancedPanel={
-              onOpenAdvancedPanel
-                ? () => onOpenAdvancedPanel("filter")
-                : undefined
-            }
+            onReprocessImageLayer={onReprocessImageLayer}
           />
         )}
       </div>

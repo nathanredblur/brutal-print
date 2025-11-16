@@ -9,8 +9,6 @@ import Header from "./Header";
 import LayersPanel from "./LayersPanel";
 import PropertiesPanel from "./PropertiesPanel";
 import ToolsBar from "./ToolsBar";
-import FontPanel from "./FontPanel";
-import FilterPanel from "./FilterPanel";
 import CanvasSettingsPanel from "./CanvasSettingsPanel";
 import ImageUploader from "./ImageUploader";
 import PrinterConnection from "./PrinterConnection";
@@ -776,45 +774,6 @@ export default function CanvasManager() {
         {/* Additional left panels - appear conditionally */}
         {(showImageUploader || showTextTool || advancedPanel) && (
           <div className="additional-panel">
-            {/* Font Panel */}
-            {advancedPanel === "font" && selectedLayer?.type === "text" && (
-              <div className="panel">
-                <div className="panel-header">
-                  <h3>Font</h3>
-                  <button
-                    className="close-btn"
-                    onClick={() => setAdvancedPanel(null)}
-                  >
-                    ×
-                  </button>
-                </div>
-                <FontPanel
-                  textLayer={selectedLayer as TextLayer}
-                  onUpdateTextLayer={updateTextLayer}
-                />
-              </div>
-            )}
-
-            {/* Filter Panel */}
-            {advancedPanel === "filter" && selectedLayer?.type === "image" && (
-              <div className="panel">
-                <div className="panel-header">
-                  <h3>Filters</h3>
-                  <button
-                    className="close-btn"
-                    onClick={() => setAdvancedPanel(null)}
-                  >
-                    ×
-                  </button>
-                </div>
-                <FilterPanel
-                  imageLayer={selectedLayer as ImageLayer}
-                  onUpdateImageLayer={updateImageLayer}
-                  onReprocessImageLayer={handleReprocessImageLayer}
-                />
-              </div>
-            )}
-
             {/* Printer Panel */}
             {advancedPanel === "printer" && (
               <div className="panel">
@@ -901,6 +860,7 @@ export default function CanvasManager() {
           onUpdateLayer={updateLayer}
           onUpdateTextLayer={updateTextLayer}
           onUpdateImageLayer={updateImageLayer}
+          onReprocessImageLayer={handleReprocessImageLayer}
           onOpenAdvancedPanel={handleOpenAdvancedPanel}
         />
       </div>
