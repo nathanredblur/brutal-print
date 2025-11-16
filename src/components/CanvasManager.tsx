@@ -6,11 +6,11 @@ import { useLayers } from "../hooks/useLayers";
 import { useCanvasPersistence } from "../hooks/useCanvasPersistence";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import Header from "./Header";
-import Sidebar from "./Sidebar";
-import ContextBar from "./ContextBar";
+import LayersPanel from "./LayersPanel";
+import PropertiesPanel from "./PropertiesPanel";
+import ToolsBar from "./ToolsBar";
 import FontPanel from "./FontPanel";
 import FilterPanel from "./FilterPanel";
-import PositionLayersPanel from "./PositionLayersPanel";
 import CanvasSettingsPanel from "./CanvasSettingsPanel";
 import ImageUploader from "./ImageUploader";
 import PrinterConnection from "./PrinterConnection";
@@ -318,14 +318,25 @@ export default function CanvasManager() {
     }
   }, []);
 
-  // Handle opening advanced panels from context bar
+  // Handle opening advanced panels
   const handleOpenAdvancedPanel = useCallback((panelType: AdvancedPanel) => {
     setAdvancedPanel(panelType);
+    // Close tools when opening advanced panels
+    setShowImageUploader(false);
+    setShowTextTool(false);
   }, []);
 
-  // Handle opening canvas settings
+  // Handle opening canvas settings from toolbar
   const handleOpenCanvasSettings = useCallback(() => {
     setAdvancedPanel("canvas");
+    setActiveTool(null);
+    setShowImageUploader(false);
+    setShowTextTool(false);
+  }, []);
+
+  // Handle opening printer panel from toolbar
+  const handleOpenPrinterPanel = useCallback(() => {
+    setAdvancedPanel("printer");
     setActiveTool(null);
     setShowImageUploader(false);
     setShowTextTool(false);
@@ -675,9 +686,9 @@ export default function CanvasManager() {
 
       // Check if click is outside the canvas container
       if (canvasContainer && !canvasContainer.contains(target)) {
-        // Also check if it's not in a sidebar/panel/header
+        // Also check if it's not in any UI panel (layers, properties, tools, etc.)
         const isInPanel = target.closest(
-          ".sidebar, .left-panel-container, .header, .context-bar"
+          ".layers-panel, .properties-panel, .additional-panel, .tools-bar, .header"
         );
         if (!isInPanel) {
           selectLayer(null);
@@ -751,150 +762,124 @@ export default function CanvasManager() {
       />
 
       <div className="canvas-manager">
-        {/* Left Sidebar - Canva style */}
-        <Sidebar
-          activeTool={activeTool}
-          onToolSelect={handleToolSelect}
-          onOpenCanvasSettings={handleOpenCanvasSettings}
+        {/* Left Panel - Always shows Layers */}
+        <LayersPanel
+          layers={layers}
+          selectedLayerId={selectedLayerId}
+          onSelectLayer={handleLayerSelect}
+          onToggleVisibility={toggleVisibility}
+          onToggleLock={toggleLock}
+          onRemoveLayer={removeLayer}
+          onMoveLayer={handleMoveLayerByDirection}
         />
 
-        {/* Left Panel - Dynamic content based on active tool and context */}
-        <div className="left-panel-container">
-          {/* Advanced panel from context bar */}
-          {advancedPanel === "font" && selectedLayer?.type === "text" && (
-            <div className="panel">
-              <div className="panel-header">
-                <h3>Fuente</h3>
-                <button
-                  className="close-btn"
-                  onClick={() => setAdvancedPanel(null)}
-                >
-                  ×
-                </button>
+        {/* Additional left panels - appear conditionally */}
+        {(showImageUploader || showTextTool || advancedPanel) && (
+          <div className="additional-panel">
+            {/* Font Panel */}
+            {advancedPanel === "font" && selectedLayer?.type === "text" && (
+              <div className="panel">
+                <div className="panel-header">
+                  <h3>Font</h3>
+                  <button
+                    className="close-btn"
+                    onClick={() => setAdvancedPanel(null)}
+                  >
+                    ×
+                  </button>
+                </div>
+                <FontPanel
+                  textLayer={selectedLayer as TextLayer}
+                  onUpdateTextLayer={updateTextLayer}
+                />
               </div>
-              <FontPanel
-                textLayer={selectedLayer as TextLayer}
-                onUpdateTextLayer={updateTextLayer}
-              />
-            </div>
-          )}
+            )}
 
-          {advancedPanel === "filter" && selectedLayer?.type === "image" && (
-            <div className="panel">
-              <div className="panel-header">
-                <h3>Filtros</h3>
-                <button
-                  className="close-btn"
-                  onClick={() => setAdvancedPanel(null)}
-                >
-                  ×
-                </button>
+            {/* Filter Panel */}
+            {advancedPanel === "filter" && selectedLayer?.type === "image" && (
+              <div className="panel">
+                <div className="panel-header">
+                  <h3>Filters</h3>
+                  <button
+                    className="close-btn"
+                    onClick={() => setAdvancedPanel(null)}
+                  >
+                    ×
+                  </button>
+                </div>
+                <FilterPanel
+                  imageLayer={selectedLayer as ImageLayer}
+                  onUpdateImageLayer={updateImageLayer}
+                  onReprocessImageLayer={handleReprocessImageLayer}
+                />
               </div>
-              <FilterPanel
-                imageLayer={selectedLayer as ImageLayer}
-                onUpdateImageLayer={updateImageLayer}
-                onReprocessImageLayer={handleReprocessImageLayer}
-              />
-            </div>
-          )}
+            )}
 
-          {advancedPanel === "position" && selectedLayer && (
-            <div className="panel">
-              <div className="panel-header">
-                <h3>Posición y Capas</h3>
-                <button
-                  className="close-btn"
-                  onClick={() => setAdvancedPanel(null)}
-                >
-                  ×
-                </button>
+            {/* Printer Panel */}
+            {advancedPanel === "printer" && (
+              <div className="panel">
+                <div className="panel-header">
+                  <h3>Printer</h3>
+                  <button
+                    className="close-btn"
+                    onClick={() => setAdvancedPanel(null)}
+                  >
+                    ×
+                  </button>
+                </div>
+                <PrinterConnection onPrint={handlePrint} />
               </div>
-              <PositionLayersPanel
-                selectedLayer={selectedLayer}
-                layers={layers}
-                onUpdateLayer={updateLayer}
-                onSelectLayer={selectLayer}
-                onToggleVisibility={toggleVisibility}
-                onToggleLock={toggleLock}
-                onRemoveLayer={removeLayer}
-                onMoveLayer={handleMoveLayerByDirection}
-              />
-            </div>
-          )}
+            )}
 
-          {advancedPanel === "printer" && (
-            <div className="panel">
-              <div className="panel-header">
-                <h3>Printer</h3>
-                <button
-                  className="close-btn"
-                  onClick={() => setAdvancedPanel(null)}
-                >
-                  ×
-                </button>
+            {/* Canvas Settings Panel */}
+            {advancedPanel === "canvas" && (
+              <div className="panel">
+                <div className="panel-header">
+                  <h3>Canvas Settings</h3>
+                  <button
+                    className="close-btn"
+                    onClick={() => setAdvancedPanel(null)}
+                  >
+                    ×
+                  </button>
+                </div>
+                <CanvasSettingsPanel
+                  canvasHeight={canvasHeight}
+                  onCanvasHeightChange={handleCanvasHeightChange}
+                />
               </div>
-              <PrinterConnection onPrint={handlePrint} />
-            </div>
-          )}
+            )}
 
-          {advancedPanel === "canvas" && (
-            <div className="panel">
-              <div className="panel-header">
-                <h3>Canvas Settings</h3>
-                <button
-                  className="close-btn"
-                  onClick={() => setAdvancedPanel(null)}
-                >
-                  ×
-                </button>
+            {/* Image Uploader */}
+            {showImageUploader && !advancedPanel && (
+              <div className="panel">
+                <div className="panel-header">
+                  <h3>Upload Image</h3>
+                  <button
+                    className="close-btn"
+                    onClick={() => setShowImageUploader(false)}
+                  >
+                    ×
+                  </button>
+                </div>
+                <ImageUploader onImageProcessed={handleImageProcessed} />
               </div>
-              <CanvasSettingsPanel
-                canvasHeight={canvasHeight}
-                onCanvasHeightChange={handleCanvasHeightChange}
-              />
-            </div>
-          )}
+            )}
 
-          {/* Image Uploader (when image tool is active) */}
-          {showImageUploader && !advancedPanel && (
-            <div className="panel">
-              <div className="panel-header">
-                <h3>Subir Imagen</h3>
-                <button
-                  className="close-btn"
-                  onClick={() => setShowImageUploader(false)}
-                >
-                  ×
-                </button>
+            {/* Text Tool */}
+            {showTextTool && !advancedPanel && (
+              <div className="panel">
+                <TextTool
+                  onAddText={handleAddText}
+                  onClose={() => setShowTextTool(false)}
+                />
               </div>
-              <ImageUploader onImageProcessed={handleImageProcessed} />
-            </div>
-          )}
+            )}
+          </div>
+        )}
 
-          {/* Text Tool (when text tool is active) */}
-          {showTextTool && !advancedPanel && (
-            <div className="panel">
-              <TextTool
-                onAddText={handleAddText}
-                onClose={() => setShowTextTool(false)}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Canvas Section with Context Bar */}
+        {/* Canvas Section */}
         <div className="canvas-container">
-          {/* Context Bar - appears when element is selected */}
-          <ContextBar
-            selectedLayer={selectedLayer}
-            selectionType={selectionType}
-            onUpdateLayer={updateLayer}
-            onUpdateTextLayer={updateTextLayer}
-            onUpdateImageLayer={updateImageLayer}
-            onOpenAdvancedPanel={handleOpenAdvancedPanel}
-          />
-
-          {/* Canvas */}
           <div className="canvas-section" ref={canvasContainerRef}>
             <FabricCanvas
               ref={fabricCanvasRef}
@@ -908,7 +893,25 @@ export default function CanvasManager() {
             />
           </div>
         </div>
+
+        {/* Right Panel - Properties */}
+        <PropertiesPanel
+          selectedLayer={selectedLayer}
+          selectionType={selectionType}
+          onUpdateLayer={updateLayer}
+          onUpdateTextLayer={updateTextLayer}
+          onUpdateImageLayer={updateImageLayer}
+          onOpenAdvancedPanel={handleOpenAdvancedPanel}
+        />
       </div>
+
+      {/* Floating Tools Bar */}
+      <ToolsBar
+        activeTool={activeTool}
+        onToolSelect={handleToolSelect}
+        onOpenCanvasSettings={handleOpenCanvasSettings}
+        onOpenPrinterPanel={handleOpenPrinterPanel}
+      />
 
       <style>{`
         .canvas-manager-wrapper {
@@ -924,7 +927,7 @@ export default function CanvasManager() {
           overflow: hidden;
         }
 
-        .left-panel-container {
+        .additional-panel {
           width: 360px;
           background: linear-gradient(135deg, rgba(21, 24, 54, 0.6) 0%, rgba(12, 15, 38, 0.8) 100%);
           backdrop-filter: blur(10px);
@@ -973,13 +976,13 @@ export default function CanvasManager() {
           margin-bottom: 1rem;
         }
 
-        .panel-title {
+        .panel-header h3 {
           font-size: 0.875rem;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
           color: var(--color-text-secondary);
-          margin: 0 0 1rem 0;
+          margin: 0;
         }
 
         .close-btn {
@@ -1002,40 +1005,6 @@ export default function CanvasManager() {
           background: rgba(239, 68, 68, 0.1);
           color: #ef4444;
         }
-
-        .action-btn {
-          width: 100%;
-          padding: 0.75rem;
-          font-size: 0.875rem;
-          font-weight: 600;
-          background: var(--color-bg-tertiary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
-          color: var(--color-text-secondary);
-          cursor: pointer;
-          transition: all var(--transition-normal);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-        }
-
-        .action-btn:hover {
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
-          border-color: var(--color-purple-primary);
-          color: var(--color-purple-primary);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(167, 139, 250, 0.2);
-        }
-
-        .new-canvas-btn svg {
-          transition: transform var(--transition-fast);
-        }
-
-        .new-canvas-btn:hover svg {
-          transform: rotate(90deg);
-        }
-
       `}</style>
     </div>
   );

@@ -1,0 +1,287 @@
+/**
+ * TypographySection - Typography controls for text elements
+ */
+
+import type { FC } from "react";
+import type { TextLayer } from "../../types/layer";
+import PropertySection from "./PropertySection";
+
+interface TypographySectionProps {
+  layer: TextLayer;
+  onUpdate: (layerId: string, updates: Partial<TextLayer>) => void;
+  onOpenAdvancedPanel?: () => void;
+}
+
+const TypographySection: FC<TypographySectionProps> = ({
+  layer,
+  onUpdate,
+  onOpenAdvancedPanel,
+}) => {
+  const handleFontSizeChange = (delta: number) => {
+    const newSize = Math.max(8, Math.min(200, (layer.fontSize || 24) + delta));
+    onUpdate(layer.id, { fontSize: newSize });
+  };
+
+  const toggleBold = () => {
+    onUpdate(layer.id, { bold: !layer.bold });
+  };
+
+  const toggleItalic = () => {
+    onUpdate(layer.id, { italic: !layer.italic });
+  };
+
+  const changeAlign = (align: "left" | "center" | "right") => {
+    onUpdate(layer.id, { align });
+  };
+
+  return (
+    <PropertySection
+      title="Typography"
+      defaultExpanded={true}
+      icon={
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polyline points="4 7 4 4 20 4 20 7" />
+          <line x1="9" y1="20" x2="15" y2="20" />
+          <line x1="12" y1="4" x2="12" y2="20" />
+        </svg>
+      }
+    >
+      {/* Font Family */}
+      <div className="property-field">
+        <label>Font Family</label>
+        <select
+          value={layer.fontFamily || "Inter"}
+          onChange={(e) => onUpdate(layer.id, { fontFamily: e.target.value })}
+        >
+          <option value="Inter">Inter</option>
+          <option value="Arial">Arial</option>
+          <option value="Helvetica">Helvetica</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Verdana">Verdana</option>
+        </select>
+      </div>
+
+      {/* Font Size */}
+      <div className="property-field">
+        <label>Font Size</label>
+        <div className="input-with-controls">
+          <button onClick={() => handleFontSizeChange(-2)} title="Decrease">
+            −
+          </button>
+          <input
+            type="number"
+            value={layer.fontSize || 24}
+            onChange={(e) =>
+              onUpdate(layer.id, { fontSize: parseFloat(e.target.value) || 24 })
+            }
+            min="8"
+            max="200"
+          />
+          <button onClick={() => handleFontSizeChange(2)} title="Increase">
+            +
+          </button>
+        </div>
+      </div>
+
+      {/* Style (Bold, Italic) */}
+      <div className="property-field">
+        <label>Style</label>
+        <div className="button-group">
+          <button
+            className={`style-btn ${layer.bold ? "active" : ""}`}
+            onClick={toggleBold}
+            title="Bold"
+          >
+            <strong>B</strong>
+          </button>
+          <button
+            className={`style-btn ${layer.italic ? "active" : ""}`}
+            onClick={toggleItalic}
+            title="Italic"
+          >
+            <em>I</em>
+          </button>
+        </div>
+      </div>
+
+      {/* Alignment */}
+      <div className="property-field">
+        <label>Alignment</label>
+        <div className="button-group">
+          <button
+            className={`align-btn ${layer.align === "left" ? "active" : ""}`}
+            onClick={() => changeAlign("left")}
+            title="Align left"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="17" y1="10" x2="3" y2="10" />
+              <line x1="21" y1="6" x2="3" y2="6" />
+              <line x1="21" y1="14" x2="3" y2="14" />
+              <line x1="17" y1="18" x2="3" y2="18" />
+            </svg>
+          </button>
+          <button
+            className={`align-btn ${layer.align === "center" ? "active" : ""}`}
+            onClick={() => changeAlign("center")}
+            title="Align center"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="10" x2="6" y2="10" />
+              <line x1="21" y1="6" x2="3" y2="6" />
+              <line x1="21" y1="14" x2="3" y2="14" />
+              <line x1="18" y1="18" x2="6" y2="18" />
+            </svg>
+          </button>
+          <button
+            className={`align-btn ${layer.align === "right" ? "active" : ""}`}
+            onClick={() => changeAlign("right")}
+            title="Align right"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="21" y1="10" x2="7" y2="10" />
+              <line x1="21" y1="6" x2="3" y2="6" />
+              <line x1="21" y1="14" x2="3" y2="14" />
+              <line x1="21" y1="18" x2="7" y2="18" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* More Options */}
+      {onOpenAdvancedPanel && (
+        <button className="more-options-btn" onClick={onOpenAdvancedPanel}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="1" />
+            <circle cx="19" cy="12" r="1" />
+            <circle cx="5" cy="12" r="1" />
+          </svg>
+          <span>More options</span>
+        </button>
+      )}
+
+      <style>{`
+        .property-field {
+          display: flex;
+          flex-direction: column;
+          gap: 0.375rem;
+        }
+
+        .property-field label {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--color-text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .property-field input,
+        .property-field select {
+          width: 100%;
+          padding: 0.5rem;
+          background: var(--color-bg-tertiary);
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-sm);
+          color: var(--color-text-primary);
+          font-size: 0.875rem;
+          transition: all var(--transition-fast);
+        }
+
+        .property-field input:focus,
+        .property-field select:focus {
+          outline: none;
+          border-color: var(--color-purple-primary);
+          box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2);
+        }
+
+        .input-with-controls {
+          display: grid;
+          grid-template-columns: 32px 1fr 32px;
+          gap: 0.25rem;
+        }
+
+        .input-with-controls button {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.5rem;
+          background: var(--color-bg-tertiary);
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-sm);
+          color: var(--color-text-secondary);
+          font-size: 1rem;
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+
+        .input-with-controls button:hover {
+          background: rgba(167, 139, 250, 0.1);
+          border-color: var(--color-purple-primary);
+          color: var(--color-purple-primary);
+        }
+
+        .button-group {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        .style-btn,
+        .align-btn {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.5rem;
+          background: var(--color-bg-tertiary);
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-sm);
+          color: var(--color-text-secondary);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+
+        .style-btn:hover,
+        .align-btn:hover {
+          background: rgba(167, 139, 250, 0.1);
+          border-color: var(--color-purple-primary);
+          color: var(--color-purple-primary);
+        }
+
+        .style-btn.active,
+        .align-btn.active {
+          background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+          border-color: var(--color-purple-primary);
+          color: var(--color-purple-primary);
+          box-shadow: 0 0 10px rgba(167, 139, 250, 0.3);
+        }
+
+        .more-options-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          padding: 0.5rem;
+          background: transparent;
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-sm);
+          color: var(--color-text-secondary);
+          font-size: 0.75rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          margin-top: 0.25rem;
+        }
+
+        .more-options-btn:hover {
+          background: rgba(167, 139, 250, 0.1);
+          border-color: var(--color-purple-primary);
+          color: var(--color-purple-primary);
+        }
+      `}</style>
+    </PropertySection>
+  );
+};
+
+export default TypographySection;
+
