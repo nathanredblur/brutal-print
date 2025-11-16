@@ -3,9 +3,9 @@
  * Contains all main tools and actions
  */
 
-import type { FC } from 'react';
+import type { FC } from "react";
 
-type Tool = 'image' | 'text';
+type Tool = "image" | "text";
 
 interface SidebarProps {
   activeTool: Tool | null;
@@ -13,10 +13,14 @@ interface SidebarProps {
   onOpenCanvasSettings?: () => void;
 }
 
-const Sidebar: FC<SidebarProps> = ({ activeTool, onToolSelect, onOpenCanvasSettings }) => {
+const Sidebar: FC<SidebarProps> = ({
+  activeTool,
+  onToolSelect,
+  onOpenCanvasSettings,
+}) => {
   const tools = [
     {
-      id: 'image' as Tool,
+      id: "image" as Tool,
       icon: (
         <svg
           width="24"
@@ -31,11 +35,11 @@ const Sidebar: FC<SidebarProps> = ({ activeTool, onToolSelect, onOpenCanvasSetti
           <path d="M21 15l-5-5L5 21" />
         </svg>
       ),
-      label: 'Image',
-      shortcut: 'I',
+      label: "Image",
+      shortcut: "I",
     },
     {
-      id: 'text' as Tool,
+      id: "text" as Tool,
       icon: (
         <svg
           width="24"
@@ -50,8 +54,8 @@ const Sidebar: FC<SidebarProps> = ({ activeTool, onToolSelect, onOpenCanvasSetti
           <line x1="12" y1="4" x2="12" y2="20" />
         </svg>
       ),
-      label: 'Text',
-      shortcut: 'T',
+      label: "Text",
+      shortcut: "T",
     },
   ];
 
@@ -65,7 +69,7 @@ const Sidebar: FC<SidebarProps> = ({ activeTool, onToolSelect, onOpenCanvasSetti
         {tools.map((tool) => (
           <button
             key={tool.id}
-            className={`sidebar-tool ${activeTool === tool.id ? 'active' : ''}`}
+            className={`sidebar-tool ${activeTool === tool.id ? "active" : ""}`}
             onClick={() => onToolSelect(tool.id)}
             title={`${tool.label} (${tool.shortcut})`}
           >
@@ -186,4 +190,3 @@ const Sidebar: FC<SidebarProps> = ({ activeTool, onToolSelect, onOpenCanvasSetti
 };
 
 export default Sidebar;
-

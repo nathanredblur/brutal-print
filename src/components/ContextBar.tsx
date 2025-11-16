@@ -4,8 +4,8 @@
  * Shows quick actions based on the selected element type
  */
 
-import type { FC } from 'react';
-import type { Layer, TextLayer, ImageLayer } from '../types/layer';
+import type { FC } from "react";
+import type { Layer, TextLayer, ImageLayer } from "../types/layer";
 
 type SelectionType = "layer" | "canvas" | null;
 
@@ -15,7 +15,9 @@ interface ContextBarProps {
   onUpdateLayer: (layerId: string, updates: any) => void;
   onUpdateTextLayer: (layerId: string, updates: any) => void;
   onUpdateImageLayer: (layerId: string, updates: any) => void;
-  onOpenAdvancedPanel: (panelType: 'font' | 'filter' | 'position' | 'canvas') => void;
+  onOpenAdvancedPanel: (
+    panelType: "font" | "filter" | "position" | "canvas"
+  ) => void;
 }
 
 // Shared styles for the context bar
@@ -148,10 +150,17 @@ const ContextBar: FC<ContextBarProps> = ({
           <div className="context-group">
             <button
               className="context-btn"
-              onClick={() => onOpenAdvancedPanel('canvas')}
+              onClick={() => onOpenAdvancedPanel("canvas")}
               title="Canvas settings"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <path d="M3 9h18M9 21V9" />
               </svg>
@@ -160,10 +169,17 @@ const ContextBar: FC<ContextBarProps> = ({
 
             <button
               className="context-btn"
-              onClick={() => onOpenAdvancedPanel('position')}
+              onClick={() => onOpenAdvancedPanel("position")}
               title="Layers"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                 <rect x="7" y="7" width="3" height="9" />
                 <rect x="14" y="7" width="3" height="5" />
@@ -180,15 +196,18 @@ const ContextBar: FC<ContextBarProps> = ({
   // Don't show anything if nothing is selected
   if (!selectedLayer) return null;
 
-  const isText = selectedLayer.type === 'text';
-  const isImage = selectedLayer.type === 'image';
+  const isText = selectedLayer.type === "text";
+  const isImage = selectedLayer.type === "image";
   const textLayer = isText ? (selectedLayer as TextLayer) : null;
   const imageLayer = isImage ? (selectedLayer as ImageLayer) : null;
 
   // Text controls
   const handleFontSizeChange = (delta: number) => {
     if (!textLayer) return;
-    const newSize = Math.max(8, Math.min(200, (textLayer.fontSize || 24) + delta));
+    const newSize = Math.max(
+      8,
+      Math.min(200, (textLayer.fontSize || 24) + delta)
+    );
     onUpdateTextLayer(selectedLayer.id, { fontSize: newSize });
   };
 
@@ -202,7 +221,7 @@ const ContextBar: FC<ContextBarProps> = ({
     onUpdateTextLayer(selectedLayer.id, { italic: !textLayer.italic });
   };
 
-  const changeAlign = (align: 'left' | 'center' | 'right') => {
+  const changeAlign = (align: "left" | "center" | "right") => {
     if (!textLayer) return;
     onUpdateTextLayer(selectedLayer.id, { align });
   };
@@ -225,19 +244,26 @@ const ContextBar: FC<ContextBarProps> = ({
         {isText && textLayer && (
           <>
             <div className="context-separator" />
-            
+
             <div className="context-group">
               <button
                 className="context-btn"
-                onClick={() => onOpenAdvancedPanel('font')}
+                onClick={() => onOpenAdvancedPanel("font")}
                 title="Change font"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <polyline points="4 7 4 4 20 4 20 7" />
                   <line x1="9" y1="20" x2="15" y2="20" />
                   <line x1="12" y1="4" x2="12" y2="20" />
                 </svg>
-                <span>{textLayer.fontFamily || 'Inter'}</span>
+                <span>{textLayer.fontFamily || "Inter"}</span>
               </button>
 
               <button
@@ -245,7 +271,14 @@ const ContextBar: FC<ContextBarProps> = ({
                 onClick={() => handleFontSizeChange(-2)}
                 title="Decrease font size"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M5 12h14" />
                 </svg>
               </button>
@@ -257,7 +290,14 @@ const ContextBar: FC<ContextBarProps> = ({
                 onClick={() => handleFontSizeChange(2)}
                 title="Increase font size"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M12 5v14M5 12h14" />
                 </svg>
               </button>
@@ -267,19 +307,23 @@ const ContextBar: FC<ContextBarProps> = ({
 
             <div className="context-group">
               <button
-                className={`context-btn icon-only ${textLayer.bold ? 'active' : ''}`}
+                className={`context-btn icon-only ${
+                  textLayer.bold ? "active" : ""
+                }`}
                 onClick={toggleBold}
                 title="Bold"
               >
-                <strong style={{ fontSize: '14px', fontWeight: 700 }}>B</strong>
+                <strong style={{ fontSize: "14px", fontWeight: 700 }}>B</strong>
               </button>
 
               <button
-                className={`context-btn icon-only ${textLayer.italic ? 'active' : ''}`}
+                className={`context-btn icon-only ${
+                  textLayer.italic ? "active" : ""
+                }`}
                 onClick={toggleItalic}
                 title="Italic"
               >
-                <em style={{ fontSize: '14px', fontStyle: 'italic' }}>I</em>
+                <em style={{ fontSize: "14px", fontStyle: "italic" }}>I</em>
               </button>
             </div>
 
@@ -287,11 +331,20 @@ const ContextBar: FC<ContextBarProps> = ({
 
             <div className="context-group">
               <button
-                className={`context-btn icon-only ${textLayer.align === 'left' ? 'active' : ''}`}
-                onClick={() => changeAlign('left')}
+                className={`context-btn icon-only ${
+                  textLayer.align === "left" ? "active" : ""
+                }`}
+                onClick={() => changeAlign("left")}
                 title="Align left"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <line x1="17" y1="10" x2="3" y2="10" />
                   <line x1="21" y1="6" x2="3" y2="6" />
                   <line x1="21" y1="14" x2="3" y2="14" />
@@ -300,11 +353,20 @@ const ContextBar: FC<ContextBarProps> = ({
               </button>
 
               <button
-                className={`context-btn icon-only ${textLayer.align === 'center' ? 'active' : ''}`}
-                onClick={() => changeAlign('center')}
+                className={`context-btn icon-only ${
+                  textLayer.align === "center" ? "active" : ""
+                }`}
+                onClick={() => changeAlign("center")}
                 title="Align center"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <line x1="18" y1="10" x2="6" y2="10" />
                   <line x1="21" y1="6" x2="3" y2="6" />
                   <line x1="21" y1="14" x2="3" y2="14" />
@@ -313,11 +375,20 @@ const ContextBar: FC<ContextBarProps> = ({
               </button>
 
               <button
-                className={`context-btn icon-only ${textLayer.align === 'right' ? 'active' : ''}`}
-                onClick={() => changeAlign('right')}
+                className={`context-btn icon-only ${
+                  textLayer.align === "right" ? "active" : ""
+                }`}
+                onClick={() => changeAlign("right")}
                 title="Align right"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <line x1="21" y1="10" x2="7" y2="10" />
                   <line x1="21" y1="6" x2="3" y2="6" />
                   <line x1="21" y1="14" x2="3" y2="14" />
@@ -336,10 +407,17 @@ const ContextBar: FC<ContextBarProps> = ({
             <div className="context-group">
               <button
                 className="context-btn"
-                onClick={() => onOpenAdvancedPanel('filter')}
+                onClick={() => onOpenAdvancedPanel("filter")}
                 title="Image filters"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <circle cx="12" cy="12" r="3" />
                   <path d="M12 1v6m0 6v6m5.2-13.2l-2.9 2.9m-2.6 2.6l-2.9 2.9m7.8 0l-2.9-2.9m-2.6-2.6l-2.9-2.9" />
                 </svg>
@@ -347,11 +425,18 @@ const ContextBar: FC<ContextBarProps> = ({
               </button>
 
               <button
-                className={`context-btn ${imageLayer.invert ? 'active' : ''}`}
+                className={`context-btn ${imageLayer.invert ? "active" : ""}`}
                 onClick={toggleInvert}
                 title="Invert colors"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <circle cx="12" cy="12" r="10" />
                   <path d="M12 2a10 10 0 0 0 0 20z" fill="currentColor" />
                 </svg>
@@ -367,10 +452,17 @@ const ContextBar: FC<ContextBarProps> = ({
         <div className="context-group">
           <button
             className="context-btn"
-            onClick={() => onOpenAdvancedPanel('position')}
+            onClick={() => onOpenAdvancedPanel("position")}
             title="Position and layers"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <rect x="3" y="3" width="18" height="18" rx="2" />
               <path d="M3 9h18M9 21V9" />
             </svg>

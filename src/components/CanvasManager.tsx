@@ -668,27 +668,32 @@ export default function CanvasManager() {
   }, [selectLayer]);
 
   // Handle click outside canvas (deselect everything)
-  const handleClickOutside = useCallback((e: MouseEvent) => {
-    const target = e.target as HTMLElement;
-    const canvasContainer = canvasContainerRef.current;
-    
-    // Check if click is outside the canvas container
-    if (canvasContainer && !canvasContainer.contains(target)) {
-      // Also check if it's not in a sidebar/panel/header
-      const isInPanel = target.closest('.sidebar, .left-panel-container, .header, .context-bar');
-      if (!isInPanel) {
-        selectLayer(null);
-        setSelectionType(null);
-        logger.info("CanvasManager", "Clicked outside - deselected");
+  const handleClickOutside = useCallback(
+    (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const canvasContainer = canvasContainerRef.current;
+
+      // Check if click is outside the canvas container
+      if (canvasContainer && !canvasContainer.contains(target)) {
+        // Also check if it's not in a sidebar/panel/header
+        const isInPanel = target.closest(
+          ".sidebar, .left-panel-container, .header, .context-bar"
+        );
+        if (!isInPanel) {
+          selectLayer(null);
+          setSelectionType(null);
+          logger.info("CanvasManager", "Clicked outside - deselected");
+        }
       }
-    }
-  }, [selectLayer]);
+    },
+    [selectLayer]
+  );
 
   // Setup click outside listener
   useEffect(() => {
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [handleClickOutside]);
 
