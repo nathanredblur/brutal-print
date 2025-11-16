@@ -1,218 +1,136 @@
-# 📝 Changelog - Thermal Print Studio
+# Changelog - Thermal Print Studio
 
 All notable changes to this project will be documented in this file.
 
 ---
 
-## [1.0.0] - 2024-11-12 ✅ **PRINTING FIX**
+## [1.8.0] - 2025-11-16 ✅ **Smart Image Filters & Persistence**
 
-### 🐛 Fixed - Critical Printing Issue
+### ✨ Features
 
-**Problem**: Printer was connecting successfully but not printing anything.
+- **Smart Image Filters**: Change dithering method after upload without re-uploading
+- **Canvas Persistence**: Auto-save and restore work from localStorage
+- **New Canvas Button**: Clear all layers while keeping canvas height
+- **Original Image Storage**: Reprocess images with different dithering methods without quality loss
 
-**Root Cause**: Implementation didn't follow the [official mxw01-thermal-printer patterns](https://github.com/clementvp/mxw01-thermal-printer/blob/main/examples/react-hook.tsx).
+### 🔧 Technical
 
-**Solution**: Complete rewrite of printer integration following official documentation.
+- Original images stored as base64 for reprocessing
+- Auto-save with 2-second debounce
+- Complete state serialization/deserialization
+- `useCanvasPersistence` custom hook
+
+---
+
+## [1.7.0] - 2025-11-12 ✅ **Properties Panel & Live Editing**
+
+### ✨ Features
+
+- **Properties Panel**: Real-time editing of selected elements
+- **Text Editing**: Edit content, font, size, style, alignment live
+- **Dynamic Canvas Height**: Adjust from 400px to 2000px
+- **Context-aware UI**: Panel adapts to selected layer type
+
+### 🔧 Technical
+
+- Local state prevents input lag
+- Type-safe layer updates (`updateTextLayer`, `updateImageLayer`)
+- Separate canvas dimension management
+
+---
+
+## [1.6.0] - 2025-11-12 ✅ **Interactive Canvas**
+
+### ✨ Features
+
+- **Fabric.js Integration**: Professional canvas manipulation
+- **Direct Element Control**: Drag, resize, rotate on canvas
+- **Bidirectional Sync**: Canvas ↔ Layer Panel
+- **Visual Handles**: Corner handles for resize, rotation handle for rotate
+
+### 🔧 Technical
+
+- `FabricCanvas.tsx` component wrapping Fabric.js
+- Fabric objects sync with layer state
+- Export to HTML canvas for printing
+- Hardware-accelerated rendering
+
+---
+
+## [1.5.0] - 2025-11-12 ✅ **Layer Management UX**
+
+### ✨ Features
+
+- **Toast Notifications**: Beautiful in-app notifications replacing browser alerts
+- **Delete Confirmation**: Modal dialog for layer deletion
+- **Drag & Drop Reordering**: Drag layers to change z-order
+- **Subtle Feedback**: Visual feedback over notification spam
+
+### 🔧 Technical
+
+- `ToastContext` for global notifications
+- `ConfirmDialog` component with Neuro Core styling
+- Native HTML5 Drag & Drop API
+- No toast on image upload (visual feedback only)
+
+---
+
+## [1.0.0] - 2024-11-12 ✅ **PRINTING FIX - MVP Complete**
+
+### 🐛 Critical Bug Fixed
+
+**Problem**: Printer connected but wouldn't print
+**Solution**: Rewrote printer integration following [official mxw01-thermal-printer patterns](https://github.com/clementvp/mxw01-thermal-printer)
 
 ### ✅ Changes Made
 
-#### 1. Printer Hook (`src/hooks/usePrinter.ts`)
-- ✅ Rewrote to use `useReducer` instead of multiple `useState` hooks
-- ✅ Single `useEffect` for initialization
-- ✅ Added periodic state sync (100ms interval)
-- ✅ Proper event listener cleanup
-- ✅ Changed API from `print(imageData)` to `printCanvas(canvas, options)`
-- ✅ Renamed `connect()` to `connectPrinter()` to match official API
+- Rewrote `usePrinter` hook with `useReducer`
+- Changed from `print(imageData)` to `printCanvas(canvas, options)`
+- Fixed dithering method names:
+  - `floydSteinberg` → `steinberg`
+  - `ordered` → `bayer`
+  - `halftone` → `pattern`
+- Added periodic state sync (100ms interval)
+- Proper event listener cleanup
 
-#### 2. Dithering Methods (`src/lib/dithering/`)
-- ✅ Updated to use official method names:
-  - `floydSteinberg` → `steinberg` (Floyd-Steinberg)
-  - `ordered` → `bayer` (Ordered/Bayer)
-  - `halftone` → `pattern` (Halftone/Pattern)
-- ✅ Added type mappings for backwards compatibility
-- ✅ Updated all references throughout codebase
+### ✨ Features (MVP)
 
-#### 3. Canvas Manager (`src/components/CanvasManager.tsx`)
-- ✅ Removed unnecessary `currentImageData` state
-- ✅ Pass canvas directly to `printCanvas()` instead of ImageData
-- ✅ Updated print options with correct dithering method names
-- ✅ Improved error handling
-
-#### 4. Printer Connection UI (`src/components/PrinterConnection.tsx`)
-- ✅ Updated to use new hook API (`connectPrinter` vs `connect`)
-- ✅ Get battery level from `printerState` object
-- ✅ Simplified status message display
-
-#### 5. Image Uploader (`src/components/ImageUploader.tsx`)
-- ✅ Default to `'steinberg'` dithering method
-- ✅ Updated UI options with correct method names
-- ✅ Maintained user-friendly labels
-
-### 📚 New Documentation
-
-- ✅ **PRINTING_FIX.md** - Detailed explanation of fixes and troubleshooting
-- ✅ **TESTING_CHECKLIST.md** - Complete testing guide with 10 test scenarios
-- ✅ **CHANGELOG.md** - This file
-
-### 🔧 Technical Details
-
-**Before**:
-```typescript
-const { print, connect } = usePrinter();
-await print(imageData); // ❌ Wrong API
-```
-
-**After**:
-```typescript
-const { printCanvas, connectPrinter } = usePrinter();
-await printCanvas(canvas, {
-  dither: 'steinberg',
-  brightness: 128,
-  intensity: 93,
-}); // ✅ Correct API
-```
-
-### ✅ Verification
-
-- [x] Printer connects successfully
-- [x] Battery level displays
-- [x] Image uploads and processes
-- [x] Text tool works
-- [x] **Printing works!** 🎉
-- [x] Multiple prints succeed
-- [x] No memory leaks
-- [x] Error handling works
-
-### 📖 References
-
-- [Official React Hook Example](https://github.com/clementvp/mxw01-thermal-printer/blob/main/examples/react-hook.tsx)
-- [mxw01-thermal-printer Library](https://github.com/clementvp/mxw01-thermal-printer)
+- 384px canvas for MXW01 thermal printers
+- Image upload with drag & drop
+- 5 dithering algorithms (Floyd-Steinberg, Atkinson, Bayer, Pattern, Threshold)
+- Text tool with fonts and styling
+- Web Bluetooth printer connection
+- Real-time preview
+- Neuro Core design system
 
 ---
 
-## [0.9.0] - 2024-11-11 - Initial MVP
+## Version History Summary
 
-### ✨ Features Added
-
-- ✅ Astro + React + TypeScript setup
-- ✅ Neuro Core design system
-  - Glassmorphism panels
-  - Neon glow effects
-  - Blue/purple color palette
-  - Modern sans-serif typography
-- ✅ Canvas Manager component
-- ✅ Image uploader with drag & drop
-- ✅ Text tool with styling options
-- ✅ Dithering algorithms:
-  - Floyd-Steinberg
-  - Atkinson
-  - Ordered/Bayer
-  - Halftone/Pattern
-  - Threshold
-- ✅ Image processing:
-  - Brightness adjustment
-  - Contrast adjustment
-  - Color inversion
-  - Auto-scaling to 384px
-- ✅ Real-time preview
-- ✅ Web Bluetooth integration (partial)
-
-### 🛠️ Technical Stack
-
-- Astro 4.x
-- React 18+
-- TypeScript 5.x
-- Tailwind CSS v4
-- mxw01-thermal-printer
-
-### 🐛 Known Issues (Fixed in v1.0.0)
-
-- ❌ Printer connects but doesn't print → ✅ Fixed in v1.0.0
+- **v1.8** - Smart filters & persistence
+- **v1.7** - Properties panel & live editing
+- **v1.6** - Interactive canvas with Fabric.js
+- **v1.5** - Toast system & layer UX
+- **v1.0** - MVP with working printer integration
 
 ---
 
-## [0.1.0] - 2024-11-10 - Project Setup
+## Roadmap
 
-### 🎯 Initial Setup
+### v2.0 (Planned)
 
-- ✅ Created project structure
-- ✅ Defined Neuro Core aesthetic
-- ✅ Wrote project specification (`brutal-print.md`)
-- ✅ Set up monorepo cursor rules
-- ✅ Documented MXW01 printer specifications
-
-### 📝 Documentation
-
-- brutal-print.md - Complete specification
-- .cursorrules - Monorepo best practices
-- README.md - Project overview
-
----
-
-## Future Releases
-
-### [1.5.0] - Planned
-
-**Layer Management**:
-- [ ] Drag & drop layers
-- [ ] Layer visibility toggle
-- [ ] Layer lock/unlock
-- [ ] Layer reordering
-
-**Drawing Tools**:
-- [ ] Brush tool with variable size
-- [ ] Eraser tool
-- [ ] Shape tools (rectangle, circle, line)
-
-**Assets**:
-- [ ] Icon library
-- [ ] Emoji picker
-- [ ] Texture patterns
-
-**Transforms**:
-- [ ] Rotate elements
-- [ ] Scale elements
-- [ ] Flip horizontal/vertical
-
-**Project Management**:
-- [ ] Save project as JSON
-- [ ] Load project from JSON
-- [ ] Export as PNG/PDF
-
-### [2.0.0] - Future
-
-**Advanced Features**:
-- [ ] Procedural texture generation
-- [ ] Retro presets (80s receipt, punk fanzines)
-- [ ] Glitch effects
+- [ ] Drawing tools with brushes
+- [ ] Shape tools (rectangles, circles)
+- [ ] Multiple texture patterns
+- [ ] Icons and emojis library
+- [ ] Undo/redo system
+- [ ] Snap to grid & alignment guides
+- [ ] Group selection
+- [ ] Copy/paste functionality
 - [ ] Template library
-- [ ] Multi-language support
-- [ ] Keyboard shortcuts
-
-**Optimizations**:
-- [ ] WebAssembly for dithering (performance)
-- [ ] Web Worker for image processing
-- [ ] IndexedDB for project storage
-- [ ] PWA support (offline mode)
+- [ ] Export to PNG/PDF
 
 ---
 
-## Version Naming
-
-- **Major (X.0.0)**: Breaking changes or major features
-- **Minor (0.X.0)**: New features, backwards compatible
-- **Patch (0.0.X)**: Bug fixes and small improvements
-
----
-
-## Links
-
-- **Repository**: mono-experiments/brutal-print
-- **Issue Tracker**: GitHub Issues
-- **Documentation**: [/brutal-print/docs/](./PRINTING_FIX.md)
-
----
-
-Last Updated: November 12, 2024
-Current Version: **1.0.0** ✅
-
+Last Updated: November 16, 2025
+Current Version: **1.8.0** ✅

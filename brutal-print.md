@@ -1,441 +1,330 @@
-# Thermal Print Studio - Application Overview
+# Thermal Print Studio - Technical Specification
 
-## General Concept
+## Overview
 
-A Canva-style web application optimized for designing and printing on black and white thermal printers, featuring a modern Neuro Core aesthetic with blue and purple tones, and creative tools to maximize monochrome potential.
-
----
-
-## Core Features
-
-### 1. **Canvas Editor**
-
-- Workspace adapted to thermal printer dimensions (**384px width** × variable height)
-- Real-time preview of final 1-bit monochrome output
-- Smooth zoom and navigation system (10%-500%)
-- Pan with middle-click or Shift+drag
-- Optional grid for precise alignment
-- Fit-to-screen view option
-
-### 2. **Layer Management**
-
-- Side panel with draggable layer list
-- Reorder layers via drag & drop
-- Per-layer options:
-  - Lock/unlock
-  - Show/hide
-  - Duplicate
-  - Delete
-  - Opacity (simulated with dithering)
-
-### 3. **Image Tools**
-
-#### Import
-
-- Upload custom images (JPG, PNG, SVG)
-- Library of pre-designed images
-- Integrated free image search
-
-#### B&W Conversion Effects
-
-- **Dithering Methods:**
-  - Floyd-Steinberg
-  - Atkinson
-  - Ordered (Bayer)
-  - Halftone
-  - Random/Stochastic
-  - Simple threshold
-- **Threshold Adjustment:** Slider 0-255
-- **Retro Textures:**
-  - Crosshatch
-  - Dots
-  - Lines (horizontal/vertical/diagonal)
-  - Brick pattern
-  - Checkerboard
-  - Custom ASCII patterns
-- **Contrast and brightness**
-- **Color inversion**
-- **Posterization**
-
-#### Transformations
-
-- Rotate (free or fixed angles: 90°, 180°, 270°)
-- Scale maintaining aspect ratio
-- Flip horizontal/vertical
-- Crop
-
-### 4. **Text Tools**
-
-#### Typography
-
-- System fonts
-- Retro monospace fonts:
-  - IBM Plex Mono
-  - Space Mono
-  - Courier Prime
-  - VT323
-  - Press Start 2P
-- Modern sans-serif fonts:
-  - Inter
-  - Outfit
-  - Space Grotesk
-  - Manrope
-
-#### Text Effects
-
-- Variable size
-- Bold, italic
-- Alignment (left, center, right, justified)
-- Letter and line spacing
-- Outline/stroke
-- Texture fill
-- Text on arc/curve
-
-### 5. **Drawing Tools**
-
-#### Brushes
-
-- Pencil (solid stroke)
-- Textured brush:
-  - Dots
-  - Crosshatch
-  - Noise
-  - Custom patterns
-- Variable thickness (1-50px)
-- Eraser
-
-#### Shapes
-
-- Rectangles
-- Circles/ellipses
-- Lines
-- Polygons
-- Arrows
-- Solid or textured fill
-
-### 6. **Icons and Emojis**
-
-#### Libraries
-
-- Font Awesome integration
-- Material Icons
-- Feather Icons
-- Lucide Icons
-- Native emojis converted to B&W
-- Custom thermal icon library
-
-#### Features
-
-- Keyword search
-- Organized categories
-- Size adjustment
-- Apply dithering effects
-
-### 7. **Textures and Patterns**
-
-#### Texture Library
-
-- **Volumetric shadows:**
-  - 25% gray (spaced dots)
-  - 50% gray (checkerboard)
-  - 75% gray (dense dots)
-- **Retro patterns:**
-  - Scanlines
-  - CRT effect
-  - Game Boy patterns
-  - ZX Spectrum patterns
-  - Commodore 64 patterns
-- **Organic textures:**
-  - Noise
-  - Grain
-  - Stipple
-  - Hatching
-
-#### Application
-
-- Shape fill
-- Image overlay
-- Custom brushes
-- Layer masks
-
-### 8. **Project Management**
-
-#### Save
-
-- JSON format with all project information
-- Export as PNG/JPG image (preview)
-- Export as PDF
-- Pre-designed templates
-
-#### Load
-
-- Open saved projects
-- Import templates
-- Recent projects history
-
-### 9. **Printer Connection**
-
-#### Pairing
-
-- Automatic MXW01 thermal printer detection via BLE
-- Web Bluetooth API connection (Chrome/Edge/Opera)
-- Manual parameter configuration:
-  - Print intensity (0-255, default: 93)
-  - Brightness adjustment (0-255)
-  - Dithering method selection
-
-#### Printing
-
-- Final 1-bit preview before printing
-- Real-time print progress indicator
-- Print status monitoring
-- Battery level display
-- Test print functionality
-- Connection status indicators
+A Canva-style web application optimized for designing and printing on MXW01 thermal printers (384px width), featuring a modern Neuro Core aesthetic with blue and purple tones.
 
 ---
 
-## Technology Stack
+## ✅ Implemented Features (v1.8)
 
-### Frontend
+### Canvas Editor
 
-```typescript
-// Astro + TypeScript + React
-- Astro 4.x
-- TypeScript 5.x
-- React 18+ (for interactive components)
-- Canvas API for editor
-- Web Bluetooth API for printer connection
-```
+- 384px width × variable height (400-2000px)
+- Real-time 1-bit monochrome preview
+- Interactive manipulation via Fabric.js (drag, resize, rotate)
+- Auto-save & restore from localStorage
+- WYSIWYG rendering
 
-### Main Libraries
+### Layer Management
 
-```bash
-pnpm add mxw01-thermal-printer  # MXW01 thermal printer library
-```
-
-### Thermal Printer Specifications
-
-- **Model**: MXW01 (Cat Printer compatible)
-- **Print Width**: **384 pixels** (48 bytes per line)
-- **Print Mode**: 1-bit monochrome (black/white only)
-- **Encoding**: Left to right, top to bottom
-- **Bit Order**: LSB first (bit 0 = leftmost pixel)
-- **Minimum Data**: 4320 bytes (90 lines minimum)
-- **Connection**: Bluetooth Low Energy (BLE)
-- **Protocol**: Custom BLE protocol with 3 characteristics:
-  - `AE01` (Control): Commands for status, print request, intensity
-  - `AE02` (Notify): Status responses and print completion
-  - `AE03` (Data): Image data transfer in chunks
+- Non-destructive editing
+- Drag & drop reordering
+- Lock/unlock layers
+- Show/hide visibility
+- Layer selection sync with canvas
+- Delete with confirmation dialog
 
 ### Image Processing
 
+- **5 Dithering Methods**:
+  - Floyd-Steinberg (steinberg) - Photos
+  - Atkinson - Illustrations
+  - Ordered/Bayer (bayer) - Patterns
+  - Halftone (pattern) - Dot effect
+  - Threshold - High contrast
+- Smart filters (change dithering post-upload)
+- Brightness adjustment (0-255)
+- Contrast adjustment (0-200)
+- Color inversion
+- Original image preservation for reprocessing
+
+### Text Tool
+
+- Multi-line text support
+- **6 Font Families**:
+  - Modern: Inter, Space Grotesk
+  - Monospace: Courier New
+  - Classic: Arial, Georgia, Times New Roman
+- Bold and italic styling
+- Alignment (left, center, right)
+- Font sizes (8-200px)
+- Live editing via Properties Panel
+
+### Properties Panel
+
+- Real-time text editing
+- Font customization
+- Canvas height adjustment
+- Image information display
+- Context-aware UI (adapts to layer type)
+
+### Printer Integration
+
+- Web Bluetooth connection (MXW01)
+- Battery level monitoring
+- Status indicators
+- Error handling
+- Print with configurable parameters:
+  - Dither method
+  - Brightness (0-255)
+  - Intensity (0-255, default: 93)
+
+### User Experience
+
+- Toast notifications system
+- Confirmation dialogs
+- Loading states
+- Neuro Core design system
+- Glassmorphism effects
+- Smooth animations
+
+---
+
+## 🔧 Technical Stack
+
+### Framework & Libraries
+
 ```typescript
-// Custom dithering algorithms (src/lib/dithering/)
-- Floyd-Steinberg (recommended for photos)
-- Atkinson (good for illustrations/comics)
-- Ordered/Bayer (patterns and textures)
-- Halftone (dot pattern effect)
-- Threshold (simple black/white conversion)
+- Astro 4.x          // Web framework
+- React 18+          // Interactive components
+- TypeScript 5.x     // Type safety
+- Fabric.js 6.x      // Interactive canvas
+- Tailwind CSS v4    // Styling
 ```
 
-### Paper Sizes
+### Key Dependencies
 
-- **Standard**: 384px width × variable height
-- **Minimum print**: 90 lines (4320 bytes)
-- **Physical size**: ~58mm thermal paper width
-- **Scale**: ~6.8 pixels per millimeter
+```bash
+mxw01-thermal-printer  # MXW01 printer library
+```
+
+### APIs
+
+- Web Bluetooth API (printer connection)
+- Canvas API (image rendering)
+- LocalStorage API (state persistence)
 
 ---
 
-## Neuro Core Design
+## 📱 Printer Specifications
 
-### UI Principles
+### MXW01 (Cat Printer)
 
-1. **Modern typography with tech feel**
+- **Print Width**: 384 pixels (48 bytes per line)
+- **Print Mode**: 1-bit monochrome
+- **Encoding**: Left to right, top to bottom
+- **Bit Order**: LSB first
+- **Minimum Data**: 4320 bytes (90 lines)
+- **Connection**: Bluetooth Low Energy
+- **Protocol**: Custom BLE with 3 characteristics:
+  - `AE01` (Control) - Commands
+  - `AE02` (Notify) - Status responses
+  - `AE03` (Data) - Image data transfer
 
-   - Clean sans-serif headers
-   - Variable font weights
-   - Clear information hierarchy
+### Paper Specifications
 
-2. **Sleek and functional layout**
-
-   - Subtle borders with glow effects
-   - Soft shadows and gradients
-   - Balanced spacing with rhythm
-
-3. **Blue-purple color palette**
-
-   - Primary: Deep blue (#1E40AF, #3B82F6)
-   - Secondary: Vibrant purple (#7C3AED, #A78BFA)
-   - Accent: Cyan (#06B6D4)
-   - Neutral: Dark slate (#0F172A, #1E293B, #334155)
-   - Background: Near-black with blue tint (#0A0E1A)
-
-4. **Visual elements**
-   - Rounded corners with subtle radius
-   - Neon glow effects on hover
-   - Glassmorphism panels
-   - Gradient borders
-   - Smooth transitions and animations
-
-### Component Structure
-
-```
-┌─────────────────────────────────────────┐
-│  ⚡ THERMAL PRINT STUDIO                │ Neuro blue header
-├─────────┬───────────────────┬───────────┤
-│ TOOLS   │                   │  LAYERS   │ Glass panels
-│ 🖼️      │                   │           │
-│ [IMG]   │                   │  👁️ Layer3│
-│ [TXT]   │     CANVAS        │  👁️ Layer2│
-│ [DRAW]  │                   │  🔒 Layer1│
-│ [ICON]  │                   │           │
-│         │                   │  PROPS    │
-│ EFFECTS │                   │  ╔══════╗ │ Gradient borders
-│ ▼       │                   │  ║      ║ │
-├─────────┴───────────────────┴───────────┤
-│  [💾 SAVE] [📤 EXPORT] [🖨️ PRINT]      │ Glow on hover
-└─────────────────────────────────────────┘
-```
+- Width: ~58mm thermal paper
+- Scale: ~6.8 pixels per millimeter
+- Format: Variable length
 
 ---
 
-## User Flow
+## 🎨 Neuro Core Design System
 
-### 1. Start
+### Color Palette
 
-```
-New Project → Select size → Empty canvas
-Open Project → Load JSON → Restore state
-Template → Choose design → Customize
-```
+- **Primary**: Deep blue (#1E40AF, #3B82F6)
+- **Secondary**: Vibrant purple (#7C3AED, #A78BFA)
+- **Accent**: Cyan (#06B6D4)
+- **Neutral**: Dark slate (#0F172A, #1E293B, #334155)
+- **Background**: Near-black with blue tint (#0A0E1A)
 
-### 2. Design
+### Visual Elements
 
-```
-Add elements → Apply effects → Organize layers
-↓
-Adjust dithering → Apply textures → Preview
-↓
-Refine details → Save versions
-```
+- Glassmorphism panels with backdrop blur
+- Neon glow effects on hover
+- Gradient borders
+- Smooth transitions (200-300ms)
+- Rounded corners (4-8px)
 
-### 3. Print
+### Typography
 
-```
-Connect printer → Configure parameters → Preview
-↓
-Adjust density → Test print → Final print
-```
+- Primary: Inter, Space Grotesk
+- Monospace: Courier New
+- Variable font weights for hierarchy
+- Clear contrast and readability
 
 ---
 
-## Unique Features
-
-### 1. **Procedural Textures**
-
-Real-time texture generation system to simulate volumes and shadows without actual grayscale.
-
-### 2. **Retro Presets**
-
-Collection of effects inspired by:
-
-- 80s receipt printers
-- Punk fanzines
-- Vintage newspapers
-- ASCII art
-- 1-bit pixel art
-
-### 3. **Experimental Mode**
-
-- Glitch effects
-- Datamoshing
-- Artistic error diffusion
-- Random texture generation
-
-### 4. **Thermal Optimization**
-
-Specific algorithms to maximize quality on thermal printers:
-
-- Reduction of solid black areas (heat saving)
-- Intelligent pixel distribution
-- Prevention of banding and artifacts
-
----
-
-## Astro Project Structure
+## 📁 Project Structure
 
 ```
-thermal-print-studio/
+brutal-print/
 ├── src/
 │   ├── components/
-│   │   ├── Canvas.astro
-│   │   ├── Toolbar.astro
-│   │   ├── LayerPanel.astro
-│   │   ├── PropertiesPanel.astro
-│   │   ├── DitheringControls.astro
-│   │   └── PrinterConnection.astro
+│   │   ├── CanvasManager.tsx       # Main controller
+│   │   ├── FabricCanvas.tsx        # Interactive canvas (Fabric.js)
+│   │   ├── LayersPanel.tsx         # Layer management UI
+│   │   ├── PropertiesPanel.tsx     # Properties editor
+│   │   ├── PrinterConnection.tsx   # Bluetooth connection
+│   │   ├── ImageUploader.tsx       # Image upload & processing
+│   │   ├── TextTool.tsx            # Text editor
+│   │   └── ToastContainer.tsx      # Notifications
+│   ├── contexts/
+│   │   ├── PrinterContext.tsx      # Shared printer state
+│   │   └── ToastContext.tsx        # Global toast manager
+│   ├── hooks/
+│   │   ├── usePrinter.ts           # Printer state management
+│   │   ├── useLayers.ts            # Layer state management
+│   │   ├── useToast.ts             # Toast notifications
+│   │   └── useCanvasPersistence.ts # LocalStorage sync
 │   ├── lib/
 │   │   ├── dithering/
-│   │   │   ├── floyd-steinberg.ts
-│   │   │   ├── atkinson.ts
-│   │   │   ├── ordered.ts
-│   │   │   └── textures.ts
+│   │   │   ├── algorithms.ts       # 5 dithering algorithms
+│   │   │   ├── imageProcessing.ts  # Image utilities
+│   │   │   └── types.ts            # Type definitions
 │   │   ├── canvas/
-│   │   │   ├── layer-manager.ts
-│   │   │   ├── drawing-tools.ts
-│   │   │   └── transformations.ts
-│   │   ├── printer/
-│   │   │   ├── connection.ts
-│   │   │   ├── commands.ts
-│   │   │   └── preview.ts
-│   │   └── utils/
-│   │       ├── image-processing.ts
-│   │       ├── export.ts
-│   │       └── storage.ts
-│   ├── styles/
-│   │   ├── neuro-core.css
-│   │   └── global.css
-│   └── pages/
-│       └── index.astro
+│   │   │   └── canvasHelpers.ts    # Canvas utilities
+│   │   └── logger.ts               # Debug logging system
+│   ├── utils/
+│   │   ├── canvasRenderer.ts       # Layer rendering
+│   │   └── imageReprocessor.ts     # Smart filter reprocessing
+│   ├── types/
+│   │   ├── layer.ts                # Layer type definitions
+│   │   └── toast.ts                # Toast type definitions
+│   └── styles/
+│       └── global.css              # Neuro Core design system
 ├── public/
-│   ├── textures/
-│   ├── icons/
-│   └── templates/
-└── package.json
+└── docs/                           # Documentation
 ```
 
 ---
 
-## Feature Roadmap
+## 🔄 Data Flow
 
-### MVP (v1.0)
+### Printer Connection
 
-1. Basic canvas with layers
-2. Import images
-3. Text with basic fonts
-4. Floyd-Steinberg and Threshold dithering
-5. Basic connection and printing
-6. Save/load projects
+```
+User clicks Connect → Web Bluetooth API → Select MXW01
+→ ThermalPrinterClient.connect() → Event: 'connected'
+→ PrinterContext updates → Components receive state
+→ UI shows "Connected" + battery level
+```
 
-### v1.5
+### Image Processing
 
-1. Drawing tool
-2. Multiple dithering methods
-3. Basic textures
-4. Icons and emojis
-5. Advanced transformations
+```
+User uploads image → ImageUploader processes
+→ Apply dithering algorithm → Convert to 1-bit
+→ Store original as base64 → Create ImageLayer
+→ useLayers.addImageLayer() → Render to canvas
+→ Auto-save to localStorage
+```
 
-### v2.0
+### Interactive Canvas
 
-1. Complete procedural textures
-2. Retro presets
-3. Experimental mode
-4. Pre-designed templates
-5. Advanced export
-6. Thermal optimization
+```
+User drags element → Fabric.js fires 'modified' event
+→ FabricCanvas updates layer position
+→ useLayers.updateLayer() → State updated
+→ LayersPanel reflects changes
+→ Auto-save triggered
+```
+
+### Printing
+
+```
+User clicks Print → CanvasManager.handlePrint()
+→ Check isConnected → Export Fabric canvas
+→ usePrinter.printCanvas(canvas, options)
+→ ThermalPrinterClient.print() → Send to printer
+→ Show toast notification
+```
 
 ---
 
-This application combines the nostalgia of monochrome design with modern tools, offering a unique experience for creating printable art on thermal printers with a modern Neuro Core visual style featuring blue and purple tones.
+## 🗺️ Roadmap
+
+### Completed
+
+- ✅ v1.0 - MVP with printer integration
+- ✅ v1.5 - Layer management & toast system
+- ✅ v1.6 - Interactive canvas (Fabric.js)
+- ✅ v1.7 - Properties Panel & live editing
+- ✅ v1.8 - Smart filters & persistence
+
+### Planned v2.0
+
+- [ ] Drawing tools with brushes
+- [ ] Shape tools (rectangles, circles, lines)
+- [ ] Icons and emojis library
+- [ ] Undo/redo system
+- [ ] Snap to grid & alignment guides
+- [ ] Group selection & multi-select
+- [ ] Copy/paste functionality
+- [ ] Template library
+- [ ] Export to PNG/PDF
+- [ ] Multiple texture patterns
+- [ ] Procedural texture generation
+- [ ] Advanced image filters
+- [ ] Batch processing
+
+---
+
+## 🔍 Browser Compatibility
+
+### Supported
+
+- ✅ Chrome/Chromium 56+
+- ✅ Microsoft Edge 79+
+- ✅ Opera 43+
+- ✅ Chrome for Android
+
+### Not Supported
+
+- ❌ Firefox (no Web Bluetooth API)
+- ❌ Safari (no Web Bluetooth API as of 2024)
+
+**Note**: Web Bluetooth API is required for printer connection.
+
+---
+
+## 📊 Performance Characteristics
+
+### Rendering
+
+- 60fps canvas manipulation (Fabric.js hardware acceleration)
+- Efficient layer rendering (only modified objects)
+- Real-time dithering preview
+
+### Memory
+
+- LocalStorage state: ~50KB per saved canvas
+- Fabric.js overhead: ~200KB
+- Efficient image storage (base64)
+
+### Network
+
+- Zero network calls (fully offline-capable)
+- Web Bluetooth only for printer communication
+
+---
+
+## 🎯 Design Principles
+
+1. **WYSIWYG** - What you see is what you print
+2. **Non-destructive** - All edits are reversible
+3. **Real-time feedback** - Instant visual updates
+4. **Professional UX** - Canva-like experience
+5. **Thermal-optimized** - 1-bit preview at all times
+6. **Auto-save** - Never lose work
+7. **Type-safe** - TypeScript throughout
+
+---
+
+**Version**: 1.8.0  
+**Last Updated**: November 16, 2025
+
+This specification reflects the **current implementation** of Thermal Print Studio.
+For future features, see the Roadmap section.
