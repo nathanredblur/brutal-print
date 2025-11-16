@@ -12,7 +12,7 @@ import ToolsBar from "./ToolsBar";
 import CanvasSettingsPanel from "./CanvasSettingsPanel";
 import ImageUploader from "./ImageUploader";
 import PrinterConnection from "./PrinterConnection";
-import TextTool from "./TextTool";
+import TextGalleryPanel from "./TextGalleryPanel";
 import FabricCanvas, { type FabricCanvasRef } from "./FabricCanvas";
 import { PRINTER_WIDTH } from "../lib/dithering";
 import { logger } from "../lib/logger";
@@ -376,7 +376,7 @@ export default function CanvasManager() {
         "Text added!",
         `${layerName} has been added to the canvas.`
       );
-      setShowTextTool(false);
+      // Panel stays open to allow adding multiple text elements
     },
     [addTextLayer, layers.length, toast]
   );
@@ -825,10 +825,10 @@ export default function CanvasManager() {
               </div>
             )}
 
-            {/* Text Tool */}
+            {/* Text Gallery Panel */}
             {showTextTool && !advancedPanel && (
               <div className="panel">
-                <TextTool
+                <TextGalleryPanel
                   onAddText={handleAddText}
                   onClose={() => setShowTextTool(false)}
                 />
