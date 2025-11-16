@@ -12,6 +12,8 @@ interface SizeSectionProps {
 }
 
 const SizeSection: FC<SizeSectionProps> = ({ layer, onUpdate }) => {
+  const isTextLayer = layer.type === "text";
+
   return (
     <PropertySection
       title="Size"
@@ -42,6 +44,8 @@ const SizeSection: FC<SizeSectionProps> = ({ layer, onUpdate }) => {
               onUpdate(layer.id, { height: parseFloat(e.target.value) || 1 })
             }
             min="1"
+            disabled={isTextLayer}
+            title={isTextLayer ? "Height is determined by text content" : ""}
           />
         </div>
       </div>
@@ -82,6 +86,12 @@ const SizeSection: FC<SizeSectionProps> = ({ layer, onUpdate }) => {
           outline: none;
           border-color: var(--color-purple-primary);
           box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2);
+        }
+
+        .property-field input:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          background: var(--color-bg-secondary);
         }
       `}</style>
     </PropertySection>

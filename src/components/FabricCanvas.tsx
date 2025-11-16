@@ -38,7 +38,15 @@ interface FabricObjectWithData extends fabric.FabricObject {
 
 const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
   (
-    { width, height, layers, selectedLayerId, onLayerUpdate, onLayerSelect, onCanvasSelect },
+    {
+      width,
+      height,
+      layers,
+      selectedLayerId,
+      onLayerUpdate,
+      onLayerSelect,
+      onCanvasSelect,
+    },
     ref
   ) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -154,8 +162,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       // Handle text editing
       fabricCanvas.on("text:changed", (e: any) => {
         const obj = e.target as FabricObjectWithData;
-        if (obj?.data?.layerId && obj instanceof fabric.Textbox) {
-          const layerId = obj.data.layerId;
+        const layerId = obj?.data?.layerId;
+        if (layerId && obj instanceof fabric.Textbox) {
           const newText = obj.text || "";
 
           logger.info("FabricCanvas", "📝 Text changed in canvas", {
@@ -383,6 +391,11 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           editable: !layer.locked,
           opacity: layer.opacity,
         }) as FabricObjectWithData;
+
+        // Disable top and bottom middle controls
+        text.setControlVisible("mt", false);
+        text.setControlVisible("mb", false);
+
         obj = text;
       }
 
@@ -762,6 +775,11 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           selectable: true,
           editable: true,
         }) as FabricObjectWithData;
+
+        // Disable top and bottom middle controls
+        textObj.setControlVisible("mt", false);
+        textObj.setControlVisible("mb", false);
+
         textObj.data = { layerId };
         fabricCanvas.add(textObj);
         layerObjectsRef.current.set(layerId, textObj);
