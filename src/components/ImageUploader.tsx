@@ -269,18 +269,18 @@ export default function ImageUploader({
         .image-uploader {
           display: flex;
           flex-direction: column;
-          gap: 1rem;
+          gap: 0.75rem;
         }
 
         .drop-zone {
           border: 2px dashed var(--color-border);
-          border-radius: var(--radius-lg);
-          padding: 2rem;
+          border-radius: var(--radius-md);
+          padding: 1.5rem;
           text-align: center;
           cursor: pointer;
           transition: all var(--transition-normal);
           background: var(--color-bg-secondary);
-          min-height: 300px;
+          min-height: 200px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -307,9 +307,9 @@ export default function ImageUploader({
 
         .preview-image {
           max-width: 100%;
-          max-height: 500px;
+          max-height: 300px;
           image-rendering: pixelated;
-          border-radius: var(--radius-md);
+          border-radius: var(--radius-sm);
         }
 
         .processing-overlay {
@@ -320,14 +320,14 @@ export default function ImageUploader({
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          gap: 1rem;
-          border-radius: var(--radius-lg);
+          gap: 0.5rem;
+          border-radius: var(--radius-md);
         }
 
         .spinner-large {
-          width: 40px;
-          height: 40px;
-          border: 3px solid rgba(167, 139, 250, 0.3);
+          width: 30px;
+          height: 30px;
+          border: 2px solid rgba(167, 139, 250, 0.3);
           border-top-color: var(--color-purple-primary);
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
@@ -337,44 +337,46 @@ export default function ImageUploader({
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 1rem;
+          gap: 0.5rem;
           color: var(--color-text-secondary);
         }
 
         .drop-placeholder svg {
           color: var(--color-purple-primary);
+          width: 36px;
+          height: 36px;
         }
 
         .drop-placeholder p {
-          font-size: 1rem;
+          font-size: 0.875rem;
           font-weight: 600;
           color: var(--color-text-primary);
           margin: 0;
         }
 
         .drop-placeholder span {
-          font-size: 0.875rem;
+          font-size: 0.75rem;
           color: var(--color-text-muted);
         }
 
         .processing-controls {
           display: flex;
           flex-direction: column;
-          gap: 1rem;
-          padding: 1rem;
+          gap: 0.625rem;
+          padding: 0.75rem;
           background: var(--color-bg-tertiary);
           border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
+          border-radius: var(--radius-sm);
         }
 
         .control-group {
           display: flex;
           flex-direction: column;
-          gap: 0.5rem;
+          gap: 0.375rem;
         }
 
         .control-group label {
-          font-size: 0.875rem;
+          font-size: 0.75rem;
           font-weight: 600;
           color: var(--color-text-secondary);
         }
@@ -389,12 +391,12 @@ export default function ImageUploader({
           color: var(--color-text-primary);
           border: 1px solid var(--color-border);
           border-radius: var(--radius-sm);
-          padding: 0.5rem;
-          font-size: 0.875rem;
+          padding: 0.375rem 0.5rem;
+          font-size: 0.75rem;
         }
 
         .control-group input[type="range"] {
-          height: 4px;
+          height: 3px;
           background: var(--color-bg-secondary);
           border-radius: 2px;
           outline: none;
@@ -403,8 +405,8 @@ export default function ImageUploader({
 
         .control-group input[type="range"]::-webkit-slider-thumb {
           -webkit-appearance: none;
-          width: 16px;
-          height: 16px;
+          width: 12px;
+          height: 12px;
           background: var(--color-purple-primary);
           border-radius: 50%;
           cursor: pointer;
@@ -418,8 +420,8 @@ export default function ImageUploader({
         }
 
         .checkbox-group input[type="checkbox"] {
-          width: 18px;
-          height: 18px;
+          width: 16px;
+          height: 16px;
           cursor: pointer;
         }
       `}</style>

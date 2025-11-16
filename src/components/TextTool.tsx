@@ -1,5 +1,5 @@
 // Text tool component for adding text to canvas
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 interface TextToolProps {
   onAddText: (text: string, options: TextOptions) => void;
@@ -11,48 +11,48 @@ interface TextOptions {
   fontFamily: string;
   bold: boolean;
   italic: boolean;
-  align: 'left' | 'center' | 'right';
+  align: "left" | "center" | "right";
   x: number;
   y: number;
 }
 
 const FONT_FAMILIES = [
-  { value: 'Inter, sans-serif', label: 'Inter' },
-  { value: 'Space Grotesk, sans-serif', label: 'Space Grotesk' },
-  { value: 'IBM Plex Mono, monospace', label: 'IBM Plex Mono' },
-  { value: 'Space Mono, monospace', label: 'Space Mono' },
-  { value: 'Courier Prime, monospace', label: 'Courier Prime' },
-  { value: 'Arial, sans-serif', label: 'Arial' },
-  { value: 'Times New Roman, serif', label: 'Times New Roman' },
+  { value: "Inter, sans-serif", label: "Inter" },
+  { value: "Space Grotesk, sans-serif", label: "Space Grotesk" },
+  { value: "IBM Plex Mono, monospace", label: "IBM Plex Mono" },
+  { value: "Space Mono, monospace", label: "Space Mono" },
+  { value: "Courier Prime, monospace", label: "Courier Prime" },
+  { value: "Arial, sans-serif", label: "Arial" },
+  { value: "Times New Roman, serif", label: "Times New Roman" },
 ];
 
 export default function TextTool({ onAddText, onClose }: TextToolProps) {
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
   const [options, setOptions] = useState<TextOptions>({
     fontSize: 24,
-    fontFamily: 'Inter, sans-serif',
+    fontFamily: "Inter, sans-serif",
     bold: false,
     italic: false,
-    align: 'left',
+    align: "left",
     x: 192, // Center of 384px width
     y: 100,
   });
 
   const handleAddText = useCallback(() => {
     if (!text.trim()) {
-      alert('Please enter some text');
+      alert("Please enter some text");
       return;
     }
 
     onAddText(text, options);
-    setText('');
+    setText("");
   }, [text, options, onAddText]);
 
   const updateOption = <K extends keyof TextOptions>(
     key: K,
     value: TextOptions[K]
   ) => {
-    setOptions(prev => ({ ...prev, [key]: value }));
+    setOptions((prev) => ({ ...prev, [key]: value }));
   };
 
   return (
@@ -82,10 +82,10 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
           <label>Font</label>
           <select
             value={options.fontFamily}
-            onChange={(e) => updateOption('fontFamily', e.target.value)}
+            onChange={(e) => updateOption("fontFamily", e.target.value)}
             className="select-input"
           >
-            {FONT_FAMILIES.map(font => (
+            {FONT_FAMILIES.map((font) => (
               <option key={font.value} value={font.value}>
                 {font.label}
               </option>
@@ -101,7 +101,7 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
             min="8"
             max="72"
             value={options.fontSize}
-            onChange={(e) => updateOption('fontSize', Number(e.target.value))}
+            onChange={(e) => updateOption("fontSize", Number(e.target.value))}
             className="range-input"
           />
         </div>
@@ -111,15 +111,15 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
           <label>Style</label>
           <div className="style-buttons">
             <button
-              className={`style-btn ${options.bold ? 'active' : ''}`}
-              onClick={() => updateOption('bold', !options.bold)}
+              className={`style-btn ${options.bold ? "active" : ""}`}
+              onClick={() => updateOption("bold", !options.bold)}
               title="Bold"
             >
               <strong>B</strong>
             </button>
             <button
-              className={`style-btn ${options.italic ? 'active' : ''}`}
-              onClick={() => updateOption('italic', !options.italic)}
+              className={`style-btn ${options.italic ? "active" : ""}`}
+              onClick={() => updateOption("italic", !options.italic)}
               title="Italic"
             >
               <em>I</em>
@@ -132,36 +132,63 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
           <label>Alignment</label>
           <div className="align-buttons">
             <button
-              className={`align-btn ${options.align === 'left' ? 'active' : ''}`}
-              onClick={() => updateOption('align', 'left')}
+              className={`align-btn ${
+                options.align === "left" ? "active" : ""
+              }`}
+              onClick={() => updateOption("align", "left")}
               title="Align Left"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="3" y1="6" x2="21" y2="6"/>
-                <line x1="3" y1="12" x2="15" y2="12"/>
-                <line x1="3" y1="18" x2="18" y2="18"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="15" y2="12" />
+                <line x1="3" y1="18" x2="18" y2="18" />
               </svg>
             </button>
             <button
-              className={`align-btn ${options.align === 'center' ? 'active' : ''}`}
-              onClick={() => updateOption('align', 'center')}
+              className={`align-btn ${
+                options.align === "center" ? "active" : ""
+              }`}
+              onClick={() => updateOption("align", "center")}
               title="Align Center"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="3" y1="6" x2="21" y2="6"/>
-                <line x1="6" y1="12" x2="18" y2="12"/>
-                <line x1="5" y1="18" x2="19" y2="18"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="6" y1="12" x2="18" y2="12" />
+                <line x1="5" y1="18" x2="19" y2="18" />
               </svg>
             </button>
             <button
-              className={`align-btn ${options.align === 'right' ? 'active' : ''}`}
-              onClick={() => updateOption('align', 'right')}
+              className={`align-btn ${
+                options.align === "right" ? "active" : ""
+              }`}
+              onClick={() => updateOption("align", "right")}
               title="Align Right"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="3" y1="6" x2="21" y2="6"/>
-                <line x1="9" y1="12" x2="21" y2="12"/>
-                <line x1="6" y1="18" x2="21" y2="18"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="9" y1="12" x2="21" y2="12" />
+                <line x1="6" y1="18" x2="21" y2="18" />
               </svg>
             </button>
           </div>
@@ -178,7 +205,7 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
                 min="0"
                 max="384"
                 value={options.x}
-                onChange={(e) => updateOption('x', Number(e.target.value))}
+                onChange={(e) => updateOption("x", Number(e.target.value))}
                 className="number-input"
               />
             </div>
@@ -188,7 +215,7 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
                 type="number"
                 min="0"
                 value={options.y}
-                onChange={(e) => updateOption('y', Number(e.target.value))}
+                onChange={(e) => updateOption("y", Number(e.target.value))}
                 className="number-input"
               />
             </div>
@@ -202,12 +229,12 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
             style={{
               fontFamily: options.fontFamily,
               fontSize: `${Math.min(options.fontSize, 32)}px`,
-              fontWeight: options.bold ? 'bold' : 'normal',
-              fontStyle: options.italic ? 'italic' : 'normal',
+              fontWeight: options.bold ? "bold" : "normal",
+              fontStyle: options.italic ? "italic" : "normal",
               textAlign: options.align,
             }}
           >
-            {text || 'Preview your text here...'}
+            {text || "Preview your text here..."}
           </div>
         </div>
 
@@ -233,13 +260,13 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding-bottom: 1rem;
+          padding-bottom: 0.75rem;
           border-bottom: 1px solid var(--color-border);
-          margin-bottom: 1rem;
+          margin-bottom: 0.75rem;
         }
 
         .tool-header h3 {
-          font-size: 0.875rem;
+          font-size: 0.75rem;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
@@ -251,11 +278,11 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
           background: transparent;
           border: none;
           color: var(--color-text-secondary);
-          font-size: 1.5rem;
+          font-size: 1.25rem;
           cursor: pointer;
           padding: 0;
-          width: 24px;
-          height: 24px;
+          width: 20px;
+          height: 20px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -271,7 +298,7 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
         .tool-content {
           display: flex;
           flex-direction: column;
-          gap: 1rem;
+          gap: 0.625rem;
           flex: 1;
           overflow-y: auto;
         }
@@ -279,11 +306,11 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
         .control-group {
           display: flex;
           flex-direction: column;
-          gap: 0.5rem;
+          gap: 0.375rem;
         }
 
         .control-group label {
-          font-size: 0.75rem;
+          font-size: 0.6875rem;
           font-weight: 600;
           color: var(--color-text-secondary);
           text-transform: uppercase;
@@ -296,10 +323,10 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
           border: 1px solid var(--color-border);
           border-radius: var(--radius-sm);
           padding: 0.5rem;
-          font-size: 0.875rem;
+          font-size: 0.75rem;
           font-family: inherit;
           resize: vertical;
-          min-height: 80px;
+          min-height: 60px;
         }
 
         .text-input:focus {
@@ -313,14 +340,14 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
           color: var(--color-text-primary);
           border: 1px solid var(--color-border);
           border-radius: var(--radius-sm);
-          padding: 0.5rem;
-          font-size: 0.875rem;
+          padding: 0.375rem 0.5rem;
+          font-size: 0.75rem;
           cursor: pointer;
         }
 
         .range-input {
           width: 100%;
-          height: 4px;
+          height: 3px;
           background: var(--color-bg-secondary);
           border-radius: 2px;
           outline: none;
@@ -329,8 +356,8 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
 
         .range-input::-webkit-slider-thumb {
           -webkit-appearance: none;
-          width: 16px;
-          height: 16px;
+          width: 12px;
+          height: 12px;
           background: var(--color-purple-primary);
           border-radius: 50%;
           cursor: pointer;
@@ -339,13 +366,13 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
         .style-buttons,
         .align-buttons {
           display: flex;
-          gap: 0.5rem;
+          gap: 0.375rem;
         }
 
         .style-btn,
         .align-btn {
           flex: 1;
-          padding: 0.5rem;
+          padding: 0.375rem 0.5rem;
           background: var(--color-bg-secondary);
           color: var(--color-text-secondary);
           border: 1px solid var(--color-border);
@@ -373,19 +400,19 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
         .position-inputs {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 0.5rem;
+          gap: 0.375rem;
         }
 
         .position-field {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
+          gap: 0.375rem;
         }
 
         .position-field span {
-          font-size: 0.75rem;
+          font-size: 0.6875rem;
           color: var(--color-text-muted);
-          min-width: 20px;
+          min-width: 16px;
         }
 
         .number-input {
@@ -395,7 +422,7 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
           border: 1px solid var(--color-border);
           border-radius: var(--radius-sm);
           padding: 0.375rem 0.5rem;
-          font-size: 0.875rem;
+          font-size: 0.75rem;
         }
 
         .number-input:focus {
@@ -407,20 +434,21 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
           background: white;
           border: 1px solid var(--color-border);
           border-radius: var(--radius-sm);
-          padding: 1rem;
-          min-height: 80px;
+          padding: 0.75rem;
+          min-height: 60px;
         }
 
         .text-preview {
           color: #000000;
           word-wrap: break-word;
+          font-size: 0.875rem;
         }
 
         .tool-actions {
           display: flex;
-          gap: 0.5rem;
+          gap: 0.375rem;
           margin-top: auto;
-          padding-top: 1rem;
+          padding-top: 0.75rem;
           border-top: 1px solid var(--color-border);
         }
 
@@ -431,4 +459,3 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
     </div>
   );
 }
-

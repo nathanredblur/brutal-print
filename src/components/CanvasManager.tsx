@@ -888,15 +888,15 @@ export default function CanvasManager() {
         }
 
         .additional-panel {
-          width: 360px;
+          width: 280px;
           background: linear-gradient(135deg, rgba(21, 24, 54, 0.6) 0%, rgba(12, 15, 38, 0.8) 100%);
           backdrop-filter: blur(10px);
           border-right: 1px solid var(--color-border);
-          padding: 1rem;
+          padding: 0.75rem;
           overflow-y: auto;
           display: flex;
           flex-direction: column;
-          gap: 1rem;
+          gap: 0.75rem;
         }
 
         .canvas-container {
@@ -913,7 +913,7 @@ export default function CanvasManager() {
           align-items: center;
           justify-content: center;
           overflow: auto;
-          padding: 2rem;
+          padding: 1.5rem;
         }
 
         .canvas-section > div {
@@ -925,19 +925,19 @@ export default function CanvasManager() {
         .panel {
           background: var(--color-bg-tertiary);
           border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
-          padding: 1rem;
+          border-radius: var(--radius-sm);
+          padding: 0.75rem;
         }
 
         .panel-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 1rem;
+          margin-bottom: 0.75rem;
         }
 
         .panel-header h3 {
-          font-size: 0.875rem;
+          font-size: 0.75rem;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
@@ -949,11 +949,11 @@ export default function CanvasManager() {
           background: transparent;
           border: none;
           color: var(--color-text-secondary);
-          font-size: 1.5rem;
+          font-size: 1.25rem;
           cursor: pointer;
           padding: 0;
-          width: 24px;
-          height: 24px;
+          width: 20px;
+          height: 20px;
           display: flex;
           align-items: center;
           justify-content: center;

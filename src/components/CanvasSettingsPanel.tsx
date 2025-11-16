@@ -96,17 +96,17 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
         .canvas-settings-panel {
           display: flex;
           flex-direction: column;
-          gap: 1.5rem;
+          gap: 0.75rem;
         }
 
         .settings-section {
           display: flex;
           flex-direction: column;
-          gap: 0.75rem;
+          gap: 0.5rem;
         }
 
         .settings-label {
-          font-size: 0.75rem;
+          font-size: 0.6875rem;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
@@ -121,13 +121,13 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
 
         .height-input {
           flex: 1;
-          padding: 0.75rem;
-          padding-right: 3rem;
+          padding: 0.5rem;
+          padding-right: 2.5rem;
           background: var(--color-bg-secondary);
           border: 1px solid var(--color-border);
           border-radius: var(--radius-sm);
           color: var(--color-text-primary);
-          font-size: 1rem;
+          font-size: 0.875rem;
           font-weight: 600;
           outline: none;
           transition: all var(--transition-fast);
@@ -140,17 +140,17 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
 
         .input-unit {
           position: absolute;
-          right: 0.75rem;
-          font-size: 0.875rem;
+          right: 0.5rem;
+          font-size: 0.75rem;
           color: var(--color-text-muted);
           pointer-events: none;
         }
 
         .height-slider {
           width: 100%;
-          height: 6px;
+          height: 4px;
           background: var(--color-bg-secondary);
-          border-radius: 3px;
+          border-radius: 2px;
           outline: none;
           -webkit-appearance: none;
         }
@@ -158,8 +158,8 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
         .height-slider::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
-          width: 16px;
-          height: 16px;
+          width: 12px;
+          height: 12px;
           background: var(--color-purple-primary);
           border-radius: 50%;
           cursor: pointer;
@@ -172,8 +172,8 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
         }
 
         .height-slider::-moz-range-thumb {
-          width: 16px;
-          height: 16px;
+          width: 12px;
+          height: 12px;
           background: var(--color-purple-primary);
           border-radius: 50%;
           cursor: pointer;
@@ -189,15 +189,15 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
         .preset-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 0.5rem;
+          gap: 0.375rem;
         }
 
         .preset-btn {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 0.25rem;
-          padding: 0.875rem;
+          gap: 0.125rem;
+          padding: 0.5rem;
           background: var(--color-bg-secondary);
           border: 1px solid var(--color-border);
           border-radius: var(--radius-sm);
@@ -216,16 +216,16 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
           background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
           border-color: var(--color-purple-primary);
           color: var(--color-purple-primary);
-          box-shadow: 0 0 10px rgba(167, 139, 250, 0.3);
+          box-shadow: 0 0 8px rgba(167, 139, 250, 0.25);
         }
 
         .preset-name {
-          font-size: 0.75rem;
+          font-size: 0.6875rem;
           font-weight: 600;
         }
 
         .preset-size {
-          font-size: 0.875rem;
+          font-size: 0.75rem;
           font-weight: 500;
           opacity: 0.7;
         }
@@ -234,10 +234,10 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
           background: var(--color-bg-secondary);
           border: 1px solid var(--color-border);
           border-radius: var(--radius-sm);
-          padding: 0.75rem;
+          padding: 0.5rem;
           display: flex;
           flex-direction: column;
-          gap: 0.5rem;
+          gap: 0.375rem;
         }
 
         .info-row {
@@ -247,20 +247,20 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
         }
 
         .info-label {
-          font-size: 0.875rem;
+          font-size: 0.75rem;
           color: var(--color-text-muted);
         }
 
         .info-value {
-          font-size: 0.875rem;
+          font-size: 0.75rem;
           font-weight: 600;
           color: var(--color-text-primary);
         }
 
         .settings-note {
           display: flex;
-          gap: 0.75rem;
-          padding: 0.875rem;
+          gap: 0.5rem;
+          padding: 0.5rem;
           background: rgba(6, 182, 212, 0.05);
           border: 1px solid rgba(6, 182, 212, 0.2);
           border-radius: var(--radius-sm);
@@ -270,11 +270,13 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
         .settings-note svg {
           flex-shrink: 0;
           margin-top: 0.125rem;
+          width: 14px;
+          height: 14px;
         }
 
         .settings-note p {
-          font-size: 0.75rem;
-          line-height: 1.5;
+          font-size: 0.6875rem;
+          line-height: 1.4;
           margin: 0;
         }
       `}</style>
