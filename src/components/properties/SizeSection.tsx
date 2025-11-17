@@ -5,6 +5,7 @@
 import type { FC } from "react";
 import type { Layer } from "../../types/layer";
 import PropertySection from "./PropertySection";
+import { Input } from "@/components/ui/input";
 import { Square } from "lucide-react";
 
 interface SizeSectionProps {
@@ -24,7 +25,7 @@ const SizeSection: FC<SizeSectionProps> = ({ layer, onUpdate }) => {
       <div className="property-grid">
         <div className="property-field">
           <label>Width</label>
-          <input
+          <Input
             type="number"
             value={Math.round(layer.width)}
             onChange={(e) =>
@@ -35,7 +36,7 @@ const SizeSection: FC<SizeSectionProps> = ({ layer, onUpdate }) => {
         </div>
         <div className="property-field">
           <label>Height</label>
-          <input
+          <Input
             type="number"
             value={Math.round(layer.height)}
             onChange={(e) =>
@@ -67,29 +68,6 @@ const SizeSection: FC<SizeSectionProps> = ({ layer, onUpdate }) => {
           color: var(--color-text-secondary);
           text-transform: uppercase;
           letter-spacing: 0.05em;
-        }
-
-        .property-field input {
-          width: 100%;
-          padding: 0.5rem;
-          background: var(--color-bg-tertiary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          color: var(--color-text-primary);
-          font-size: 0.875rem;
-          transition: all var(--transition-fast);
-        }
-
-        .property-field input:focus {
-          outline: none;
-          border-color: var(--color-purple-primary);
-          box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2);
-        }
-
-        .property-field input:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-          background: var(--color-bg-secondary);
         }
       `}</style>
     </PropertySection>

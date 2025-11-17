@@ -6,6 +6,7 @@
 import { useState, useMemo } from "react";
 import type { FC, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { X, Search } from "lucide-react";
 
 export interface GalleryItem {
@@ -59,12 +60,12 @@ const Gallery: FC<GalleryProps> = ({
       {/* Search Input */}
       <div className="gallery-search">
         <Search size={14} className="search-icon" />
-        <input
+        <Input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={placeholder}
-          className="gallery-search-input"
+          className="border-0 shadow-none h-auto px-0 py-0 focus-visible:ring-0"
         />
         {searchQuery && (
           <Button
@@ -122,19 +123,6 @@ const Gallery: FC<GalleryProps> = ({
         .search-icon {
           color: var(--color-text-muted);
           flex-shrink: 0;
-        }
-
-        .gallery-search-input {
-          flex: 1;
-          background: transparent;
-          border: none;
-          outline: none;
-          color: var(--color-text-primary);
-          font-size: 0.75rem;
-        }
-
-        .gallery-search-input::placeholder {
-          color: var(--color-text-muted);
         }
 
         .gallery-grid {

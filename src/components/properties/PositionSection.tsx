@@ -5,6 +5,7 @@
 import type { FC } from "react";
 import type { Layer } from "../../types/layer";
 import PropertySection from "./PropertySection";
+import { Input } from "@/components/ui/input";
 import { Move } from "lucide-react";
 
 interface PositionSectionProps {
@@ -22,7 +23,7 @@ const PositionSection: FC<PositionSectionProps> = ({ layer, onUpdate }) => {
       <div className="property-grid">
         <div className="property-field">
           <label>X</label>
-          <input
+          <Input
             type="number"
             value={Math.round(layer.x)}
             onChange={(e) =>
@@ -32,7 +33,7 @@ const PositionSection: FC<PositionSectionProps> = ({ layer, onUpdate }) => {
         </div>
         <div className="property-field">
           <label>Y</label>
-          <input
+          <Input
             type="number"
             value={Math.round(layer.y)}
             onChange={(e) =>
@@ -45,12 +46,13 @@ const PositionSection: FC<PositionSectionProps> = ({ layer, onUpdate }) => {
       <div className="property-field">
         <label>Rotation</label>
         <div className="input-with-unit">
-          <input
+          <Input
             type="number"
             value={Math.round(layer.rotation || 0)}
             onChange={(e) =>
               onUpdate(layer.id, { rotation: parseFloat(e.target.value) || 0 })
             }
+            className="pr-8"
           />
           <span className="unit">°</span>
         </div>
@@ -77,37 +79,15 @@ const PositionSection: FC<PositionSectionProps> = ({ layer, onUpdate }) => {
           letter-spacing: 0.05em;
         }
 
-        .property-field input {
-          width: 100%;
-          padding: 0.5rem;
-          background: var(--color-bg-tertiary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          color: var(--color-text-primary);
-          font-size: 0.875rem;
-          transition: all var(--transition-fast);
-        }
-
-        .property-field input:focus {
-          outline: none;
-          border-color: var(--color-purple-primary);
-          box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2);
-        }
-
         .input-with-unit {
           position: relative;
-          display: flex;
-          align-items: center;
-        }
-
-        .input-with-unit input {
-          flex: 1;
-          padding-right: 2rem;
         }
 
         .unit {
           position: absolute;
           right: 0.75rem;
+          top: 50%;
+          transform: translateY(-50%);
           font-size: 0.75rem;
           color: var(--color-text-muted);
           pointer-events: none;

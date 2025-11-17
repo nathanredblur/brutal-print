@@ -5,6 +5,7 @@
 
 import type { FC } from 'react';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Info } from "lucide-react";
 
 interface CanvasSettingsPanelProps {
@@ -28,11 +29,11 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
       <div className="settings-section">
         <label className="settings-label">Canvas Height</label>
         <div className="height-input-group">
-          <input
+          <Input
             type="number"
             value={canvasHeight}
             onChange={(e) => onCanvasHeightChange(parseInt(e.target.value) || 400)}
-            className="height-input"
+            className="pr-12"
             min="200"
             max="3000"
             step="50"
@@ -114,32 +115,13 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
 
         .height-input-group {
           position: relative;
-          display: flex;
-          align-items: center;
-        }
-
-        .height-input {
-          flex: 1;
-          padding: 0.5rem;
-          padding-right: 2.5rem;
-          background: var(--color-bg-secondary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          color: var(--color-text-primary);
-          font-size: 0.875rem;
-          font-weight: 600;
-          outline: none;
-          transition: all var(--transition-fast);
-        }
-
-        .height-input:focus {
-          border-color: var(--color-purple-primary);
-          box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2);
         }
 
         .input-unit {
           position: absolute;
-          right: 0.5rem;
+          right: 0.75rem;
+          top: 50%;
+          transform: translateY(-50%);
           font-size: 0.75rem;
           color: var(--color-text-muted);
           pointer-events: none;

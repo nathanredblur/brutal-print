@@ -6,6 +6,7 @@ import type { FC } from "react";
 import type { TextLayer } from "../../types/layer";
 import PropertySection from "./PropertySection";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Type, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 
 interface TypographySectionProps {
@@ -69,7 +70,7 @@ const TypographySection: FC<TypographySectionProps> = ({
           >
             −
           </Button>
-          <input
+          <Input
             type="number"
             value={layer.fontSize || 24}
             onChange={(e) =>
@@ -77,6 +78,7 @@ const TypographySection: FC<TypographySectionProps> = ({
             }
             min="8"
             max="200"
+            className="text-center"
           />
           <Button 
             variant="neuro-ghost" 
