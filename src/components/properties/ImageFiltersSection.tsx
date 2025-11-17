@@ -3,11 +3,24 @@
  * Integrated within the properties panel
  */
 
-import { useState, useRef, useEffect, type FC } from "react";
+import { memo, useState, useRef, useEffect, useCallback, type FC } from "react";
 import type { ImageLayer } from "../../types/layer";
 import PropertySection from "./PropertySection";
 import { Button } from "@/components/ui/button";
 import { Sun, CircleOff } from "lucide-react";
+
+// Constants outside component - no need for useMemo
+const DITHER_METHODS = [
+  { id: "threshold", name: "Threshold" },
+  { id: "steinberg", name: "Floyd-Steinberg" },
+  { id: "atkinson", name: "Atkinson" },
+  { id: "bayer", name: "Bayer Matrix" },
+  { id: "pattern", name: "Halftone" },
+] as const;
+
+// Shared slider className - defined once, used multiple times
+const SLIDER_CLASS_NAME =
+  "w-full h-1 bg-bg-secondary rounded-sm outline-none appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-purple-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200 [&::-webkit-slider-thumb]:hover:bg-purple-accent [&::-webkit-slider-thumb]:hover:shadow-[0_0_8px_rgba(167,139,250,0.4)] [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:bg-purple-primary [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:transition-all [&::-moz-range-thumb]:duration-200 [&::-moz-range-thumb]:hover:bg-purple-accent [&::-moz-range-thumb]:hover:shadow-[0_0_8px_rgba(167,139,250,0.4)]";
 
 interface ImageFiltersSectionProps {
   layer: ImageLayer;
@@ -69,119 +82,126 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
     };
   }, []);
 
-  const ditherMethods = [
-    { id: "threshold", name: "Threshold" },
-    { id: "steinberg", name: "Floyd-Steinberg" },
-    { id: "atkinson", name: "Atkinson" },
-    { id: "bayer", name: "Bayer Matrix" },
-    { id: "pattern", name: "Halftone" },
-  ];
-
   // Helper to trigger reprocessing with updated parameters
-  const reprocessWithUpdates = async (updates: any) => {
-    const { reprocessImage } = await import("../../utils/imageReprocessor");
+  const reprocessWithUpdates = useCallback(
+    async (updates: any) => {
+      const { reprocessImage } = await import("../../utils/imageReprocessor");
 
-    const params = {
-      ditherMethod: updates.ditherMethod || layer.ditherMethod,
-      threshold:
-        updates.threshold !== undefined ? updates.threshold : layer.threshold,
-      invert: updates.invert !== undefined ? updates.invert : layer.invert,
-      brightness:
-        updates.brightness !== undefined
-          ? updates.brightness
-          : layer.brightness ?? 128,
-      contrast:
-        updates.contrast !== undefined ? updates.contrast : layer.contrast ?? 100,
-      bayerMatrixSize:
-        updates.bayerMatrixSize !== undefined
-          ? updates.bayerMatrixSize
-          : layer.bayerMatrixSize ?? 4,
-      halftoneCellSize:
-        updates.halftoneCellSize !== undefined
-          ? updates.halftoneCellSize
-          : layer.halftoneCellSize ?? 4,
-      targetWidth: layer.width,
-      targetHeight: layer.height,
-    };
+      const params = {
+        ditherMethod: updates.ditherMethod || layer.ditherMethod,
+        threshold:
+          updates.threshold !== undefined ? updates.threshold : layer.threshold,
+        invert: updates.invert !== undefined ? updates.invert : layer.invert,
+        brightness:
+          updates.brightness !== undefined
+            ? updates.brightness
+            : layer.brightness ?? 128,
+        contrast:
+          updates.contrast !== undefined
+            ? updates.contrast
+            : layer.contrast ?? 100,
+        bayerMatrixSize:
+          updates.bayerMatrixSize !== undefined
+            ? updates.bayerMatrixSize
+            : layer.bayerMatrixSize ?? 4,
+        halftoneCellSize:
+          updates.halftoneCellSize !== undefined
+            ? updates.halftoneCellSize
+            : layer.halftoneCellSize ?? 4,
+        targetWidth: layer.width,
+        targetHeight: layer.height,
+      };
 
-    try {
-      const result = await reprocessImage(
-        layer.originalImageData,
-        params.ditherMethod as any,
-        params
-      );
+      try {
+        const result = await reprocessImage(
+          layer.originalImageData,
+          params.ditherMethod as any,
+          params
+        );
 
-      onReprocessImageLayer(layer.id, result.canvas, updates);
-    } catch (error) {
-      console.error("Failed to reprocess image:", error);
-    }
-  };
+        onReprocessImageLayer(layer.id, result.canvas, updates);
+      } catch (error) {
+        console.error("Failed to reprocess image:", error);
+      }
+    },
+    [layer, onReprocessImageLayer]
+  );
 
   // Throttled processing
-  const processThrottled = (updates: any) => {
-    const now = Date.now();
-    const timeSinceLastProcess = now - lastProcessTimeRef.current;
-    const THROTTLE_MS = 100;
+  const processThrottled = useCallback(
+    (updates: any) => {
+      const now = Date.now();
+      const timeSinceLastProcess = now - lastProcessTimeRef.current;
+      const THROTTLE_MS = 100;
 
-    if (timeSinceLastProcess >= THROTTLE_MS) {
-      lastProcessTimeRef.current = now;
-      reprocessWithUpdates(updates);
-      if (updates.threshold !== undefined) pendingThresholdRef.current = null;
-      if (updates.brightness !== undefined) pendingBrightnessRef.current = null;
-      if (updates.contrast !== undefined) pendingContrastRef.current = null;
-      if (updates.bayerMatrixSize !== undefined)
-        pendingBayerMatrixRef.current = null;
-      if (updates.halftoneCellSize !== undefined)
-        pendingHalftoneRef.current = null;
-    } else {
-      if (throttleTimerRef.current) {
-        clearTimeout(throttleTimerRef.current);
-      }
-
-      const delay = THROTTLE_MS - timeSinceLastProcess;
-      throttleTimerRef.current = setTimeout(() => {
-        lastProcessTimeRef.current = Date.now();
-
-        const pendingUpdates: any = {};
-        if (pendingThresholdRef.current !== null) {
-          pendingUpdates.threshold = pendingThresholdRef.current;
-          pendingThresholdRef.current = null;
-        }
-        if (pendingBrightnessRef.current !== null) {
-          pendingUpdates.brightness = pendingBrightnessRef.current;
+      if (timeSinceLastProcess >= THROTTLE_MS) {
+        lastProcessTimeRef.current = now;
+        reprocessWithUpdates(updates);
+        if (updates.threshold !== undefined) pendingThresholdRef.current = null;
+        if (updates.brightness !== undefined)
           pendingBrightnessRef.current = null;
-        }
-        if (pendingContrastRef.current !== null) {
-          pendingUpdates.contrast = pendingContrastRef.current;
-          pendingContrastRef.current = null;
-        }
-        if (pendingBayerMatrixRef.current !== null) {
-          pendingUpdates.bayerMatrixSize = pendingBayerMatrixRef.current;
+        if (updates.contrast !== undefined) pendingContrastRef.current = null;
+        if (updates.bayerMatrixSize !== undefined)
           pendingBayerMatrixRef.current = null;
-        }
-        if (pendingHalftoneRef.current !== null) {
-          pendingUpdates.halftoneCellSize = pendingHalftoneRef.current;
+        if (updates.halftoneCellSize !== undefined)
           pendingHalftoneRef.current = null;
+      } else {
+        if (throttleTimerRef.current) {
+          clearTimeout(throttleTimerRef.current);
         }
 
-        if (Object.keys(pendingUpdates).length > 0) {
-          reprocessWithUpdates(pendingUpdates);
-        }
-      }, delay);
-    }
-  };
+        const delay = THROTTLE_MS - timeSinceLastProcess;
+        throttleTimerRef.current = setTimeout(() => {
+          lastProcessTimeRef.current = Date.now();
 
-  const handleDitherChange = (method: string) => {
-    reprocessWithUpdates({ ditherMethod: method });
-  };
+          const pendingUpdates: any = {};
+          if (pendingThresholdRef.current !== null) {
+            pendingUpdates.threshold = pendingThresholdRef.current;
+            pendingThresholdRef.current = null;
+          }
+          if (pendingBrightnessRef.current !== null) {
+            pendingUpdates.brightness = pendingBrightnessRef.current;
+            pendingBrightnessRef.current = null;
+          }
+          if (pendingContrastRef.current !== null) {
+            pendingUpdates.contrast = pendingContrastRef.current;
+            pendingContrastRef.current = null;
+          }
+          if (pendingBayerMatrixRef.current !== null) {
+            pendingUpdates.bayerMatrixSize = pendingBayerMatrixRef.current;
+            pendingBayerMatrixRef.current = null;
+          }
+          if (pendingHalftoneRef.current !== null) {
+            pendingUpdates.halftoneCellSize = pendingHalftoneRef.current;
+            pendingHalftoneRef.current = null;
+          }
 
-  const handleThresholdChange = (value: number) => {
-    setThreshold(value);
-    pendingThresholdRef.current = value;
-    processThrottled({ threshold: value });
-  };
+          if (Object.keys(pendingUpdates).length > 0) {
+            reprocessWithUpdates(pendingUpdates);
+          }
+        }, delay);
+      }
+    },
+    [reprocessWithUpdates]
+  );
 
-  const handleThresholdRelease = () => {
+  const handleDitherChange = useCallback(
+    (method: string) => {
+      reprocessWithUpdates({ ditherMethod: method });
+    },
+    [reprocessWithUpdates]
+  );
+
+  const handleThresholdChange = useCallback(
+    (value: number) => {
+      setThreshold(value);
+      pendingThresholdRef.current = value;
+      processThrottled({ threshold: value });
+    },
+    [processThrottled]
+  );
+
+  const handleThresholdRelease = useCallback(() => {
     if (pendingThresholdRef.current !== null) {
       if (throttleTimerRef.current) {
         clearTimeout(throttleTimerRef.current);
@@ -190,15 +210,18 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
       pendingThresholdRef.current = null;
       lastProcessTimeRef.current = Date.now();
     }
-  };
+  }, [reprocessWithUpdates]);
 
-  const handleBrightnessChange = (value: number) => {
-    setBrightness(value);
-    pendingBrightnessRef.current = value;
-    processThrottled({ brightness: value });
-  };
+  const handleBrightnessChange = useCallback(
+    (value: number) => {
+      setBrightness(value);
+      pendingBrightnessRef.current = value;
+      processThrottled({ brightness: value });
+    },
+    [processThrottled]
+  );
 
-  const handleBrightnessRelease = () => {
+  const handleBrightnessRelease = useCallback(() => {
     if (pendingBrightnessRef.current !== null) {
       if (throttleTimerRef.current) {
         clearTimeout(throttleTimerRef.current);
@@ -207,15 +230,18 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
       pendingBrightnessRef.current = null;
       lastProcessTimeRef.current = Date.now();
     }
-  };
+  }, [reprocessWithUpdates]);
 
-  const handleContrastChange = (value: number) => {
-    setContrast(value);
-    pendingContrastRef.current = value;
-    processThrottled({ contrast: value });
-  };
+  const handleContrastChange = useCallback(
+    (value: number) => {
+      setContrast(value);
+      pendingContrastRef.current = value;
+      processThrottled({ contrast: value });
+    },
+    [processThrottled]
+  );
 
-  const handleContrastRelease = () => {
+  const handleContrastRelease = useCallback(() => {
     if (pendingContrastRef.current !== null) {
       if (throttleTimerRef.current) {
         clearTimeout(throttleTimerRef.current);
@@ -224,15 +250,18 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
       pendingContrastRef.current = null;
       lastProcessTimeRef.current = Date.now();
     }
-  };
+  }, [reprocessWithUpdates]);
 
-  const handleBayerMatrixChange = (value: number) => {
-    setBayerMatrixSize(value);
-    pendingBayerMatrixRef.current = value;
-    processThrottled({ bayerMatrixSize: value });
-  };
+  const handleBayerMatrixChange = useCallback(
+    (value: number) => {
+      setBayerMatrixSize(value);
+      pendingBayerMatrixRef.current = value;
+      processThrottled({ bayerMatrixSize: value });
+    },
+    [processThrottled]
+  );
 
-  const handleBayerMatrixRelease = () => {
+  const handleBayerMatrixRelease = useCallback(() => {
     if (pendingBayerMatrixRef.current !== null) {
       if (throttleTimerRef.current) {
         clearTimeout(throttleTimerRef.current);
@@ -241,15 +270,18 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
       pendingBayerMatrixRef.current = null;
       lastProcessTimeRef.current = Date.now();
     }
-  };
+  }, [reprocessWithUpdates]);
 
-  const handleHalftoneChange = (value: number) => {
-    setHalftoneCellSize(value);
-    pendingHalftoneRef.current = value;
-    processThrottled({ halftoneCellSize: value });
-  };
+  const handleHalftoneChange = useCallback(
+    (value: number) => {
+      setHalftoneCellSize(value);
+      pendingHalftoneRef.current = value;
+      processThrottled({ halftoneCellSize: value });
+    },
+    [processThrottled]
+  );
 
-  const handleHalftoneRelease = () => {
+  const handleHalftoneRelease = useCallback(() => {
     if (pendingHalftoneRef.current !== null) {
       if (throttleTimerRef.current) {
         clearTimeout(throttleTimerRef.current);
@@ -258,23 +290,25 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
       pendingHalftoneRef.current = null;
       lastProcessTimeRef.current = Date.now();
     }
-  };
+  }, [reprocessWithUpdates]);
+
+  const handleInvertToggle = useCallback(() => {
+    reprocessWithUpdates({ invert: !layer.invert });
+  }, [layer.invert, reprocessWithUpdates]);
 
   return (
-    <PropertySection
-      title="Filters"
-      value="filters"
-      icon={<Sun size={14} />}
-    >
+    <PropertySection title="Filters" value="filters" icon={<Sun size={14} />}>
       {/* Dither Method */}
-      <div className="filter-group">
-        <label className="filter-label-small">Dither Method</label>
+      <div className="flex flex-col gap-2">
+        <label className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
+          Dither Method
+        </label>
         <select
           value={layer.ditherMethod}
           onChange={(e) => handleDitherChange(e.target.value)}
-          className="filter-select"
+          className="w-full px-2 py-2 bg-bg-tertiary border border-border rounded-sm text-text-primary text-sm font-medium cursor-pointer transition-all duration-200 hover:border-purple-primary focus:outline-none focus:border-purple-primary focus:ring-2 focus:ring-purple-500/20"
         >
-          {ditherMethods.map((method) => (
+          {DITHER_METHODS.map((method) => (
             <option key={method.id} value={method.id}>
               {method.name}
             </option>
@@ -287,10 +321,12 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
         layer.ditherMethod === "steinberg" ||
         layer.ditherMethod === "atkinson" ||
         layer.ditherMethod === "bayer") && (
-        <div className="filter-group">
-          <label className="filter-label-small">
-            Threshold
-            <span className="filter-value-small">{threshold}</span>
+        <div className="flex flex-col gap-2">
+          <label className="flex justify-between items-center text-xs font-semibold text-text-secondary uppercase tracking-wide">
+            <span>Threshold</span>
+            <span className="text-xs font-semibold text-purple-primary bg-purple-500/10 px-1.5 py-0.5 rounded-sm">
+              {threshold}
+            </span>
           </label>
           <input
             type="range"
@@ -301,17 +337,17 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
             onPointerUp={handleThresholdRelease}
             onMouseUp={handleThresholdRelease}
             onTouchEnd={handleThresholdRelease}
-            className="filter-slider"
+            className={SLIDER_CLASS_NAME}
           />
         </div>
       )}
 
       {/* Bayer matrix size */}
       {layer.ditherMethod === "bayer" && (
-        <div className="filter-group">
-          <label className="filter-label-small">
-            Matrix Size
-            <span className="filter-value-small">
+        <div className="flex flex-col gap-2">
+          <label className="flex justify-between items-center text-xs font-semibold text-text-secondary uppercase tracking-wide">
+            <span>Matrix Size</span>
+            <span className="text-xs font-semibold text-purple-primary bg-purple-500/10 px-1.5 py-0.5 rounded-sm">
               {bayerMatrixSize}×{bayerMatrixSize}
             </span>
           </label>
@@ -324,17 +360,19 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
             onPointerUp={handleBayerMatrixRelease}
             onMouseUp={handleBayerMatrixRelease}
             onTouchEnd={handleBayerMatrixRelease}
-            className="filter-slider"
+            className={SLIDER_CLASS_NAME}
           />
         </div>
       )}
 
       {/* Halftone cell size */}
       {layer.ditherMethod === "pattern" && (
-        <div className="filter-group">
-          <label className="filter-label-small">
-            Cell Size
-            <span className="filter-value-small">{halftoneCellSize}px</span>
+        <div className="flex flex-col gap-2">
+          <label className="flex justify-between items-center text-xs font-semibold text-text-secondary uppercase tracking-wide">
+            <span>Cell Size</span>
+            <span className="text-xs font-semibold text-purple-primary bg-purple-500/10 px-1.5 py-0.5 rounded-sm">
+              {halftoneCellSize}px
+            </span>
           </label>
           <input
             type="range"
@@ -345,16 +383,18 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
             onPointerUp={handleHalftoneRelease}
             onMouseUp={handleHalftoneRelease}
             onTouchEnd={handleHalftoneRelease}
-            className="filter-slider"
+            className={SLIDER_CLASS_NAME}
           />
         </div>
       )}
 
       {/* Brightness */}
-      <div className="filter-group">
-        <label className="filter-label-small">
-          Brightness
-          <span className="filter-value-small">{brightness}</span>
+      <div className="flex flex-col gap-2">
+        <label className="flex justify-between items-center text-xs font-semibold text-text-secondary uppercase tracking-wide">
+          <span>Brightness</span>
+          <span className="text-xs font-semibold text-purple-primary bg-purple-500/10 px-1.5 py-0.5 rounded-sm">
+            {brightness}
+          </span>
         </label>
         <input
           type="range"
@@ -365,15 +405,17 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
           onPointerUp={handleBrightnessRelease}
           onMouseUp={handleBrightnessRelease}
           onTouchEnd={handleBrightnessRelease}
-          className="filter-slider"
+          className={SLIDER_CLASS_NAME}
         />
       </div>
 
       {/* Contrast */}
-      <div className="filter-group">
-        <label className="filter-label-small">
-          Contrast
-          <span className="filter-value-small">{contrast}%</span>
+      <div className="flex flex-col gap-2">
+        <label className="flex justify-between items-center text-xs font-semibold text-text-secondary uppercase tracking-wide">
+          <span>Contrast</span>
+          <span className="text-xs font-semibold text-purple-primary bg-purple-500/10 px-1.5 py-0.5 rounded-sm">
+            {contrast}%
+          </span>
         </label>
         <input
           type="range"
@@ -384,156 +426,36 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
           onPointerUp={handleContrastRelease}
           onMouseUp={handleContrastRelease}
           onTouchEnd={handleContrastRelease}
-          className="filter-slider"
+          className={SLIDER_CLASS_NAME}
         />
       </div>
 
       {/* Invert Toggle */}
-      <div className="filter-group">
+      <div className="flex flex-col gap-2">
         <Button
           variant="neuro-ghost"
-          className="invert-toggle w-full justify-start"
-          onClick={() => reprocessWithUpdates({ invert: !layer.invert })}
+          className="w-full justify-start text-xs"
+          onClick={handleInvertToggle}
         >
           <CircleOff size={16} />
           <span>Invert</span>
-          <div className={`toggle-switch ${layer.invert ? "active" : ""}`}>
-            <div className="toggle-handle" />
+          <div
+            className={`ml-auto w-8 h-4 rounded-full relative transition-all duration-200 ${
+              layer.invert
+                ? "bg-linear-to-br from-purple-dark to-blue-dark border-purple-primary"
+                : "bg-bg-secondary border border-border"
+            }`}
+          >
+            <div
+              className={`w-2.5 h-2.5 bg-text-primary rounded-full absolute top-0.5 transition-all duration-200 ${
+                layer.invert ? "left-[18px]" : "left-0.5"
+              }`}
+            />
           </div>
         </Button>
       </div>
-
-      <style>{`
-        .filter-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .filter-label-small {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-size: 0.7rem;
-          font-weight: 600;
-          color: var(--color-text-secondary);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .filter-value-small {
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: var(--color-purple-primary);
-          background: rgba(167, 139, 250, 0.1);
-          padding: 0.125rem 0.375rem;
-          border-radius: var(--radius-sm);
-        }
-
-        .filter-select {
-          width: 100%;
-          padding: 0.5rem;
-          background: var(--color-bg-tertiary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          color: var(--color-text-primary);
-          font-size: 0.875rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .filter-select:focus {
-          outline: none;
-          border-color: var(--color-purple-primary);
-          box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2);
-        }
-
-        .filter-select:hover {
-          border-color: var(--color-purple-primary);
-        }
-
-        .filter-slider {
-          width: 100%;
-          height: 4px;
-          background: var(--color-bg-secondary);
-          border-radius: 2px;
-          outline: none;
-          -webkit-appearance: none;
-        }
-
-        .filter-slider::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          appearance: none;
-          width: 12px;
-          height: 12px;
-          background: var(--color-purple-primary);
-          border-radius: 50%;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .filter-slider::-webkit-slider-thumb:hover {
-          background: var(--color-purple-accent);
-          box-shadow: 0 0 8px rgba(167, 139, 250, 0.4);
-        }
-
-        .filter-slider::-moz-range-thumb {
-          width: 12px;
-          height: 12px;
-          background: var(--color-purple-primary);
-          border-radius: 50%;
-          cursor: pointer;
-          border: none;
-          transition: all var(--transition-fast);
-        }
-
-        .filter-slider::-moz-range-thumb:hover {
-          background: var(--color-purple-accent);
-          box-shadow: 0 0 8px rgba(167, 139, 250, 0.4);
-        }
-
-        .invert-toggle {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.75rem;
-        }
-
-        .toggle-switch {
-          margin-left: auto;
-          width: 32px;
-          height: 16px;
-          background: var(--color-bg-secondary);
-          border: 1px solid var(--color-border);
-          border-radius: 8px;
-          position: relative;
-          transition: all var(--transition-fast);
-        }
-
-        .toggle-switch.active {
-          background: linear-gradient(135deg, var(--color-purple-dark) 0%, var(--color-blue-dark) 100%);
-          border-color: var(--color-purple-primary);
-        }
-
-        .toggle-handle {
-          width: 10px;
-          height: 10px;
-          background: var(--color-text-primary);
-          border-radius: 50%;
-          position: absolute;
-          top: 2px;
-          left: 2px;
-          transition: all var(--transition-fast);
-        }
-
-        .toggle-switch.active .toggle-handle {
-          left: 18px;
-        }
-      `}</style>
     </PropertySection>
   );
 };
 
-export default ImageFiltersSection;
-
+export default memo(ImageFiltersSection);

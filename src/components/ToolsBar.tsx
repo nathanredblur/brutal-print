@@ -3,7 +3,7 @@
  * Shows all main tools at the bottom of the canvas
  */
 
-import type { FC } from "react";
+import { memo, useCallback, type FC, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Image, Type, Layout, Printer } from "lucide-react";
 
@@ -16,44 +16,51 @@ interface ToolsBarProps {
   onOpenPrinterPanel?: () => void;
 }
 
+// Static tools configuration - no need for useMemo
+const TOOLS: Array<{
+  id: Tool;
+  icon: ReactNode;
+  label: string;
+  shortcut: string;
+}> = [
+  {
+    id: "image",
+    icon: <Image size={20} />,
+    label: "Image",
+    shortcut: "I",
+  },
+  {
+    id: "text",
+    icon: <Type size={20} />,
+    label: "Text",
+    shortcut: "T",
+  },
+];
+
 const ToolsBar: FC<ToolsBarProps> = ({
   activeTool,
   onToolSelect,
   onOpenCanvasSettings,
   onOpenPrinterPanel,
 }) => {
-  const tools = [
-    {
-      id: "image" as Tool,
-      icon: <Image size={20} />,
-      label: "Image",
-      shortcut: "I",
+  // Memoize tool selection handler
+  const handleToolSelect = useCallback(
+    (toolId: Tool) => {
+      onToolSelect(toolId);
     },
-    {
-      id: "text" as Tool,
-      icon: <Type size={20} />,
-      label: "Text",
-      shortcut: "T",
-    },
-  ];
+    [onToolSelect]
+  );
 
   return (
     <div className="tools-bar">
       <div className="tools-bar-content">
-        {tools.map((tool) => (
-          <Button
+        {TOOLS.map((tool) => (
+          <ToolButton
             key={tool.id}
-            variant={
-              activeTool === tool.id ? "neuro-tool-active" : "neuro-tool"
-            }
-            size="xl"
-            onClick={() => onToolSelect(tool.id)}
-            title={`${tool.label} (${tool.shortcut})`}
-            className="gap-1"
-          >
-            {tool.icon}
-            <span className="text-xs font-semibold">{tool.label}</span>
-          </Button>
+            tool={tool}
+            isActive={activeTool === tool.id}
+            onSelect={handleToolSelect}
+          />
         ))}
 
         <div className="separator" />
@@ -132,4 +139,37 @@ const ToolsBar: FC<ToolsBarProps> = ({
   );
 };
 
-export default ToolsBar;
+// Memoized ToolButton component to prevent re-renders
+interface ToolButtonProps {
+  tool: {
+    id: Tool;
+    icon: ReactNode;
+    label: string;
+    shortcut: string;
+  };
+  isActive: boolean;
+  onSelect: (toolId: Tool) => void;
+}
+
+const ToolButton = memo<ToolButtonProps>(({ tool, isActive, onSelect }) => {
+  const handleClick = useCallback(() => {
+    onSelect(tool.id);
+  }, [tool.id, onSelect]);
+
+  return (
+    <Button
+      variant={isActive ? "neuro-tool-active" : "neuro-tool"}
+      size="xl"
+      onClick={handleClick}
+      title={`${tool.label} (${tool.shortcut})`}
+      className="gap-1"
+    >
+      {tool.icon}
+      <span className="text-xs font-semibold">{tool.label}</span>
+    </Button>
+  );
+});
+
+ToolButton.displayName = "ToolButton";
+
+export default memo(ToolsBar);

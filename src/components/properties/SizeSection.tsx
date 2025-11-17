@@ -2,6 +2,7 @@
  * SizeSection - Dimensions controls
  */
 
+import { memo, useCallback } from "react";
 import type { FC } from "react";
 import type { Layer } from "../../types/layer";
 import PropertySection from "./PropertySection";
@@ -16,6 +17,14 @@ interface SizeSectionProps {
 const SizeSection: FC<SizeSectionProps> = ({ layer, onUpdate }) => {
   const isTextLayer = layer.type === "text";
 
+  const handleWidthChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onUpdate(layer.id, { width: parseFloat(e.target.value) || 1 });
+  }, [layer.id, onUpdate]);
+
+  const handleHeightChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onUpdate(layer.id, { height: parseFloat(e.target.value) || 1 });
+  }, [layer.id, onUpdate]);
+
   return (
     <PropertySection
       title="Size"
@@ -28,9 +37,7 @@ const SizeSection: FC<SizeSectionProps> = ({ layer, onUpdate }) => {
           <Input
             type="number"
             value={Math.round(layer.width)}
-            onChange={(e) =>
-              onUpdate(layer.id, { width: parseFloat(e.target.value) || 1 })
-            }
+            onChange={handleWidthChange}
             min="1"
           />
         </div>
@@ -39,9 +46,7 @@ const SizeSection: FC<SizeSectionProps> = ({ layer, onUpdate }) => {
           <Input
             type="number"
             value={Math.round(layer.height)}
-            onChange={(e) =>
-              onUpdate(layer.id, { height: parseFloat(e.target.value) || 1 })
-            }
+            onChange={handleHeightChange}
             min="1"
             disabled={isTextLayer}
             title={isTextLayer ? "Height is determined by text content" : ""}
@@ -74,5 +79,5 @@ const SizeSection: FC<SizeSectionProps> = ({ layer, onUpdate }) => {
   );
 };
 
-export default SizeSection;
+export default memo(SizeSection);
 

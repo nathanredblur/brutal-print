@@ -2,6 +2,7 @@
  * TypographySection - Typography controls for text elements
  */
 
+import { memo, useCallback } from "react";
 import type { FC } from "react";
 import type { TextLayer } from "../../types/layer";
 import PropertySection from "./PropertySection";
@@ -14,26 +15,61 @@ interface TypographySectionProps {
   onUpdate: (layerId: string, updates: Partial<TextLayer>) => void;
 }
 
-const TypographySection: FC<TypographySectionProps> = ({
-  layer,
-  onUpdate,
-}) => {
-  const handleFontSizeChange = (delta: number) => {
-    const newSize = Math.max(8, Math.min(200, (layer.fontSize || 24) + delta));
+// Static font family options - no need to recreate on each render
+const FONT_FAMILIES = [
+  "Inter",
+  "Arial",
+  "Helvetica",
+  "Times New Roman",
+  "Courier New",
+  "Georgia",
+  "Verdana",
+] as const;
+
+const TypographySection: FC<TypographySectionProps> = ({ layer, onUpdate }) => {
+  const handleFontSizeDecrease = useCallback(() => {
+    const newSize = Math.max(8, Math.min(200, (layer.fontSize || 24) - 2));
     onUpdate(layer.id, { fontSize: newSize });
-  };
+  }, [layer.fontSize, layer.id, onUpdate]);
 
-  const toggleBold = () => {
+  const handleFontSizeIncrease = useCallback(() => {
+    const newSize = Math.max(8, Math.min(200, (layer.fontSize || 24) + 2));
+    onUpdate(layer.id, { fontSize: newSize });
+  }, [layer.fontSize, layer.id, onUpdate]);
+
+  const handleFontSizeChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onUpdate(layer.id, { fontSize: parseFloat(e.target.value) || 24 });
+    },
+    [layer.id, onUpdate]
+  );
+
+  const handleFontFamilyChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      onUpdate(layer.id, { fontFamily: e.target.value });
+    },
+    [layer.id, onUpdate]
+  );
+
+  const toggleBold = useCallback(() => {
     onUpdate(layer.id, { bold: !layer.bold });
-  };
+  }, [layer.id, layer.bold, onUpdate]);
 
-  const toggleItalic = () => {
+  const toggleItalic = useCallback(() => {
     onUpdate(layer.id, { italic: !layer.italic });
-  };
+  }, [layer.id, layer.italic, onUpdate]);
 
-  const changeAlign = (align: "left" | "center" | "right") => {
-    onUpdate(layer.id, { align });
-  };
+  const changeAlignLeft = useCallback(() => {
+    onUpdate(layer.id, { align: "left" });
+  }, [layer.id, onUpdate]);
+
+  const changeAlignCenter = useCallback(() => {
+    onUpdate(layer.id, { align: "center" });
+  }, [layer.id, onUpdate]);
+
+  const changeAlignRight = useCallback(() => {
+    onUpdate(layer.id, { align: "right" });
+  }, [layer.id, onUpdate]);
 
   return (
     <PropertySection
@@ -46,15 +82,13 @@ const TypographySection: FC<TypographySectionProps> = ({
         <label>Font Family</label>
         <select
           value={layer.fontFamily || "Inter"}
-          onChange={(e) => onUpdate(layer.id, { fontFamily: e.target.value })}
+          onChange={handleFontFamilyChange}
         >
-          <option value="Inter">Inter</option>
-          <option value="Arial">Arial</option>
-          <option value="Helvetica">Helvetica</option>
-          <option value="Times New Roman">Times New Roman</option>
-          <option value="Courier New">Courier New</option>
-          <option value="Georgia">Georgia</option>
-          <option value="Verdana">Verdana</option>
+          {FONT_FAMILIES.map((font) => (
+            <option key={font} value={font}>
+              {font}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -62,10 +96,10 @@ const TypographySection: FC<TypographySectionProps> = ({
       <div className="property-field">
         <label>Font Size</label>
         <div className="input-with-controls">
-          <Button 
-            variant="neuro-ghost" 
-            size="icon-sm" 
-            onClick={() => handleFontSizeChange(-2)} 
+          <Button
+            variant="neuro-ghost"
+            size="icon-sm"
+            onClick={handleFontSizeDecrease}
             title="Decrease"
           >
             −
@@ -73,17 +107,15 @@ const TypographySection: FC<TypographySectionProps> = ({
           <Input
             type="number"
             value={layer.fontSize || 24}
-            onChange={(e) =>
-              onUpdate(layer.id, { fontSize: parseFloat(e.target.value) || 24 })
-            }
+            onChange={handleFontSizeChange}
             min="8"
             max="200"
             className="text-center"
           />
-          <Button 
-            variant="neuro-ghost" 
-            size="icon-sm" 
-            onClick={() => handleFontSizeChange(2)} 
+          <Button
+            variant="neuro-ghost"
+            size="icon-sm"
+            onClick={handleFontSizeIncrease}
             title="Increase"
           >
             +
@@ -123,7 +155,7 @@ const TypographySection: FC<TypographySectionProps> = ({
           <Button
             variant={layer.align === "left" ? "neuro" : "neuro-ghost"}
             size="icon-sm"
-            onClick={() => changeAlign("left")}
+            onClick={changeAlignLeft}
             title="Align left"
             className="flex-1"
           >
@@ -132,7 +164,7 @@ const TypographySection: FC<TypographySectionProps> = ({
           <Button
             variant={layer.align === "center" ? "neuro" : "neuro-ghost"}
             size="icon-sm"
-            onClick={() => changeAlign("center")}
+            onClick={changeAlignCenter}
             title="Align center"
             className="flex-1"
           >
@@ -141,7 +173,7 @@ const TypographySection: FC<TypographySectionProps> = ({
           <Button
             variant={layer.align === "right" ? "neuro" : "neuro-ghost"}
             size="icon-sm"
-            onClick={() => changeAlign("right")}
+            onClick={changeAlignRight}
             title="Align right"
             className="flex-1"
           >
@@ -249,5 +281,4 @@ const TypographySection: FC<TypographySectionProps> = ({
   );
 };
 
-export default TypographySection;
-
+export default memo(TypographySection);

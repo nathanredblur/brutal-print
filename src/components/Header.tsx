@@ -3,7 +3,7 @@
  * Contains file menu, undo/redo, and print button
  */
 
-import { useState, type FC } from "react";
+import { memo, useState, useCallback, type FC } from "react";
 import { Button } from "@/components/ui/button";
 import {
   FileText,
@@ -43,77 +43,86 @@ const Header: FC<HeaderProps> = ({
 }) => {
   const [showFileMenu, setShowFileMenu] = useState(false);
 
+  const toggleFileMenu = useCallback(() => {
+    setShowFileMenu((prev) => !prev);
+  }, []);
+
+  const closeFileMenu = useCallback(() => {
+    setShowFileMenu(false);
+  }, []);
+
+  const handleNewCanvas = useCallback(() => {
+    setShowFileMenu(false);
+    onNewCanvas();
+  }, [onNewCanvas]);
+
+  const handleSave = useCallback(() => {
+    setShowFileMenu(false);
+    onSave();
+  }, [onSave]);
+
+  const handleExport = useCallback(() => {
+    setShowFileMenu(false);
+    onExport();
+  }, [onExport]);
+
   return (
-    <header className="app-header">
-      <div className="header-left">
-        <div className="app-logo">
-          <span className="logo-icon">⚡</span>
-          <h1 className="app-title">THERMAL PRINT STUDIO</h1>
+    <header className="flex justify-between items-center px-6 py-3 bg-linear-to-br from-slate-900/60 to-slate-950/80 backdrop-blur-md border-b border-border z-100 animate-in slide-in-from-top duration-300">
+      <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">⚡</span>
+          <h1 className="text-lg font-bold tracking-wide m-0 bg-linear-to-r from-purple-400 via-purple-300 to-blue-400 bg-clip-text text-transparent">
+            THERMAL PRINT STUDIO
+          </h1>
         </div>
 
         {/* File Menu */}
-        <div className="menu-container">
-          <Button
-            variant="neuro-ghost"
-            size="sm"
-            onClick={() => setShowFileMenu(!showFileMenu)}
-          >
+        <div className="relative">
+          <Button variant="neuro-ghost" size="sm" onClick={toggleFileMenu}>
             <span>File</span>
             <ChevronDown size={12} />
           </Button>
 
           {showFileMenu && (
             <>
-              <div
-                className="menu-overlay"
-                onClick={() => setShowFileMenu(false)}
-              />
-              <div className="dropdown-menu">
+              <div className="fixed inset-0 z-99" onClick={closeFileMenu} />
+              <div className="absolute top-[calc(100%+0.5rem)] left-0 min-w-[240px] bg-bg-tertiary border border-border rounded-md shadow-xl z-100 animate-in slide-in-from-top-2 duration-200 overflow-hidden">
                 <Button
                   variant="neuro-menu"
                   className="w-full justify-between"
-                  onClick={() => {
-                    setShowFileMenu(false);
-                    onNewCanvas();
-                  }}
+                  onClick={handleNewCanvas}
                 >
                   <div className="flex items-center gap-3">
                     <FileText size={16} />
                     <span>New</span>
                   </div>
-                  <span className="text-xs text-[#94A3B8]">Ctrl+N</span>
+                  <span className="text-xs text-slate-400">Ctrl+N</span>
                 </Button>
 
-                <div className="menu-divider" />
+                <div className="h-px bg-border my-1" />
 
                 <Button
                   variant="neuro-menu"
                   className="w-full justify-between"
-                  onClick={() => {
-                    setShowFileMenu(false);
-                    onSave();
-                  }}
+                  onClick={handleSave}
                 >
                   <div className="flex items-center gap-3">
                     <Save size={16} />
                     <span>Save</span>
                   </div>
-                  <span className="text-xs text-[#94A3B8]">Ctrl+S</span>
+                  <span className="text-xs text-slate-400">Ctrl+S</span>
                 </Button>
 
                 <Button
                   variant="neuro-menu"
                   className="w-full justify-between"
-                  onClick={() => {
-                    setShowFileMenu(false);
-                    onExport();
-                  }}
+                  onClick={handleExport}
                 >
                   <div className="flex items-center gap-3">
                     <Download size={16} />
                     <span>Export</span>
                   </div>
-                  <span className="text-xs text-[#94A3B8]">Ctrl+E</span>
+                  <span className="text-xs text-slate-400">Ctrl+E</span>
                 </Button>
               </div>
             </>
@@ -121,7 +130,7 @@ const Header: FC<HeaderProps> = ({
         </div>
 
         {/* Undo/Redo */}
-        <div className="history-controls">
+        <div className="flex gap-1">
           <Button
             variant="neuro-icon"
             size="icon-sm"
@@ -144,11 +153,31 @@ const Header: FC<HeaderProps> = ({
         </div>
       </div>
 
-      <div className="header-right">
+      <PrintSection
+        isConnected={isConnected}
+        isPrinting={isPrinting}
+        onPrint={onPrint}
+      />
+    </header>
+  );
+};
+
+// Separate PrintSection component to avoid re-rendering entire Header
+// when isPrinting or isConnected changes
+interface PrintSectionProps {
+  isConnected: boolean;
+  isPrinting: boolean;
+  onPrint: () => void;
+}
+
+const PrintSection = memo<PrintSectionProps>(
+  ({ isConnected, isPrinting, onPrint }) => {
+    return (
+      <div className="flex items-center gap-4">
         {/* Connection status indicator */}
         {isConnected && (
-          <div className="connection-status">
-            <div className="status-dot" />
+          <div className="flex items-center gap-2 px-3 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-sm text-sm text-cyan">
+            <div className="w-2 h-2 bg-cyan rounded-full animate-pulse" />
             <span>Printer connected</span>
           </div>
         )}
@@ -162,7 +191,7 @@ const Header: FC<HeaderProps> = ({
         >
           {isPrinting ? (
             <>
-              <Loader2 size={20} className="spinner" />
+              <Loader2 size={20} className="animate-spin" />
               <span>Printing...</span>
             </>
           ) : (
@@ -173,135 +202,31 @@ const Header: FC<HeaderProps> = ({
           )}
         </Button>
       </div>
+    );
+  }
+);
 
-      <style>{`
-        .app-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 0.75rem 1.5rem;
-          background: linear-gradient(135deg, rgba(21, 24, 54, 0.6) 0%, rgba(12, 15, 38, 0.8) 100%);
-          backdrop-filter: blur(10px);
-          border-bottom: 1px solid var(--color-border);
-          z-index: 100;
-          animation: slideIn 0.3s ease-out;
-        }
+PrintSection.displayName = "PrintSection";
 
-        .header-left {
-          display: flex;
-          align-items: center;
-          gap: 1.5rem;
-        }
-
-        .app-logo {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        }
-
-        .logo-icon {
-          font-size: 1.5rem;
-        }
-
-        .app-title {
-          font-size: 1.125rem;
-          font-weight: 700;
-          letter-spacing: 0.05em;
-          margin: 0;
-          background: linear-gradient(135deg, var(--color-purple-primary) 0%, var(--color-blue-primary) 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .menu-container {
-          position: relative;
-        }
-
-        .menu-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          z-index: 99;
-        }
-
-        .dropdown-menu {
-          position: absolute;
-          top: calc(100% + 0.5rem);
-          left: 0;
-          min-width: 240px;
-          background: var(--color-bg-tertiary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
-          box-shadow: var(--shadow-xl);
-          z-index: 100;
-          animation: slideIn 0.2s ease-out;
-          overflow: hidden;
-        }
-
-        .menu-divider {
-          height: 1px;
-          background: var(--color-border);
-          margin: 0.25rem 0;
-        }
-
-        .history-controls {
-          display: flex;
-          gap: 0.25rem;
-        }
-
-        .header-right {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .connection-status {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.5rem 0.75rem;
-          background: rgba(6, 182, 212, 0.1);
-          border: 1px solid rgba(6, 182, 212, 0.3);
-          border-radius: var(--radius-sm);
-          font-size: 0.875rem;
-          color: var(--color-cyan);
-        }
-
-        .status-dot {
-          width: 8px;
-          height: 8px;
-          background: var(--color-cyan);
-          border-radius: 50%;
-          animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-
-        .spinner {
-          animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
-    </header>
+// Custom comparison function to prevent re-renders when only
+// isPrinting or isConnected change (those only affect PrintSection)
+const arePropsEqual = (
+  prevProps: HeaderProps,
+  nextProps: HeaderProps
+): boolean => {
+  // Compare all props except isPrinting and isConnected
+  return (
+    prevProps.onNewCanvas === nextProps.onNewCanvas &&
+    prevProps.onSave === nextProps.onSave &&
+    prevProps.onExport === nextProps.onExport &&
+    prevProps.onPrint === nextProps.onPrint &&
+    prevProps.canUndo === nextProps.canUndo &&
+    prevProps.canRedo === nextProps.canRedo &&
+    prevProps.onUndo === nextProps.onUndo &&
+    prevProps.onRedo === nextProps.onRedo
+    // Intentionally ignore isPrinting and isConnected
+    // as they only affect PrintSection which is memoized separately
   );
 };
 
-export default Header;
+export default memo(Header, arePropsEqual);

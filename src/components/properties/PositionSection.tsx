@@ -2,6 +2,7 @@
  * PositionSection - Position and rotation controls
  */
 
+import { memo, useCallback } from "react";
 import type { FC } from "react";
 import type { Layer } from "../../types/layer";
 import PropertySection from "./PropertySection";
@@ -14,6 +15,18 @@ interface PositionSectionProps {
 }
 
 const PositionSection: FC<PositionSectionProps> = ({ layer, onUpdate }) => {
+  const handleXChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onUpdate(layer.id, { x: parseFloat(e.target.value) || 0 });
+  }, [layer.id, onUpdate]);
+
+  const handleYChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onUpdate(layer.id, { y: parseFloat(e.target.value) || 0 });
+  }, [layer.id, onUpdate]);
+
+  const handleRotationChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onUpdate(layer.id, { rotation: parseFloat(e.target.value) || 0 });
+  }, [layer.id, onUpdate]);
+
   return (
     <PropertySection
       title="Position"
@@ -26,9 +39,7 @@ const PositionSection: FC<PositionSectionProps> = ({ layer, onUpdate }) => {
           <Input
             type="number"
             value={Math.round(layer.x)}
-            onChange={(e) =>
-              onUpdate(layer.id, { x: parseFloat(e.target.value) || 0 })
-            }
+            onChange={handleXChange}
           />
         </div>
         <div className="property-field">
@@ -36,9 +47,7 @@ const PositionSection: FC<PositionSectionProps> = ({ layer, onUpdate }) => {
           <Input
             type="number"
             value={Math.round(layer.y)}
-            onChange={(e) =>
-              onUpdate(layer.id, { y: parseFloat(e.target.value) || 0 })
-            }
+            onChange={handleYChange}
           />
         </div>
       </div>
@@ -49,9 +58,7 @@ const PositionSection: FC<PositionSectionProps> = ({ layer, onUpdate }) => {
           <Input
             type="number"
             value={Math.round(layer.rotation || 0)}
-            onChange={(e) =>
-              onUpdate(layer.id, { rotation: parseFloat(e.target.value) || 0 })
-            }
+            onChange={handleRotationChange}
             className="pr-8"
           />
           <span className="unit">°</span>
@@ -97,5 +104,5 @@ const PositionSection: FC<PositionSectionProps> = ({ layer, onUpdate }) => {
   );
 };
 
-export default PositionSection;
+export default memo(PositionSection);
 

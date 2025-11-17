@@ -3,7 +3,7 @@
  * Shown in left panel when clicking "Canvas" button in sidebar
  */
 
-import type { FC } from 'react';
+import type { FC } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Info } from "lucide-react";
@@ -13,17 +13,18 @@ interface CanvasSettingsPanelProps {
   onCanvasHeightChange: (height: number) => void;
 }
 
+// Static preset sizes - no need to recreate on each render
+const PRESET_SIZES = [
+  { name: "Small Receipt", height: 400 },
+  { name: "Medium Receipt", height: 800 },
+  { name: "Large Receipt", height: 1200 },
+  { name: "Extra Large", height: 1600 },
+] as const;
+
 const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
   canvasHeight,
   onCanvasHeightChange,
 }) => {
-  const presetSizes = [
-    { name: 'Small Receipt', height: 400 },
-    { name: 'Medium Receipt', height: 800 },
-    { name: 'Large Receipt', height: 1200 },
-    { name: 'Extra Large', height: 1600 },
-  ];
-
   return (
     <div className="canvas-settings-panel">
       <div className="settings-section">
@@ -32,7 +33,9 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
           <Input
             type="number"
             value={canvasHeight}
-            onChange={(e) => onCanvasHeightChange(parseInt(e.target.value) || 400)}
+            onChange={(e) =>
+              onCanvasHeightChange(parseInt(e.target.value) || 400)
+            }
             className="pr-12"
             min="200"
             max="3000"
@@ -40,7 +43,7 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
           />
           <span className="input-unit">px</span>
         </div>
-        
+
         <input
           type="range"
           min="200"
@@ -55,11 +58,13 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
       <div className="settings-section">
         <label className="settings-label">Preset Sizes</label>
         <div className="preset-grid">
-          {presetSizes.map((preset) => (
+          {PRESET_SIZES.map((preset) => (
             <Button
               key={preset.name}
               variant="neuro-ghost"
-              className={`preset-btn ${canvasHeight === preset.height ? 'active' : ''}`}
+              className={`preset-btn ${
+                canvasHeight === preset.height ? "active" : ""
+              }`}
               onClick={() => onCanvasHeightChange(preset.height)}
             >
               <span className="preset-name">{preset.name}</span>
@@ -89,7 +94,10 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
 
       <div className="settings-note">
         <Info size={16} />
-        <p>Width is fixed at 384px (48mm) for thermal printers. Adjust height as needed for your content.</p>
+        <p>
+          Width is fixed at 384px (48mm) for thermal printers. Adjust height as
+          needed for your content.
+        </p>
       </div>
 
       <style>{`
@@ -254,4 +262,3 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
 };
 
 export default CanvasSettingsPanel;
-

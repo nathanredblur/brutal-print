@@ -3,6 +3,7 @@
  * Always visible in the left sidebar
  */
 
+import { memo, useMemo, useCallback } from "react";
 import type { FC } from "react";
 import type { Layer } from "../types/layer";
 import { Button } from "@/components/ui/button";
@@ -38,16 +39,20 @@ const LayersPanel: FC<LayersPanelProps> = ({
   onRemoveLayer,
   onMoveLayer,
 }) => {
-  const selectedLayer = layers.find((l) => l.id === selectedLayerId);
-  const selectedIndex = selectedLayer
-    ? layers.findIndex((l) => l.id === selectedLayerId)
-    : -1;
+  // Memoize reversed layers to avoid creating new array on each render
+  const reversedLayers = useMemo(() => [...layers].reverse(), [layers]);
 
-  // Check if can move up (towards end of array = higher z-index)
-  const canMoveUp = selectedLayer && selectedIndex < layers.length - 1;
-
-  // Check if can move down (towards start of array = lower z-index)
-  const canMoveDown = selectedLayer && selectedIndex > 0;
+  // Memoize selected layer info
+  const { selectedLayer, selectedIndex, canMoveUp, canMoveDown } = useMemo(() => {
+    const layer = layers.find((l) => l.id === selectedLayerId);
+    const index = layer ? layers.findIndex((l) => l.id === selectedLayerId) : -1;
+    return {
+      selectedLayer: layer,
+      selectedIndex: index,
+      canMoveUp: layer && index < layers.length - 1,
+      canMoveDown: layer && index > 0,
+    };
+  }, [layers, selectedLayerId]);
 
   return (
     <div className="layers-panel">
@@ -98,67 +103,16 @@ const LayersPanel: FC<LayersPanelProps> = ({
             <span className="hint">Use the tools below to add content</span>
           </div>
         ) : (
-          [...layers].reverse().map((layer, index) => (
-            <div
+          reversedLayers.map((layer) => (
+            <LayerItem
               key={layer.id}
-              className={`layer-item ${
-                selectedLayerId === layer.id ? "selected" : ""
-              }`}
-              onClick={() => onSelectLayer(layer.id)}
-            >
-              <div className="layer-icon">
-                {layer.type === "text" ? (
-                  <Type size={14} />
-                ) : (
-                  <Image size={14} />
-                )}
-              </div>
-
-              <span className="layer-name">{layer.name}</span>
-
-              <div className="layer-actions">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleVisibility(layer.id);
-                  }}
-                  title={layer.visible ? "Hide" : "Show"}
-                  className="h-6 w-6"
-                >
-                  {layer.visible ? <Eye size={12} /> : <EyeOff size={12} />}
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleLock(layer.id);
-                  }}
-                  title={layer.locked ? "Unlock" : "Lock"}
-                  className="h-6 w-6"
-                >
-                  {layer.locked ? <Lock size={12} /> : <Unlock size={12} />}
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (confirm(`Delete layer "${layer.name}"?`)) {
-                      onRemoveLayer(layer.id);
-                    }
-                  }}
-                  title="Delete"
-                  className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 size={12} />
-                </Button>
-              </div>
-            </div>
+              layer={layer}
+              isSelected={selectedLayerId === layer.id}
+              onSelectLayer={onSelectLayer}
+              onToggleVisibility={onToggleVisibility}
+              onToggleLock={onToggleLock}
+              onRemoveLayer={onRemoveLayer}
+            />
           ))
         )}
       </div>
@@ -354,4 +308,91 @@ const LayersPanel: FC<LayersPanelProps> = ({
   );
 };
 
-export default LayersPanel;
+// Memoized LayerItem component to prevent unnecessary re-renders
+interface LayerItemProps {
+  layer: Layer;
+  isSelected: boolean;
+  onSelectLayer: (layerId: string) => void;
+  onToggleVisibility: (layerId: string) => void;
+  onToggleLock: (layerId: string) => void;
+  onRemoveLayer: (layerId: string) => void;
+}
+
+const LayerItem = memo<LayerItemProps>(({
+  layer,
+  isSelected,
+  onSelectLayer,
+  onToggleVisibility,
+  onToggleLock,
+  onRemoveLayer,
+}) => {
+  const handleSelect = useCallback(() => {
+    onSelectLayer(layer.id);
+  }, [layer.id, onSelectLayer]);
+
+  const handleToggleVisibility = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleVisibility(layer.id);
+  }, [layer.id, onToggleVisibility]);
+
+  const handleToggleLock = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleLock(layer.id);
+  }, [layer.id, onToggleLock]);
+
+  const handleRemove = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm(`Delete layer "${layer.name}"?`)) {
+      onRemoveLayer(layer.id);
+    }
+  }, [layer.id, layer.name, onRemoveLayer]);
+
+  return (
+    <div
+      className={`layer-item ${isSelected ? "selected" : ""}`}
+      onClick={handleSelect}
+    >
+      <div className="layer-icon">
+        {layer.type === "text" ? <Type size={14} /> : <Image size={14} />}
+      </div>
+
+      <span className="layer-name">{layer.name}</span>
+
+      <div className="layer-actions">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={handleToggleVisibility}
+          title={layer.visible ? "Hide" : "Show"}
+          className="h-6 w-6"
+        >
+          {layer.visible ? <Eye size={12} /> : <EyeOff size={12} />}
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={handleToggleLock}
+          title={layer.locked ? "Unlock" : "Lock"}
+          className="h-6 w-6"
+        >
+          {layer.locked ? <Lock size={12} /> : <Unlock size={12} />}
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={handleRemove}
+          title="Delete"
+          className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
+        >
+          <Trash2 size={12} />
+        </Button>
+      </div>
+    </div>
+  );
+});
+
+LayerItem.displayName = "LayerItem";
+
+export default memo(LayersPanel);
