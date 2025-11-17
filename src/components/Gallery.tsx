@@ -6,7 +6,7 @@
 import { useState, useMemo } from "react";
 import type { FC, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, Search } from "lucide-react";
 
 export interface GalleryItem {
   id: string;
@@ -58,18 +58,7 @@ const Gallery: FC<GalleryProps> = ({
     <div className="gallery">
       {/* Search Input */}
       <div className="gallery-search">
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          className="search-icon"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.35-4.35" />
-        </svg>
+        <Search size={14} className="search-icon" />
         <input
           type="text"
           value={searchQuery}
@@ -93,17 +82,7 @@ const Gallery: FC<GalleryProps> = ({
       <div className="gallery-grid">
         {filteredItems.length === 0 ? (
           <div className="gallery-empty">
-            <svg
-              width="36"
-              height="36"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.35-4.35" />
-            </svg>
+            <Search size={36} />
             <p>{emptyMessage}</p>
           </div>
         ) : (

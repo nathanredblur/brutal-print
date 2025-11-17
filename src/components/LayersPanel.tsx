@@ -6,6 +6,7 @@
 import type { FC } from "react";
 import type { Layer } from "../types/layer";
 import { Button } from "@/components/ui/button";
+import { ChevronUp, ChevronDown, Eye, EyeOff, Lock, Unlock, Trash2, Image, Type, Layers } from "lucide-react";
 
 interface LayersPanelProps {
   layers: Layer[];
@@ -43,9 +44,7 @@ const LayersPanel: FC<LayersPanelProps> = ({
             onClick={() => onMoveLayer(selectedLayer.id, "up")}
             title="Bring forward"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 15l-6-6-6 6" />
-            </svg>
+            <ChevronUp size={12} />
           </Button>
           <Button
             variant="neuro-icon"
@@ -53,9 +52,7 @@ const LayersPanel: FC<LayersPanelProps> = ({
             onClick={() => onMoveLayer(selectedLayer.id, "down")}
             title="Send backward"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M6 9l6 6 6-6" />
-            </svg>
+            <ChevronDown size={12} />
           </Button>
         </div>
       )}
@@ -64,16 +61,7 @@ const LayersPanel: FC<LayersPanelProps> = ({
       <div className="layers-list">
         {layers.length === 0 ? (
           <div className="empty-state">
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
+            <Layers size={48} />
             <p>No layers yet</p>
             <span className="hint">Use the tools below to add content</span>
           </div>
@@ -88,17 +76,9 @@ const LayersPanel: FC<LayersPanelProps> = ({
             >
               <div className="layer-icon">
                 {layer.type === "text" ? (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="4 7 4 4 20 4 20 7" />
-                    <line x1="9" y1="20" x2="15" y2="20" />
-                    <line x1="12" y1="4" x2="12" y2="20" />
-                  </svg>
+                  <Type size={14} />
                 ) : (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <path d="M21 15l-5-5L5 21" />
-                  </svg>
+                  <Image size={14} />
                 )}
               </div>
 
@@ -116,15 +96,9 @@ const LayersPanel: FC<LayersPanelProps> = ({
                   className="h-6 w-6"
                 >
                   {layer.visible ? (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
+                    <Eye size={12} />
                   ) : (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
+                    <EyeOff size={12} />
                   )}
                 </Button>
 
@@ -139,15 +113,9 @@ const LayersPanel: FC<LayersPanelProps> = ({
                   className="h-6 w-6"
                 >
                   {layer.locked ? (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="5" y="11" width="14" height="10" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
+                    <Lock size={12} />
                   ) : (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="5" y="11" width="14" height="10" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 9.9-1" />
-                    </svg>
+                    <Unlock size={12} />
                   )}
                 </Button>
 
@@ -163,9 +131,7 @@ const LayersPanel: FC<LayersPanelProps> = ({
                   title="Delete"
                   className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                  </svg>
+                  <Trash2 size={12} />
                 </Button>
               </div>
             </div>

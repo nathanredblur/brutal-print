@@ -3,6 +3,7 @@ import { usePrinterContext } from '../contexts/PrinterContext';
 import { logger } from '../lib/logger';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Battery, Printer } from 'lucide-react';
 
 interface PrinterConnectionProps {
   onPrint?: () => void;
@@ -84,10 +85,7 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
 
         {batteryLevel !== null && (
           <div className="battery-indicator">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="1" y="6" width="18" height="12" rx="2" ry="2"/>
-              <line x1="23" y1="10" x2="23" y2="14"/>
-            </svg>
+            <Battery size={20} />
             <span>{batteryLevel}%</span>
           </div>
         )}
@@ -107,11 +105,7 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
             onClick={handleConnect}
             disabled={isPrinting}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M6 9V2h12v7"/>
-              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-              <path d="M6 14h12v8H6z"/>
-            </svg>
+            <Printer size={16} />
             Connect Printer
           </Button>
         ) : (
@@ -137,11 +131,7 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
                 </>
               ) : (
                 <>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M6 9V2h12v7"/>
-                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-                    <path d="M6 14h12v8H6z"/>
-                  </svg>
+                  <Printer size={16} />
                   Print
                 </>
               )}

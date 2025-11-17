@@ -7,6 +7,7 @@ import { useState, useRef, useEffect, type FC } from "react";
 import type { ImageLayer } from "../../types/layer";
 import PropertySection from "./PropertySection";
 import { Button } from "@/components/ui/button";
+import { Sun, CircleOff } from "lucide-react";
 
 interface ImageFiltersSectionProps {
   layer: ImageLayer;
@@ -263,12 +264,7 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
     <PropertySection
       title="Filters"
       defaultExpanded={true}
-      icon={
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 1v6m0 6v6m5.2-13.2l-2.9 2.9m-2.6 2.6l-2.9 2.9m7.8 0l-2.9-2.9m-2.6-2.6l-2.9-2.9" />
-        </svg>
-      }
+      icon={<Sun size={14} />}
     >
       {/* Dither Method */}
       <div className="filter-group">
@@ -399,10 +395,7 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
           className="invert-toggle w-full justify-start"
           onClick={() => reprocessWithUpdates({ invert: !layer.invert })}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 2a10 10 0 0 0 0 20z" fill="currentColor" />
-          </svg>
+          <CircleOff size={16} />
           <span>Invert</span>
           <div className={`toggle-switch ${layer.invert ? "active" : ""}`}>
             <div className="toggle-handle" />

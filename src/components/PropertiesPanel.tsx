@@ -9,6 +9,7 @@ import PositionSection from "./properties/PositionSection";
 import SizeSection from "./properties/SizeSection";
 import TypographySection from "./properties/TypographySection";
 import ImageFiltersSection from "./properties/ImageFiltersSection";
+import { Info } from "lucide-react";
 
 type SelectionType = "layer" | "canvas" | null;
 
@@ -68,17 +69,7 @@ const PropertiesPanel: FC<PropertiesPanelProps> = ({
 
         <div className="properties-content">
           <div className="empty-state">
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 16v-4M12 8h.01" />
-            </svg>
+            <Info size={48} />
             <p>Select an element to see its properties</p>
           </div>
         </div>

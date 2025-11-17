@@ -1,7 +1,7 @@
 // Text tool component for adding text to canvas
 import { useState, useCallback } from "react";
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { X, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 
 interface TextToolProps {
   onAddText: (text: string, options: TextOptions) => void;
@@ -141,18 +141,7 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
               onClick={() => updateOption("align", "left")}
               title="Align Left"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="15" y2="12" />
-                <line x1="3" y1="18" x2="18" y2="18" />
-              </svg>
+              <AlignLeft size={16} />
             </Button>
             <Button
               variant={options.align === "center" ? "neuro" : "neuro-ghost"}
@@ -160,18 +149,7 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
               onClick={() => updateOption("align", "center")}
               title="Align Center"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="6" y1="12" x2="18" y2="12" />
-                <line x1="5" y1="18" x2="19" y2="18" />
-              </svg>
+              <AlignCenter size={16} />
             </Button>
             <Button
               variant={options.align === "right" ? "neuro" : "neuro-ghost"}
@@ -179,18 +157,7 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
               onClick={() => updateOption("align", "right")}
               title="Align Right"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="9" y1="12" x2="21" y2="12" />
-                <line x1="6" y1="18" x2="21" y2="18" />
-              </svg>
+              <AlignRight size={16} />
             </Button>
           </div>
         </div>

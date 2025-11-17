@@ -5,6 +5,7 @@
 
 import type { FC } from "react";
 import { Button } from "@/components/ui/button";
+import { Image, Type, Layout, Printer } from "lucide-react";
 
 type Tool = "image" | "text";
 
@@ -24,39 +25,13 @@ const ToolsBar: FC<ToolsBarProps> = ({
   const tools = [
     {
       id: "image" as Tool,
-      icon: (
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <circle cx="8.5" cy="8.5" r="1.5" />
-          <path d="M21 15l-5-5L5 21" />
-        </svg>
-      ),
+      icon: <Image size={20} />,
       label: "Image",
       shortcut: "I",
     },
     {
       id: "text" as Tool,
-      icon: (
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <polyline points="4 7 4 4 20 4 20 7" />
-          <line x1="9" y1="20" x2="15" y2="20" />
-          <line x1="12" y1="4" x2="12" y2="20" />
-        </svg>
-      ),
+      icon: <Type size={20} />,
       label: "Text",
       shortcut: "T",
     },
@@ -92,17 +67,7 @@ const ToolsBar: FC<ToolsBarProps> = ({
             title="Canvas Settings"
             className="gap-1"
           >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <path d="M3 9h18M9 21V9" />
-            </svg>
+            <Layout size={20} />
             <span className="text-xs font-semibold">Canvas</span>
           </Button>
         )}
@@ -116,18 +81,7 @@ const ToolsBar: FC<ToolsBarProps> = ({
             title="Printer Connection"
             className="gap-1"
           >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <polyline points="6 9 6 2 18 2 18 9" />
-              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-              <rect x="6" y="14" width="12" height="8" />
-            </svg>
+            <Printer size={20} />
             <span className="text-xs font-semibold">Printer</span>
           </Button>
         )}

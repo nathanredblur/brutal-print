@@ -6,6 +6,7 @@ import type { FC } from "react";
 import type { TextLayer } from "../../types/layer";
 import PropertySection from "./PropertySection";
 import { Button } from "@/components/ui/button";
+import { Type, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 
 interface TypographySectionProps {
   layer: TextLayer;
@@ -37,13 +38,7 @@ const TypographySection: FC<TypographySectionProps> = ({
     <PropertySection
       title="Typography"
       defaultExpanded={true}
-      icon={
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="4 7 4 4 20 4 20 7" />
-          <line x1="9" y1="20" x2="15" y2="20" />
-          <line x1="12" y1="4" x2="12" y2="20" />
-        </svg>
-      }
+      icon={<Type size={14} />}
     >
       {/* Font Family */}
       <div className="property-field">
@@ -130,12 +125,7 @@ const TypographySection: FC<TypographySectionProps> = ({
             title="Align left"
             className="flex-1"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="17" y1="10" x2="3" y2="10" />
-              <line x1="21" y1="6" x2="3" y2="6" />
-              <line x1="21" y1="14" x2="3" y2="14" />
-              <line x1="17" y1="18" x2="3" y2="18" />
-            </svg>
+            <AlignLeft size={16} />
           </Button>
           <Button
             variant={layer.align === "center" ? "neuro" : "neuro-ghost"}
@@ -144,12 +134,7 @@ const TypographySection: FC<TypographySectionProps> = ({
             title="Align center"
             className="flex-1"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="10" x2="6" y2="10" />
-              <line x1="21" y1="6" x2="3" y2="6" />
-              <line x1="21" y1="14" x2="3" y2="14" />
-              <line x1="18" y1="18" x2="6" y2="18" />
-            </svg>
+            <AlignCenter size={16} />
           </Button>
           <Button
             variant={layer.align === "right" ? "neuro" : "neuro-ghost"}
@@ -158,12 +143,7 @@ const TypographySection: FC<TypographySectionProps> = ({
             title="Align right"
             className="flex-1"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="21" y1="10" x2="7" y2="10" />
-              <line x1="21" y1="6" x2="3" y2="6" />
-              <line x1="21" y1="14" x2="3" y2="14" />
-              <line x1="21" y1="18" x2="7" y2="18" />
-            </svg>
+            <AlignRight size={16} />
           </Button>
         </div>
       </div>
