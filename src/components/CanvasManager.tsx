@@ -17,6 +17,8 @@ import FabricCanvas, { type FabricCanvasRef } from "./FabricCanvas";
 import { PRINTER_WIDTH } from "../lib/dithering";
 import { logger } from "../lib/logger";
 import type { Layer, ImageLayer, TextLayer } from "../types/layer";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 type Tool = "image" | "text";
 type AdvancedPanel =
@@ -208,36 +210,38 @@ export default function CanvasManager() {
     });
   }, [isConnected, isPrinting]);
 
-  const handleImageProcessed = useCallback(
-    (
-      canvas: HTMLCanvasElement,
-      binaryData: boolean[][],
-      originalImageData: string,
-      ditherMethod: string,
-      threshold: number,
-      invert: boolean
-    ) => {
-      // Add image as a new layer (non-destructive!)
+  const handleImageUploaded = useCallback(
+    async (imageDataUrl: string) => {
+      // Process image and add as a new layer
       const layerName = `Image ${layers.length + 1}`;
-      addImageLayer(
-        canvas,
-        originalImageData,
-        ditherMethod,
-        threshold,
-        invert,
-        {
+
+      // Load image and process it
+      const img = new Image();
+      img.onload = async () => {
+        const { processImageForPrinter } = await import("../lib/dithering");
+
+        // Process with default settings
+        const { canvas } = processImageForPrinter(img, {
+          ditherMethod: "steinberg",
+          threshold: 128,
+          brightness: 128,
+          contrast: 100,
+          invert: false,
+        });
+
+        addImageLayer(canvas, imageDataUrl, "steinberg", 128, false, {
           name: layerName,
           x: 0,
           y: 0,
-        }
-      );
+        });
 
-      logger.success(
-        "CanvasManager",
-        "Image added as layer with original data"
-      );
-      // No toast notification - visual feedback is the layer appearing
-      setShowImageUploader(false);
+        logger.success(
+          "CanvasManager",
+          "Image added as layer with original data"
+        );
+        setShowImageUploader(false);
+      };
+      img.src = imageDataUrl;
     },
     [addImageLayer, layers.length]
   );
@@ -779,12 +783,13 @@ export default function CanvasManager() {
               <div className="panel">
                 <div className="panel-header">
                   <h3>Printer</h3>
-                  <button
-                    className="close-btn"
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() => setAdvancedPanel(null)}
                   >
-                    ×
-                  </button>
+                    <X className="w-4 h-4" />
+                  </Button>
                 </div>
                 <PrinterConnection onPrint={handlePrint} />
               </div>
@@ -795,12 +800,13 @@ export default function CanvasManager() {
               <div className="panel">
                 <div className="panel-header">
                   <h3>Canvas Settings</h3>
-                  <button
-                    className="close-btn"
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() => setAdvancedPanel(null)}
                   >
-                    ×
-                  </button>
+                    <X className="w-4 h-4" />
+                  </Button>
                 </div>
                 <CanvasSettingsPanel
                   canvasHeight={canvasHeight}
@@ -814,14 +820,15 @@ export default function CanvasManager() {
               <div className="panel">
                 <div className="panel-header">
                   <h3>Upload Image</h3>
-                  <button
-                    className="close-btn"
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() => setShowImageUploader(false)}
                   >
-                    ×
-                  </button>
+                    <X className="w-4 h-4" />
+                  </Button>
                 </div>
-                <ImageUploader onImageProcessed={handleImageProcessed} />
+                <ImageUploader onImageUploaded={handleImageUploaded} />
               </div>
             )}
 
@@ -945,26 +952,6 @@ export default function CanvasManager() {
           margin: 0;
         }
 
-        .close-btn {
-          background: transparent;
-          border: none;
-          color: var(--color-text-secondary);
-          font-size: 1.25rem;
-          cursor: pointer;
-          padding: 0;
-          width: 20px;
-          height: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: var(--radius-sm);
-          transition: all var(--transition-fast);
-        }
-
-        .close-btn:hover {
-          background: rgba(239, 68, 68, 0.1);
-          color: #ef4444;
-        }
       `}</style>
     </div>
   );

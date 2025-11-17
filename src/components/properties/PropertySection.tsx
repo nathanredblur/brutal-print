@@ -4,6 +4,8 @@
  */
 
 import { useState, type FC, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { ChevronDown } from "lucide-react";
 
 interface PropertySectionProps {
   title: string;
@@ -22,26 +24,20 @@ const PropertySection: FC<PropertySectionProps> = ({
 
   return (
     <div className="property-section">
-      <button
-        className="section-header"
+      <Button
+        variant="ghost"
+        className="section-header w-full justify-between"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="section-title-wrapper">
           {icon && <span className="section-icon">{icon}</span>}
           <h3 className="section-title">{title}</h3>
         </div>
-        <svg
+        <ChevronDown
           className={`chevron ${isExpanded ? "expanded" : ""}`}
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </button>
+          size={12}
+        />
+      </Button>
 
       {isExpanded && <div className="section-content">{children}</div>}
 
@@ -51,15 +47,10 @@ const PropertySection: FC<PropertySectionProps> = ({
         }
 
         .section-header {
-          width: 100%;
           display: flex;
           align-items: center;
-          justify-content: space-between;
           padding: 0.75rem 0;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          transition: all var(--transition-fast);
+          height: auto;
         }
 
         .section-header:hover {
@@ -90,6 +81,7 @@ const PropertySection: FC<PropertySectionProps> = ({
         .chevron {
           transition: transform var(--transition-fast);
           color: var(--color-text-muted);
+          flex-shrink: 0;
         }
 
         .chevron.expanded {
@@ -124,4 +116,3 @@ const PropertySection: FC<PropertySectionProps> = ({
 };
 
 export default PropertySection;
-

@@ -1,74 +1,14 @@
-// Image upload and processing component
+// Image upload component - simplified to only handle upload
 import { useState, useRef, useCallback } from "react";
-import { processImageForPrinter, binaryDataToCanvas } from "../lib/dithering";
-import type { DitherMethod } from "../lib/dithering";
 
 interface ImageUploaderProps {
-  onImageProcessed?: (
-    canvas: HTMLCanvasElement,
-    binaryData: boolean[][],
-    originalImageData: string,
-    ditherMethod: string,
-    threshold: number,
-    invert: boolean
-  ) => void;
+  onImageUploaded?: (imageDataUrl: string) => void;
 }
 
-export default function ImageUploader({
-  onImageProcessed,
-}: ImageUploaderProps) {
-  const [image, setImage] = useState<HTMLImageElement | null>(null);
+export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
   const [preview, setPreview] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [ditherMethod, setDitherMethod] = useState<DitherMethod>("steinberg");
-  const [threshold, setThreshold] = useState(128);
-  const [brightness, setBrightness] = useState(128);
-  const [contrast, setContrast] = useState(100);
-  const [invert, setInvert] = useState(false);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
-
-  const processImage = useCallback(
-    async (img: HTMLImageElement) => {
-      if (!img) return;
-
-      setIsProcessing(true);
-
-      try {
-        const { canvas, binaryData } = processImageForPrinter(img, {
-          ditherMethod,
-          threshold,
-          brightness,
-          contrast,
-          invert,
-        });
-
-        // Create preview canvas with 1-bit dithered image
-        const previewCanvas = binaryDataToCanvas(binaryData, 1);
-        setPreview(previewCanvas.toDataURL());
-
-        // Get original image data (stored in dataset)
-        const originalImageData = img.dataset.originalData || img.src;
-
-        // Notify parent with the 1-bit dithered canvas (previewCanvas) for display
-        // This ensures the canvas shows the crisp 1-bit image
-        onImageProcessed?.(
-          previewCanvas, // Use previewCanvas instead of canvas for correct 1-bit rendering
-          binaryData,
-          originalImageData,
-          ditherMethod,
-          threshold,
-          invert
-        );
-      } catch (error) {
-        console.error("Failed to process image:", error);
-      } finally {
-        setIsProcessing(false);
-      }
-    },
-    [ditherMethod, threshold, brightness, contrast, invert, onImageProcessed]
-  );
 
   const handleFileSelect = useCallback(
     (file: File) => {
@@ -79,19 +19,14 @@ export default function ImageUploader({
 
       const reader = new FileReader();
       reader.onload = (e) => {
-        const originalDataUrl = e.target?.result as string;
-        const img = new Image();
-        img.onload = () => {
-          setImage(img);
-          // Store original data URL for later reprocessing
-          img.dataset.originalData = originalDataUrl;
-          processImage(img);
-        };
-        img.src = originalDataUrl;
+        const dataUrl = e.target?.result as string;
+        setPreview(dataUrl);
+        // Notify parent with the raw image data
+        onImageUploaded?.(dataUrl);
       };
       reader.readAsDataURL(file);
     },
-    [processImage]
+    [onImageUploaded]
   );
 
   const handleFileInput = useCallback(
@@ -122,22 +57,15 @@ export default function ImageUploader({
     e.stopPropagation();
   }, []);
 
-  // Re-process when settings change
-  const handleSettingChange = useCallback(() => {
-    if (image) {
-      processImage(image);
-    }
-  }, [image, processImage]);
-
   return (
     <div className="image-uploader">
       {/* Drop Zone */}
       <div
         ref={dropZoneRef}
-        className={`drop-zone ${image ? "has-image" : ""}`}
+        className={`drop-zone ${preview ? "has-image" : ""}`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => !preview && fileInputRef.current?.click()}
       >
         <input
           ref={fileInputRef}
@@ -150,12 +78,6 @@ export default function ImageUploader({
         {preview ? (
           <div className="preview-container">
             <img src={preview} alt="Preview" className="preview-image" />
-            {isProcessing && (
-              <div className="processing-overlay">
-                <div className="spinner-large"></div>
-                <span>Processing...</span>
-              </div>
-            )}
           </div>
         ) : (
           <div className="drop-placeholder">
@@ -176,94 +98,6 @@ export default function ImageUploader({
           </div>
         )}
       </div>
-
-      {/* Processing Controls */}
-      {image && (
-        <div className="processing-controls">
-          <div className="control-group">
-            <label>Dithering Method</label>
-            <select
-              value={ditherMethod}
-              onChange={(e) => {
-                setDitherMethod(e.target.value as DitherMethod);
-                handleSettingChange();
-              }}
-            >
-              <option value="steinberg">Floyd-Steinberg</option>
-              <option value="atkinson">Atkinson</option>
-              <option value="bayer">Ordered (Bayer)</option>
-              <option value="pattern">Halftone/Pattern</option>
-              <option value="threshold">Threshold</option>
-            </select>
-          </div>
-
-          <div className="control-group">
-            <label>Threshold: {threshold}</label>
-            <input
-              type="range"
-              min="0"
-              max="255"
-              value={threshold}
-              onChange={(e) => {
-                setThreshold(Number(e.target.value));
-                handleSettingChange();
-              }}
-            />
-          </div>
-
-          <div className="control-group">
-            <label>Brightness: {brightness}</label>
-            <input
-              type="range"
-              min="0"
-              max="255"
-              value={brightness}
-              onChange={(e) => {
-                setBrightness(Number(e.target.value));
-                handleSettingChange();
-              }}
-            />
-          </div>
-
-          <div className="control-group">
-            <label>Contrast: {contrast}</label>
-            <input
-              type="range"
-              min="0"
-              max="200"
-              value={contrast}
-              onChange={(e) => {
-                setContrast(Number(e.target.value));
-                handleSettingChange();
-              }}
-            />
-          </div>
-
-          <div className="control-group checkbox-group">
-            <label>
-              <input
-                type="checkbox"
-                checked={invert}
-                onChange={(e) => {
-                  setInvert(e.target.checked);
-                  handleSettingChange();
-                }}
-              />
-              Invert Colors
-            </label>
-          </div>
-
-          <button
-            className="btn-secondary"
-            onClick={() => {
-              setImage(null);
-              setPreview(null);
-            }}
-          >
-            Remove Image
-          </button>
-        </div>
-      )}
 
       <style>{`
         .image-uploader {
@@ -308,29 +142,7 @@ export default function ImageUploader({
         .preview-image {
           max-width: 100%;
           max-height: 300px;
-          image-rendering: pixelated;
           border-radius: var(--radius-sm);
-        }
-
-        .processing-overlay {
-          position: absolute;
-          inset: 0;
-          background: rgba(10, 14, 26, 0.9);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-          border-radius: var(--radius-md);
-        }
-
-        .spinner-large {
-          width: 30px;
-          height: 30px;
-          border: 2px solid rgba(167, 139, 250, 0.3);
-          border-top-color: var(--color-purple-primary);
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
         }
 
         .drop-placeholder {
@@ -357,72 +169,6 @@ export default function ImageUploader({
         .drop-placeholder span {
           font-size: 0.75rem;
           color: var(--color-text-muted);
-        }
-
-        .processing-controls {
-          display: flex;
-          flex-direction: column;
-          gap: 0.625rem;
-          padding: 0.75rem;
-          background: var(--color-bg-tertiary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-        }
-
-        .control-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.375rem;
-        }
-
-        .control-group label {
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: var(--color-text-secondary);
-        }
-
-        .control-group select,
-        .control-group input[type="range"] {
-          width: 100%;
-        }
-
-        .control-group select {
-          background: var(--color-bg-secondary);
-          color: var(--color-text-primary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          padding: 0.375rem 0.5rem;
-          font-size: 0.75rem;
-        }
-
-        .control-group input[type="range"] {
-          height: 3px;
-          background: var(--color-bg-secondary);
-          border-radius: 2px;
-          outline: none;
-          -webkit-appearance: none;
-        }
-
-        .control-group input[type="range"]::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          width: 12px;
-          height: 12px;
-          background: var(--color-purple-primary);
-          border-radius: 50%;
-          cursor: pointer;
-        }
-
-        .checkbox-group label {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          cursor: pointer;
-        }
-
-        .checkbox-group input[type="checkbox"] {
-          width: 16px;
-          height: 16px;
-          cursor: pointer;
         }
       `}</style>
     </div>

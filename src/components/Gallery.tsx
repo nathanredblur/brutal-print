@@ -5,6 +5,8 @@
 
 import { useState, useMemo } from "react";
 import type { FC, ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 export interface GalleryItem {
   id: string;
@@ -76,13 +78,14 @@ const Gallery: FC<GalleryProps> = ({
           className="gallery-search-input"
         />
         {searchQuery && (
-          <button
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => setSearchQuery("")}
-            className="search-clear"
             title="Clear search"
           >
-            ×
-          </button>
+            <X className="w-3 h-3" />
+          </Button>
         )}
       </div>
 
@@ -105,14 +108,15 @@ const Gallery: FC<GalleryProps> = ({
           </div>
         ) : (
           filteredItems.map((item) => (
-            <button
+            <Button
               key={item.id}
+              variant="neuro-ghost"
               className="gallery-item"
               onClick={() => onItemSelect(item)}
               title={item.name}
             >
               {item.preview}
-            </button>
+            </Button>
           ))
         )}
       </div>
@@ -154,27 +158,6 @@ const Gallery: FC<GalleryProps> = ({
           color: var(--color-text-muted);
         }
 
-        .search-clear {
-          background: transparent;
-          border: none;
-          color: var(--color-text-muted);
-          font-size: 1.25rem;
-          cursor: pointer;
-          padding: 0;
-          width: 20px;
-          height: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: var(--radius-sm);
-          transition: all var(--transition-fast);
-        }
-
-        .search-clear:hover {
-          background: rgba(239, 68, 68, 0.1);
-          color: #ef4444;
-        }
-
         .gallery-grid {
           flex: 1;
           overflow-y: auto;
@@ -200,21 +183,11 @@ const Gallery: FC<GalleryProps> = ({
 
         .gallery-item {
           aspect-ratio: 1;
-          background: var(--color-bg-secondary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          cursor: pointer;
-          transition: all var(--transition-fast);
+          height: auto;
           padding: 0.75rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
         }
 
         .gallery-item:hover {
-          background: rgba(167, 139, 250, 0.1);
-          border-color: var(--color-purple-primary);
           transform: translateY(-2px);
           box-shadow: 0 4px 8px rgba(167, 139, 250, 0.2);
         }

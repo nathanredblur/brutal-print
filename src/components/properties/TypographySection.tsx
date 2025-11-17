@@ -5,6 +5,7 @@
 import type { FC } from "react";
 import type { TextLayer } from "../../types/layer";
 import PropertySection from "./PropertySection";
+import { Button } from "@/components/ui/button";
 
 interface TypographySectionProps {
   layer: TextLayer;
@@ -65,9 +66,14 @@ const TypographySection: FC<TypographySectionProps> = ({
       <div className="property-field">
         <label>Font Size</label>
         <div className="input-with-controls">
-          <button onClick={() => handleFontSizeChange(-2)} title="Decrease">
+          <Button 
+            variant="neuro-ghost" 
+            size="icon-sm" 
+            onClick={() => handleFontSizeChange(-2)} 
+            title="Decrease"
+          >
             −
-          </button>
+          </Button>
           <input
             type="number"
             value={layer.fontSize || 24}
@@ -77,9 +83,14 @@ const TypographySection: FC<TypographySectionProps> = ({
             min="8"
             max="200"
           />
-          <button onClick={() => handleFontSizeChange(2)} title="Increase">
+          <Button 
+            variant="neuro-ghost" 
+            size="icon-sm" 
+            onClick={() => handleFontSizeChange(2)} 
+            title="Increase"
+          >
             +
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -87,20 +98,24 @@ const TypographySection: FC<TypographySectionProps> = ({
       <div className="property-field">
         <label>Style</label>
         <div className="button-group">
-          <button
-            className={`style-btn ${layer.bold ? "active" : ""}`}
+          <Button
+            variant={layer.bold ? "neuro" : "neuro-ghost"}
+            size="sm"
             onClick={toggleBold}
             title="Bold"
+            className="flex-1"
           >
             <strong>B</strong>
-          </button>
-          <button
-            className={`style-btn ${layer.italic ? "active" : ""}`}
+          </Button>
+          <Button
+            variant={layer.italic ? "neuro" : "neuro-ghost"}
+            size="sm"
             onClick={toggleItalic}
             title="Italic"
+            className="flex-1"
           >
             <em>I</em>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -108,10 +123,12 @@ const TypographySection: FC<TypographySectionProps> = ({
       <div className="property-field">
         <label>Alignment</label>
         <div className="button-group">
-          <button
-            className={`align-btn ${layer.align === "left" ? "active" : ""}`}
+          <Button
+            variant={layer.align === "left" ? "neuro" : "neuro-ghost"}
+            size="icon-sm"
             onClick={() => changeAlign("left")}
             title="Align left"
+            className="flex-1"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="17" y1="10" x2="3" y2="10" />
@@ -119,11 +136,13 @@ const TypographySection: FC<TypographySectionProps> = ({
               <line x1="21" y1="14" x2="3" y2="14" />
               <line x1="17" y1="18" x2="3" y2="18" />
             </svg>
-          </button>
-          <button
-            className={`align-btn ${layer.align === "center" ? "active" : ""}`}
+          </Button>
+          <Button
+            variant={layer.align === "center" ? "neuro" : "neuro-ghost"}
+            size="icon-sm"
             onClick={() => changeAlign("center")}
             title="Align center"
+            className="flex-1"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="10" x2="6" y2="10" />
@@ -131,11 +150,13 @@ const TypographySection: FC<TypographySectionProps> = ({
               <line x1="21" y1="14" x2="3" y2="14" />
               <line x1="18" y1="18" x2="6" y2="18" />
             </svg>
-          </button>
-          <button
-            className={`align-btn ${layer.align === "right" ? "active" : ""}`}
+          </Button>
+          <Button
+            variant={layer.align === "right" ? "neuro" : "neuro-ghost"}
+            size="icon-sm"
             onClick={() => changeAlign("right")}
             title="Align right"
+            className="flex-1"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="21" y1="10" x2="7" y2="10" />
@@ -143,7 +164,7 @@ const TypographySection: FC<TypographySectionProps> = ({
               <line x1="21" y1="14" x2="3" y2="14" />
               <line x1="21" y1="18" x2="7" y2="18" />
             </svg>
-          </button>
+          </Button>
         </div>
       </div>
 

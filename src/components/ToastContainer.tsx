@@ -6,6 +6,8 @@
 
 import { useEffect, useState } from 'react';
 import type { Toast } from '../types/toast';
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 interface ToastContainerProps {
   toasts: Toast[];
@@ -103,14 +105,25 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
         <div className="toast-title">{toast.title}</div>
         {toast.message && <div className="toast-message">{toast.message}</div>}
         {toast.action && (
-          <button className="toast-action" onClick={toast.action.onClick}>
+          <Button 
+            variant="neuro-ghost" 
+            size="sm"
+            className="toast-action" 
+            onClick={toast.action.onClick}
+          >
             {toast.action.label}
-          </button>
+          </Button>
         )}
       </div>
-      <button className="toast-close" onClick={handleClose} aria-label="Close notification">
-        ×
-      </button>
+      <Button 
+        variant="ghost" 
+        size="icon-sm"
+        onClick={handleClose} 
+        aria-label="Close notification"
+        className="toast-close"
+      >
+        <X className="w-4 h-4" />
+      </Button>
 
       <style>{`
         .toast {
@@ -210,41 +223,11 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
 
         .toast-action {
           margin-top: 0.5rem;
-          padding: 0.25rem 0.75rem;
-          background: rgba(59, 130, 246, 0.2);
-          border: 1px solid var(--color-blue-primary);
-          border-radius: var(--radius-sm);
-          color: var(--color-blue-accent);
-          font-size: 0.8rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
           align-self: flex-start;
-        }
-
-        .toast-action:hover {
-          background: rgba(59, 130, 246, 0.3);
-          box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
         }
 
         .toast-close {
           flex-shrink: 0;
-          width: 24px;
-          height: 24px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: transparent;
-          border: none;
-          color: var(--color-text-muted);
-          font-size: 1.5rem;
-          cursor: pointer;
-          transition: color 0.2s ease;
-          line-height: 1;
-        }
-
-        .toast-close:hover {
-          color: var(--color-text-primary);
         }
 
         @media (max-width: 640px) {

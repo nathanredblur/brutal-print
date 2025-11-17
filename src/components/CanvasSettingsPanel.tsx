@@ -4,6 +4,7 @@
  */
 
 import type { FC } from 'react';
+import { Button } from "@/components/ui/button";
 
 interface CanvasSettingsPanelProps {
   canvasHeight: number;
@@ -53,14 +54,15 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
         <label className="settings-label">Preset Sizes</label>
         <div className="preset-grid">
           {presetSizes.map((preset) => (
-            <button
+            <Button
               key={preset.name}
+              variant="neuro-ghost"
               className={`preset-btn ${canvasHeight === preset.height ? 'active' : ''}`}
               onClick={() => onCanvasHeightChange(preset.height)}
             >
               <span className="preset-name">{preset.name}</span>
               <span className="preset-size">{preset.height}px</span>
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -197,19 +199,7 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
           flex-direction: column;
           align-items: center;
           gap: 0.125rem;
-          padding: 0.5rem;
-          background: var(--color-bg-secondary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          color: var(--color-text-secondary);
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .preset-btn:hover {
-          background: rgba(167, 139, 250, 0.1);
-          border-color: var(--color-purple-primary);
-          color: var(--color-purple-primary);
+          height: auto;
         }
 
         .preset-btn.active {

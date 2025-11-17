@@ -7,6 +7,8 @@ import type { FC } from "react";
 import Gallery from "./Gallery";
 import type { GalleryItem } from "./Gallery";
 import { textTemplates, type TextTemplateData } from "../data/textTemplates";
+import { Button } from "@/components/ui/button";
+import { X, Plus } from "lucide-react";
 
 interface TextGalleryPanelProps {
   onAddText: (text: string, options: TextTemplateData) => void;
@@ -38,27 +40,21 @@ const TextGalleryPanel: FC<TextGalleryPanelProps> = ({
       {/* Header */}
       <div className="panel-header">
         <h3 className="panel-title">TEXT</h3>
-        <button className="close-btn" onClick={onClose} title="Close">
-          ×
-        </button>
+        <Button variant="ghost" size="icon-sm" onClick={onClose} title="Close">
+          <X className="w-4 h-4" />
+        </Button>
       </div>
 
       {/* Add New Text Button */}
       <div className="add-text-section">
-        <button className="add-text-btn" onClick={handleAddBlankText}>
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+        <Button 
+          variant="neuro" 
+          className="add-text-btn w-full" 
+          onClick={handleAddBlankText}
+        >
+          <Plus className="w-5 h-5" />
           <span>Add Text Box</span>
-        </button>
+        </Button>
       </div>
 
       {/* Gallery Section */}
@@ -97,27 +93,6 @@ const TextGalleryPanel: FC<TextGalleryPanelProps> = ({
           margin: 0;
         }
 
-        .close-btn {
-          background: transparent;
-          border: none;
-          color: var(--color-text-secondary);
-          font-size: 1.25rem;
-          cursor: pointer;
-          padding: 0;
-          width: 20px;
-          height: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: var(--radius-sm);
-          transition: all var(--transition-fast);
-        }
-
-        .close-btn:hover {
-          background: rgba(239, 68, 68, 0.1);
-          color: #ef4444;
-        }
-
         .add-text-section {
           display: flex;
           flex-direction: column;
@@ -129,25 +104,6 @@ const TextGalleryPanel: FC<TextGalleryPanelProps> = ({
           align-items: center;
           justify-content: center;
           gap: 0.5rem;
-          padding: 0.75rem;
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
-          border: 1px solid var(--color-purple-primary);
-          border-radius: var(--radius-sm);
-          color: var(--color-purple-primary);
-          font-size: 0.75rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .add-text-btn:hover {
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.3) 0%, rgba(59, 130, 246, 0.3) 100%);
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(167, 139, 250, 0.3);
-        }
-
-        .add-text-btn svg {
-          flex-shrink: 0;
         }
 
         .gallery-section {

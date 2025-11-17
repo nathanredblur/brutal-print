@@ -6,6 +6,7 @@
 import { useState, useRef, useEffect, type FC } from "react";
 import type { ImageLayer } from "../../types/layer";
 import PropertySection from "./PropertySection";
+import { Button } from "@/components/ui/button";
 
 interface ImageFiltersSectionProps {
   layer: ImageLayer;
@@ -261,7 +262,7 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
   return (
     <PropertySection
       title="Filters"
-      defaultExpanded={false}
+      defaultExpanded={true}
       icon={
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="12" cy="12" r="3" />
@@ -393,8 +394,9 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
 
       {/* Invert Toggle */}
       <div className="filter-group">
-        <button
-          className="invert-toggle"
+        <Button
+          variant="neuro-ghost"
+          className="invert-toggle w-full justify-start"
           onClick={() => reprocessWithUpdates({ invert: !layer.invert })}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -405,7 +407,7 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
           <div className={`toggle-switch ${layer.invert ? "active" : ""}`}>
             <div className="toggle-handle" />
           </div>
-        </button>
+        </Button>
       </div>
 
       <style>{`
@@ -502,21 +504,7 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          padding: 0.5rem 0.75rem;
-          background: var(--color-bg-tertiary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          color: var(--color-text-secondary);
           font-size: 0.75rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .invert-toggle:hover {
-          background: rgba(167, 139, 250, 0.1);
-          border-color: var(--color-purple-primary);
-          color: var(--color-purple-primary);
         }
 
         .toggle-switch {
