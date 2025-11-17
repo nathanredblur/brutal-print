@@ -73,18 +73,24 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
   };
 
   return (
-    <div className="printer-connection">
+    <div className="flex flex-col gap-4">
       {/* Connection Status */}
-      <div className="connection-status">
-        <div className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
-          <div className="status-dot"></div>
-          <span className="status-text">
+      <div className="flex justify-between items-center p-3 bg-slate-800/50 border border-slate-700 rounded-lg">
+        <div className="flex items-center gap-2">
+          <div className={`
+            w-2 h-2 rounded-full 
+            ${isConnected 
+              ? 'bg-green-500 shadow-lg shadow-green-500/50 animate-pulse' 
+              : 'bg-slate-500'
+            }
+          `} />
+          <span className="text-sm text-slate-200 font-semibold">
             {isConnected ? 'Connected' : 'Not Connected'}
           </span>
         </div>
 
         {batteryLevel !== null && (
-          <div className="battery-indicator">
+          <div className="flex items-center gap-1.5 text-sm text-slate-400">
             <Battery size={20} />
             <span>{batteryLevel}%</span>
           </div>
@@ -92,12 +98,12 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
       </div>
 
       {/* Status Message */}
-      <div className="status-message">
+      <div className="text-xs text-slate-400 px-3 py-2 bg-purple-500/5 rounded-md border-l-2 border-purple-500">
         {statusMessage}
       </div>
 
       {/* Action Buttons */}
-      <div className="connection-actions">
+      <div className="flex gap-2">
         {!isConnected ? (
           <Button 
             variant="neuro"
@@ -126,7 +132,7 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
             >
               {isPrinting ? (
                 <>
-                  <div className="spinner"></div>
+                  <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   Printing...
                 </>
               ) : (
@@ -139,95 +145,6 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
           </>
         )}
       </div>
-
-      <style>{`
-        .printer-connection {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-
-        .connection-status {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 0.75rem;
-          background: var(--color-bg-tertiary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
-        }
-
-        .status-indicator {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .status-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: var(--color-slate-medium);
-          animation: pulse 2s infinite;
-        }
-
-        .connected .status-dot {
-          background: #10b981;
-          box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
-        }
-
-        .disconnected .status-dot {
-          background: var(--color-slate-medium);
-          animation: none;
-        }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-
-        .status-text {
-          font-size: 0.875rem;
-          color: var(--color-text-primary);
-          font-weight: 600;
-        }
-
-        .battery-indicator {
-          display: flex;
-          align-items: center;
-          gap: 0.375rem;
-          font-size: 0.875rem;
-          color: var(--color-text-secondary);
-        }
-
-        .status-message {
-          font-size: 0.75rem;
-          color: var(--color-text-secondary);
-          padding: 0.5rem 0.75rem;
-          background: rgba(167, 139, 250, 0.05);
-          border-radius: var(--radius-sm);
-          border-left: 2px solid var(--color-purple-primary);
-        }
-
-
-        .connection-actions {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .spinner {
-          width: 12px;
-          height: 12px;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          border-top-color: white;
-          border-radius: 50%;
-          animation: spin 0.6s linear infinite;
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }

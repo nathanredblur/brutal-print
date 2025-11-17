@@ -7,6 +7,7 @@ import type { FC } from "react";
 import type { Layer } from "../../types/layer";
 import PropertySection from "./PropertySection";
 import { Input } from "@/components/ui/input";
+import { FieldGroup } from "@/components/ui/field-group";
 import { Square } from "lucide-react";
 
 interface SizeSectionProps {
@@ -17,32 +18,32 @@ interface SizeSectionProps {
 const SizeSection: FC<SizeSectionProps> = ({ layer, onUpdate }) => {
   const isTextLayer = layer.type === "text";
 
-  const handleWidthChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdate(layer.id, { width: parseFloat(e.target.value) || 1 });
-  }, [layer.id, onUpdate]);
+  const handleWidthChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onUpdate(layer.id, { width: parseFloat(e.target.value) || 1 });
+    },
+    [layer.id, onUpdate]
+  );
 
-  const handleHeightChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdate(layer.id, { height: parseFloat(e.target.value) || 1 });
-  }, [layer.id, onUpdate]);
+  const handleHeightChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onUpdate(layer.id, { height: parseFloat(e.target.value) || 1 });
+    },
+    [layer.id, onUpdate]
+  );
 
   return (
-    <PropertySection
-      title="Size"
-      value="size"
-      icon={<Square size={14} />}
-    >
-      <div className="property-grid">
-        <div className="property-field">
-          <label>Width</label>
+    <PropertySection title="Size" value="size" icon={<Square size={14} />}>
+      <div className="grid grid-cols-2 gap-2">
+        <FieldGroup label="Width">
           <Input
             type="number"
             value={Math.round(layer.width)}
             onChange={handleWidthChange}
             min="1"
           />
-        </div>
-        <div className="property-field">
-          <label>Height</label>
+        </FieldGroup>
+        <FieldGroup label="Height">
           <Input
             type="number"
             value={Math.round(layer.height)}
@@ -51,33 +52,10 @@ const SizeSection: FC<SizeSectionProps> = ({ layer, onUpdate }) => {
             disabled={isTextLayer}
             title={isTextLayer ? "Height is determined by text content" : ""}
           />
-        </div>
+        </FieldGroup>
       </div>
-
-      <style>{`
-        .property-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.5rem;
-        }
-
-        .property-field {
-          display: flex;
-          flex-direction: column;
-          gap: 0.375rem;
-        }
-
-        .property-field label {
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: var(--color-text-secondary);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-      `}</style>
     </PropertySection>
   );
 };
 
 export default memo(SizeSection);
-

@@ -52,8 +52,8 @@ const ToolsBar: FC<ToolsBarProps> = ({
   );
 
   return (
-    <div className="tools-bar">
-      <div className="tools-bar-content">
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-4 fade-in duration-300">
+      <div className="flex items-center gap-2 p-2 bg-gradient-to-br from-slate-900/95 to-slate-950/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl shadow-black/40 ring-1 ring-purple-500/10">
         {TOOLS.map((tool) => (
           <ToolButton
             key={tool.id}
@@ -63,7 +63,7 @@ const ToolsBar: FC<ToolsBarProps> = ({
           />
         ))}
 
-        <div className="separator" />
+        <div className="w-px h-12 bg-slate-700 mx-1" />
 
         {/* Canvas Settings */}
         {onOpenCanvasSettings && (
@@ -93,48 +93,6 @@ const ToolsBar: FC<ToolsBarProps> = ({
           </Button>
         )}
       </div>
-
-      <style>{`
-        .tools-bar {
-          position: fixed;
-          bottom: 2rem;
-          left: 50%;
-          transform: translateX(-50%);
-          z-index: 100;
-          animation: slideUp 0.3s ease-out;
-        }
-
-        .tools-bar-content {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.5rem;
-          background: linear-gradient(135deg, rgba(21, 24, 54, 0.95) 0%, rgba(12, 15, 38, 0.95) 100%);
-          backdrop-filter: blur(20px);
-          border: 1px solid var(--color-border);
-          border-radius: 12px;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
-                      0 0 0 1px rgba(167, 139, 250, 0.1);
-        }
-
-        .separator {
-          width: 1px;
-          height: 48px;
-          background: var(--color-border);
-          margin: 0 0.25rem;
-        }
-
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateX(-50%) translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 };

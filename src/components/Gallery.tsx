@@ -7,6 +7,8 @@ import { useState, useMemo } from "react";
 import type { FC, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { X, Search } from "lucide-react";
 
 export interface GalleryItem {
@@ -37,35 +39,35 @@ const Gallery: FC<GalleryProps> = ({
     if (!searchQuery.trim()) return items;
 
     const query = searchQuery.toLowerCase();
-    
+
     return items.filter((item) => {
       // Search in name
       if (item.name.toLowerCase().includes(query)) return true;
-      
+
       // Search in tags
       if (item.tags?.some((tag) => tag.toLowerCase().includes(query))) {
         return true;
       }
-      
+
       // Fuzzy match in name (allows for typos)
       const nameMatch = fuzzyMatch(query, item.name.toLowerCase());
       if (nameMatch) return true;
-      
+
       return false;
     });
   }, [items, searchQuery]);
 
   return (
-    <div className="gallery">
+    <div className="flex flex-col gap-3 h-full">
       {/* Search Input */}
-      <div className="gallery-search">
-        <Search size={14} className="search-icon" />
+      <div className="flex items-center bg-slate-800 border border-slate-700 rounded-md px-2 py-2 gap-2">
+        <Search size={14} className="text-slate-400 shrink-0" />
         <Input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={placeholder}
-          className="border-0 shadow-none h-auto px-0 py-0 focus-visible:ring-0"
+          className="border-0 shadow-none h-auto px-0 py-0 focus-visible:ring-0 bg-transparent"
         />
         {searchQuery && (
           <Button
@@ -80,104 +82,32 @@ const Gallery: FC<GalleryProps> = ({
       </div>
 
       {/* Gallery Grid */}
-      <div className="gallery-grid">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2 p-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-700">
         {filteredItems.length === 0 ? (
-          <div className="gallery-empty">
-            <Search size={36} />
-            <p>{emptyMessage}</p>
+          <div className="col-span-full">
+            <EmptyState icon={Search} title={emptyMessage} iconSize={36} />
           </div>
         ) : (
           filteredItems.map((item) => (
-            <Button
+            <Card
               key={item.id}
-              variant="neuro-ghost"
-              className="gallery-item"
+              className="aspect-square h-auto p-3 cursor-pointer transition-all duration-200 flex items-center justify-center bg-slate-800/50 border-slate-700 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-purple-500/30 hover:border-purple-500 hover:bg-purple-500/5 focus-visible:outline-2 focus-visible:outline-purple-500 focus-visible:outline-offset-2 active:translate-y-0"
               onClick={() => onItemSelect(item)}
               title={item.name}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onItemSelect(item);
+                }
+              }}
             >
               {item.preview}
-            </Button>
+            </Card>
           ))
         )}
       </div>
-
-      <style>{`
-        .gallery {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-          height: 100%;
-        }
-
-        .gallery-search {
-          position: relative;
-          display: flex;
-          align-items: center;
-          background: var(--color-bg-secondary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          padding: 0.5rem;
-          gap: 0.5rem;
-        }
-
-        .search-icon {
-          color: var(--color-text-muted);
-          flex-shrink: 0;
-        }
-
-        .gallery-grid {
-          flex: 1;
-          overflow-y: auto;
-          overflow-x: hidden;
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-          gap: 0.5rem;
-          padding: 0.25rem;
-        }
-
-        .gallery-grid::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        .gallery-grid::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        .gallery-grid::-webkit-scrollbar-thumb {
-          background: var(--color-slate-dark);
-          border-radius: 3px;
-        }
-
-        .gallery-item {
-          aspect-ratio: 1;
-          height: auto;
-          padding: 0.75rem;
-        }
-
-        .gallery-item:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(167, 139, 250, 0.2);
-        }
-
-        .gallery-empty {
-          grid-column: 1 / -1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 2rem 1rem;
-          color: var(--color-text-muted);
-        }
-
-        .gallery-empty svg {
-          opacity: 0.3;
-        }
-
-        .gallery-empty p {
-          font-size: 0.75rem;
-          margin: 0;
-        }
-      `}</style>
     </div>
   );
 };
@@ -186,16 +116,15 @@ const Gallery: FC<GalleryProps> = ({
 function fuzzyMatch(pattern: string, text: string): boolean {
   let patternIdx = 0;
   let textIdx = 0;
-  
+
   while (patternIdx < pattern.length && textIdx < text.length) {
     if (pattern[patternIdx] === text[textIdx]) {
       patternIdx++;
     }
     textIdx++;
   }
-  
+
   return patternIdx === pattern.length;
 }
 
 export default Gallery;
-

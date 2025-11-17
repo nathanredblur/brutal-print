@@ -8,6 +8,7 @@ import type { FC } from "react";
 import type { Layer } from "../types/layer";
 import { useConfirmDialogStore } from "../stores/useConfirmDialogStore";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   ChevronUp,
   ChevronDown,
@@ -59,13 +60,16 @@ const LayersPanel: FC<LayersPanelProps> = ({
     }, [layers, selectedLayerId]);
 
   return (
-    <div className="layers-panel">
-      <div className="layers-header">
-        <h2 className="layers-title">LAYERS</h2>
+    <div className="w-60 bg-gradient-to-br from-slate-900/60 to-slate-950/80 backdrop-blur-md border-r border-slate-700 flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-3 border-b border-slate-700">
+        <h2 className="text-[0.6875rem] font-bold tracking-widest text-slate-500 m-0">
+          LAYERS
+        </h2>
       </div>
 
       {/* Layer order controls - always visible, disabled when no selection */}
-      <div className="layer-order-actions">
+      <div className="flex gap-1 px-3 py-2 border-b border-slate-700 bg-purple-500/5">
         <Button
           variant="neuro-icon"
           size="icon-sm"
@@ -99,13 +103,13 @@ const LayersPanel: FC<LayersPanelProps> = ({
       </div>
 
       {/* Layers list */}
-      <div className="layers-list">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 flex flex-col gap-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-700">
         {layers.length === 0 ? (
-          <div className="empty-state">
-            <Layers size={48} />
-            <p>No layers yet</p>
-            <span className="hint">Use the tools below to add content</span>
-          </div>
+          <EmptyState
+            icon={Layers}
+            title="No layers yet"
+            description="Use the tools below to add content"
+          />
         ) : (
           reversedLayers.map((layer) => (
             <LayerItem
@@ -120,194 +124,6 @@ const LayersPanel: FC<LayersPanelProps> = ({
           ))
         )}
       </div>
-
-      <style>{`
-        .layers-panel {
-          width: 240px;
-          background: linear-gradient(135deg, rgba(21, 24, 54, 0.6) 0%, rgba(12, 15, 38, 0.8) 100%);
-          backdrop-filter: blur(10px);
-          border-right: 1px solid var(--color-border);
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-        }
-
-        .layers-header {
-          padding: 0.75rem 0.75rem;
-          border-bottom: 1px solid var(--color-border);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .layers-title {
-          font-size: 0.6875rem;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          color: var(--color-text-muted);
-          margin: 0;
-        }
-
-        .layer-order-actions {
-          display: flex;
-          gap: 0.25rem;
-          padding: 0.5rem 0.75rem;
-          border-bottom: 1px solid var(--color-border);
-          background: rgba(167, 139, 250, 0.05);
-        }
-
-        .order-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.25rem 0.5rem;
-          background: var(--color-bg-tertiary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          color: var(--color-text-secondary);
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .order-btn:hover {
-          background: rgba(167, 139, 250, 0.15);
-          border-color: var(--color-purple-primary);
-          color: var(--color-purple-primary);
-        }
-
-        .layers-list {
-          flex: 1;
-          overflow-y: auto;
-          overflow-x: hidden;
-          padding: 0.5rem;
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-        }
-
-        .layers-list::-webkit-scrollbar {
-          width: 6px;
-        }
-
-        .layers-list::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        .layers-list::-webkit-scrollbar-thumb {
-          background: var(--color-slate-dark);
-          border-radius: 3px;
-        }
-
-        .empty-state {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 1.5rem 0.75rem;
-          color: var(--color-text-muted);
-          text-align: center;
-        }
-
-        .empty-state svg {
-          opacity: 0.3;
-        }
-
-        .empty-state p {
-          font-size: 0.75rem;
-          font-weight: 600;
-          margin: 0;
-          color: var(--color-text-secondary);
-        }
-
-        .empty-state .hint {
-          font-size: 0.6875rem;
-          color: var(--color-text-muted);
-        }
-
-        .layer-item {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.5rem;
-          background: var(--color-bg-secondary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .layer-item:hover {
-          background: rgba(167, 139, 250, 0.05);
-          border-color: rgba(167, 139, 250, 0.3);
-        }
-
-        .layer-item.selected {
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
-          border-color: var(--color-purple-primary);
-          box-shadow: 0 0 8px rgba(167, 139, 250, 0.25);
-        }
-
-        .layer-icon {
-          flex-shrink: 0;
-          width: 24px;
-          height: 24px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: var(--color-bg-tertiary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          color: var(--color-text-secondary);
-        }
-
-        .layer-name {
-          flex: 1;
-          font-size: 0.75rem;
-          font-weight: 500;
-          color: var(--color-text-primary);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-
-        .layer-actions {
-          display: flex;
-          gap: 0.125rem;
-          opacity: 0;
-          transition: opacity var(--transition-fast);
-        }
-
-        .layer-item:hover .layer-actions,
-        .layer-item.selected .layer-actions {
-          opacity: 1;
-        }
-
-        .layer-action-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 20px;
-          height: 20px;
-          background: transparent;
-          border: 1px solid transparent;
-          border-radius: var(--radius-sm);
-          color: var(--color-text-muted);
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .layer-action-btn:hover {
-          background: var(--color-bg-tertiary);
-          border-color: var(--color-border);
-          color: var(--color-text-primary);
-        }
-
-        .layer-action-btn.danger:hover {
-          background: rgba(239, 68, 68, 0.1);
-          border-color: rgba(239, 68, 68, 0.3);
-          color: #ef4444;
-        }
-      `}</style>
     </div>
   );
 };
@@ -370,16 +186,27 @@ const LayerItem = memo<LayerItemProps>(
 
     return (
       <div
-        className={`layer-item ${isSelected ? "selected" : ""}`}
+        className={`
+          group flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all
+          bg-slate-800 border border-slate-700
+          hover:bg-purple-500/5 hover:border-purple-500/30
+          ${
+            isSelected
+              ? "bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-purple-500 shadow-lg shadow-purple-500/25"
+              : ""
+          }
+        `}
         onClick={handleSelect}
       >
-        <div className="layer-icon">
+        <div className="shrink-0 w-6 h-6 flex items-center justify-center bg-slate-900 border border-slate-700 rounded-sm text-slate-400">
           {layer.type === "text" ? <Type size={14} /> : <Image size={14} />}
         </div>
 
-        <span className="layer-name">{layer.name}</span>
+        <span className="flex-1 text-xs font-medium text-slate-200 whitespace-nowrap overflow-hidden text-ellipsis">
+          {layer.name}
+        </span>
 
-        <div className="layer-actions">
+        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button
             variant="ghost"
             size="icon-sm"

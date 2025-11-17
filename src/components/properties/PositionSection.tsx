@@ -7,6 +7,7 @@ import type { FC } from "react";
 import type { Layer } from "../../types/layer";
 import PropertySection from "./PropertySection";
 import { Input } from "@/components/ui/input";
+import { FieldGroup } from "@/components/ui/field-group";
 import { Move } from "lucide-react";
 
 interface PositionSectionProps {
@@ -15,17 +16,26 @@ interface PositionSectionProps {
 }
 
 const PositionSection: FC<PositionSectionProps> = ({ layer, onUpdate }) => {
-  const handleXChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdate(layer.id, { x: parseFloat(e.target.value) || 0 });
-  }, [layer.id, onUpdate]);
+  const handleXChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onUpdate(layer.id, { x: parseFloat(e.target.value) || 0 });
+    },
+    [layer.id, onUpdate]
+  );
 
-  const handleYChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdate(layer.id, { y: parseFloat(e.target.value) || 0 });
-  }, [layer.id, onUpdate]);
+  const handleYChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onUpdate(layer.id, { y: parseFloat(e.target.value) || 0 });
+    },
+    [layer.id, onUpdate]
+  );
 
-  const handleRotationChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdate(layer.id, { rotation: parseFloat(e.target.value) || 0 });
-  }, [layer.id, onUpdate]);
+  const handleRotationChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onUpdate(layer.id, { rotation: parseFloat(e.target.value) || 0 });
+    },
+    [layer.id, onUpdate]
+  );
 
   return (
     <PropertySection
@@ -33,76 +43,38 @@ const PositionSection: FC<PositionSectionProps> = ({ layer, onUpdate }) => {
       value="position"
       icon={<Move size={14} />}
     >
-      <div className="property-grid">
-        <div className="property-field">
-          <label>X</label>
+      <div className="grid grid-cols-2 gap-2">
+        <FieldGroup label="X">
           <Input
             type="number"
             value={Math.round(layer.x)}
             onChange={handleXChange}
           />
-        </div>
-        <div className="property-field">
-          <label>Y</label>
+        </FieldGroup>
+        <FieldGroup label="Y">
           <Input
             type="number"
             value={Math.round(layer.y)}
             onChange={handleYChange}
           />
-        </div>
+        </FieldGroup>
       </div>
 
-      <div className="property-field">
-        <label>Rotation</label>
-        <div className="input-with-unit">
+      <FieldGroup label="Rotation">
+        <div className="relative">
           <Input
             type="number"
             value={Math.round(layer.rotation || 0)}
             onChange={handleRotationChange}
             className="pr-8"
           />
-          <span className="unit">°</span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 pointer-events-none">
+            °
+          </span>
         </div>
-      </div>
-
-      <style>{`
-        .property-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.5rem;
-        }
-
-        .property-field {
-          display: flex;
-          flex-direction: column;
-          gap: 0.375rem;
-        }
-
-        .property-field label {
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: var(--color-text-secondary);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .input-with-unit {
-          position: relative;
-        }
-
-        .unit {
-          position: absolute;
-          right: 0.75rem;
-          top: 50%;
-          transform: translateY(-50%);
-          font-size: 0.75rem;
-          color: var(--color-text-muted);
-          pointer-events: none;
-        }
-      `}</style>
+      </FieldGroup>
     </PropertySection>
   );
 };
 
 export default memo(PositionSection);
-

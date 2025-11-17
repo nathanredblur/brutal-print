@@ -20,6 +20,7 @@ import { PRINTER_WIDTH } from "../lib/dithering";
 import { logger } from "../lib/logger";
 import type { Layer, ImageLayer, TextLayer } from "../types/layer";
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 import { X } from "lucide-react";
 import { DEFAULT_FONT_FAMILY } from "../constants/fonts";
 
@@ -728,7 +729,7 @@ export default function CanvasManager() {
   });
 
   return (
-    <div className="canvas-manager-wrapper">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <Header
         onNewCanvas={handleNewCanvas}
@@ -741,7 +742,7 @@ export default function CanvasManager() {
         isConnected={isConnected}
       />
 
-      <div className="canvas-manager">
+      <div className="flex flex-1 overflow-hidden">
         {/* Left Panel - Always shows Layers */}
         <LayersPanel
           layers={layers}
@@ -755,64 +756,40 @@ export default function CanvasManager() {
 
         {/* Additional left panels - appear conditionally */}
         {(showImageUploader || showTextTool || advancedPanel) && (
-          <div className="additional-panel">
+          <div className="w-[280px] bg-gradient-to-br from-slate-900/60 to-slate-950/80 backdrop-blur-md border-r border-slate-700 p-3 overflow-y-auto flex flex-col gap-3">
             {/* Printer Panel */}
             {advancedPanel === "printer" && (
-              <div className="panel">
-                <div className="panel-header">
-                  <h3>Printer</h3>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setAdvancedPanel(null)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
+              <Panel title="Printer" onClose={() => setAdvancedPanel(null)}>
                 <PrinterConnection onPrint={handlePrint} />
-              </div>
+              </Panel>
             )}
 
             {/* Canvas Settings Panel */}
             {advancedPanel === "canvas" && (
-              <div className="panel">
-                <div className="panel-header">
-                  <h3>Canvas Settings</h3>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setAdvancedPanel(null)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
+              <Panel
+                title="Canvas Settings"
+                onClose={() => setAdvancedPanel(null)}
+              >
                 <CanvasSettingsPanel
                   canvasHeight={canvasHeight}
                   onCanvasHeightChange={handleCanvasHeightChange}
                 />
-              </div>
+              </Panel>
             )}
 
             {/* Image Uploader */}
             {showImageUploader && !advancedPanel && (
-              <div className="panel">
-                <div className="panel-header">
-                  <h3>Upload Image</h3>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setShowImageUploader(false)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
+              <Panel
+                title="Upload Image"
+                onClose={() => setShowImageUploader(false)}
+              >
                 <ImageUploader onImageUploaded={handleImageUploaded} />
-              </div>
+              </Panel>
             )}
 
             {/* Text Gallery Panel */}
             {showTextTool && !advancedPanel && (
-              <div className="panel">
+              <div className="bg-slate-800/50 border border-slate-700 rounded-md p-3">
                 <TextGalleryPanel
                   onAddText={handleAddText}
                   onClose={() => setShowTextTool(false)}
@@ -823,16 +800,18 @@ export default function CanvasManager() {
         )}
 
         {/* Canvas Section */}
-        <FabricCanvas
-          ref={fabricCanvasRef}
-          width={CANVAS_WIDTH}
-          height={canvasHeight}
-          layers={layers}
-          selectedLayerId={selectedLayerId}
-          onLayerUpdate={handleLayerUpdate}
-          onLayerSelect={handleLayerSelect}
-          onCanvasSelect={handleCanvasSelect}
-        />
+        <div className="flex-1 bg-slate-800 flex items-center justify-center overflow-auto p-6">
+          <FabricCanvas
+            ref={fabricCanvasRef}
+            width={CANVAS_WIDTH}
+            height={canvasHeight}
+            layers={layers}
+            selectedLayerId={selectedLayerId}
+            onLayerUpdate={handleLayerUpdate}
+            onLayerSelect={handleLayerSelect}
+            onCanvasSelect={handleCanvasSelect}
+          />
+        </div>
 
         {/* Right Panel - Properties */}
         <PropertiesPanel
@@ -853,67 +832,6 @@ export default function CanvasManager() {
         onOpenCanvasSettings={handleOpenCanvasSettings}
         onOpenPrinterPanel={handleOpenPrinterPanel}
       />
-
-      <style>{`
-        .canvas-manager-wrapper {
-          display: flex;
-          flex-direction: column;
-          height: 100%;
-          overflow: hidden;
-        }
-
-        .canvas-manager {
-          display: flex;
-          flex: 1;
-          overflow: hidden;
-        }
-
-        .additional-panel {
-          width: 280px;
-          background: linear-gradient(135deg, rgba(21, 24, 54, 0.6) 0%, rgba(12, 15, 38, 0.8) 100%);
-          backdrop-filter: blur(10px);
-          border-right: 1px solid var(--color-border);
-          padding: 0.75rem;
-          overflow-y: auto;
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-
-        .canvas-section {
-          flex: 1;
-          background: var(--color-bg-secondary);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: auto;
-          padding: 1.5rem;
-        }
-
-        .panel {
-          background: var(--color-bg-tertiary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          padding: 0.75rem;
-        }
-
-        .panel-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 0.75rem;
-        }
-
-        .panel-header h3 {
-          font-size: 0.75rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          color: var(--color-text-secondary);
-          margin: 0;
-        }
-
-      `}</style>
 
       {/* Global Confirmation Dialog */}
       <GlobalConfirmDialog />

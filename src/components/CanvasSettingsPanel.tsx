@@ -27,10 +27,14 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
   onCanvasHeightChange,
 }) => {
   return (
-    <div className="canvas-settings-panel">
-      <div className="settings-section">
-        <label className="settings-label">Canvas Height</label>
-        <div className="height-input-group">
+    <div className="flex flex-col gap-3">
+      {/* Canvas Height */}
+      <div className="flex flex-col gap-2">
+        <label className="text-[0.6875rem] font-bold uppercase tracking-wide text-slate-400">
+          Canvas Height
+        </label>
+
+        <div className="relative">
           <Input
             type="number"
             value={canvasHeight}
@@ -42,7 +46,9 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
             max="3000"
             step="50"
           />
-          <span className="input-unit">px</span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 pointer-events-none">
+            px
+          </span>
         </div>
 
         <Slider
@@ -51,212 +57,72 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
           step={50}
           value={[canvasHeight]}
           onValueChange={(values) => onCanvasHeightChange(values[0])}
-          className="height-slider"
         />
       </div>
 
-      <div className="settings-section">
-        <label className="settings-label">Preset Sizes</label>
-        <div className="preset-grid">
+      {/* Preset Sizes */}
+      <div className="flex flex-col gap-2">
+        <label className="text-[0.6875rem] font-bold uppercase tracking-wide text-slate-400">
+          Preset Sizes
+        </label>
+        <div className="grid grid-cols-2 gap-1.5">
           {PRESET_SIZES.map((preset) => (
             <Button
               key={preset.name}
               variant="neuro-ghost"
-              className={`preset-btn ${
-                canvasHeight === preset.height ? "active" : ""
+              className={`flex flex-col items-center gap-0.5 h-auto ${
+                canvasHeight === preset.height
+                  ? "bg-gradient-to-br from-purple-900/20 to-blue-900/20 border-purple-500 text-purple-400 shadow-lg shadow-purple-500/25"
+                  : ""
               }`}
               onClick={() => onCanvasHeightChange(preset.height)}
             >
-              <span className="preset-name">{preset.name}</span>
-              <span className="preset-size">{preset.height}px</span>
+              <span className="text-[0.6875rem] font-semibold">
+                {preset.name}
+              </span>
+              <span className="text-xs font-medium opacity-70">
+                {preset.height}px
+              </span>
             </Button>
           ))}
         </div>
       </div>
 
-      <div className="settings-section">
-        <label className="settings-label">Canvas Info</label>
-        <div className="info-card">
-          <div className="info-row">
-            <span className="info-label">Width:</span>
-            <span className="info-value">384px (fixed)</span>
+      {/* Canvas Info */}
+      <div className="flex flex-col gap-2">
+        <label className="text-[0.6875rem] font-bold uppercase tracking-wide text-slate-400">
+          Canvas Info
+        </label>
+        <div className="bg-slate-800 border border-slate-700 rounded-md p-2 flex flex-col gap-1.5">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-slate-500">Width:</span>
+            <span className="text-xs font-semibold text-slate-200">
+              384px (fixed)
+            </span>
           </div>
-          <div className="info-row">
-            <span className="info-label">Height:</span>
-            <span className="info-value">{canvasHeight}px</span>
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-slate-500">Height:</span>
+            <span className="text-xs font-semibold text-slate-200">
+              {canvasHeight}px
+            </span>
           </div>
-          <div className="info-row">
-            <span className="info-label">Format:</span>
-            <span className="info-value">Thermal Receipt</span>
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-slate-500">Format:</span>
+            <span className="text-xs font-semibold text-slate-200">
+              Thermal Receipt
+            </span>
           </div>
         </div>
       </div>
 
-      <div className="settings-note">
-        <Info size={16} />
-        <p>
+      {/* Info Note */}
+      <div className="flex gap-2 p-2 bg-cyan-500/5 border border-cyan-500/20 rounded-md text-cyan-400">
+        <Info size={14} className="shrink-0 mt-0.5" />
+        <p className="text-[0.6875rem] leading-snug m-0">
           Width is fixed at 384px (48mm) for thermal printers. Adjust height as
           needed for your content.
         </p>
       </div>
-
-      <style>{`
-        .canvas-settings-panel {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-
-        .settings-section {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .settings-label {
-          font-size: 0.6875rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          color: var(--color-text-secondary);
-        }
-
-        .height-input-group {
-          position: relative;
-        }
-
-        .input-unit {
-          position: absolute;
-          right: 0.75rem;
-          top: 50%;
-          transform: translateY(-50%);
-          font-size: 0.75rem;
-          color: var(--color-text-muted);
-          pointer-events: none;
-        }
-
-        .height-slider {
-          width: 100%;
-          height: 4px;
-          background: var(--color-bg-secondary);
-          border-radius: 2px;
-          outline: none;
-          -webkit-appearance: none;
-        }
-
-        .height-slider::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          appearance: none;
-          width: 12px;
-          height: 12px;
-          background: var(--color-purple-primary);
-          border-radius: 50%;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .height-slider::-webkit-slider-thumb:hover {
-          background: var(--color-purple-accent);
-          box-shadow: var(--glow-purple);
-        }
-
-        .height-slider::-moz-range-thumb {
-          width: 12px;
-          height: 12px;
-          background: var(--color-purple-primary);
-          border-radius: 50%;
-          cursor: pointer;
-          border: none;
-          transition: all var(--transition-fast);
-        }
-
-        .height-slider::-moz-range-thumb:hover {
-          background: var(--color-purple-accent);
-          box-shadow: var(--glow-purple);
-        }
-
-        .preset-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0.375rem;
-        }
-
-        .preset-btn {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.125rem;
-          height: auto;
-        }
-
-        .preset-btn.active {
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
-          border-color: var(--color-purple-primary);
-          color: var(--color-purple-primary);
-          box-shadow: 0 0 8px rgba(167, 139, 250, 0.25);
-        }
-
-        .preset-name {
-          font-size: 0.6875rem;
-          font-weight: 600;
-        }
-
-        .preset-size {
-          font-size: 0.75rem;
-          font-weight: 500;
-          opacity: 0.7;
-        }
-
-        .info-card {
-          background: var(--color-bg-secondary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          padding: 0.5rem;
-          display: flex;
-          flex-direction: column;
-          gap: 0.375rem;
-        }
-
-        .info-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .info-label {
-          font-size: 0.75rem;
-          color: var(--color-text-muted);
-        }
-
-        .info-value {
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: var(--color-text-primary);
-        }
-
-        .settings-note {
-          display: flex;
-          gap: 0.5rem;
-          padding: 0.5rem;
-          background: rgba(6, 182, 212, 0.05);
-          border: 1px solid rgba(6, 182, 212, 0.2);
-          border-radius: var(--radius-sm);
-          color: var(--color-cyan);
-        }
-
-        .settings-note svg {
-          flex-shrink: 0;
-          margin-top: 0.125rem;
-          width: 14px;
-          height: 14px;
-        }
-
-        .settings-note p {
-          font-size: 0.6875rem;
-          line-height: 1.4;
-          margin: 0;
-        }
-      `}</style>
     </div>
   );
 };

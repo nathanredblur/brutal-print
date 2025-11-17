@@ -61,108 +61,47 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
   }, []);
 
   return (
-    <div className="image-uploader">
-      {/* Drop Zone */}
-      <div
-        ref={dropZoneRef}
-        className={`drop-zone ${preview ? "has-image" : ""}`}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onClick={() => !preview && fileInputRef.current?.click()}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileInput}
-          style={{ display: "none" }}
-        />
-
-        {preview ? (
-          <div className="preview-container">
-            <img src={preview} alt="Preview" className="preview-image" />
-          </div>
-        ) : (
-          <div className="drop-placeholder">
-            <Image size={48} />
-            <p>Drop image here or click to upload</p>
-            <span>Supports JPG, PNG, SVG</span>
-          </div>
-        )}
-      </div>
-
-      <style>{`
-        .image-uploader {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
+    <div
+      ref={dropZoneRef}
+      className={`
+        border-2 border-dashed rounded-lg cursor-pointer transition-all
+        flex items-center justify-center text-center min-h-[200px]
+        ${preview 
+          ? 'border border-slate-700 p-0' 
+          : 'border-slate-700 p-6 bg-slate-800 hover:border-purple-500 hover:bg-purple-500/5'
         }
+      `}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onClick={() => !preview && fileInputRef.current?.click()}
+    >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileInput}
+        style={{ display: "none" }}
+      />
 
-        .drop-zone {
-          border: 2px dashed var(--color-border);
-          border-radius: var(--radius-md);
-          padding: 1.5rem;
-          text-align: center;
-          cursor: pointer;
-          transition: all var(--transition-normal);
-          background: var(--color-bg-secondary);
-          min-height: 200px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .drop-zone:hover {
-          border-color: var(--color-purple-primary);
-          background: rgba(167, 139, 250, 0.05);
-        }
-
-        .drop-zone.has-image {
-          padding: 0;
-          border: 1px solid var(--color-border);
-        }
-
-        .preview-container {
-          position: relative;
-          width: 100%;
-          height: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .preview-image {
-          max-width: 100%;
-          max-height: 300px;
-          border-radius: var(--radius-sm);
-        }
-
-        .drop-placeholder {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.5rem;
-          color: var(--color-text-secondary);
-        }
-
-        .drop-placeholder svg {
-          color: var(--color-purple-primary);
-          width: 36px;
-          height: 36px;
-        }
-
-        .drop-placeholder p {
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: var(--color-text-primary);
-          margin: 0;
-        }
-
-        .drop-placeholder span {
-          font-size: 0.75rem;
-          color: var(--color-text-muted);
-        }
-      `}</style>
+      {preview ? (
+        <div className="relative w-full h-full flex items-center justify-center">
+          <img 
+            src={preview} 
+            alt="Preview" 
+            className="max-w-full max-h-[300px] rounded-md" 
+          />
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-2 text-slate-400">
+          <Image size={36} className="text-purple-500" />
+          <p className="text-sm font-semibold text-slate-200 m-0">
+            Drop image here or click to upload
+          </p>
+          <span className="text-xs text-slate-500">
+            Supports JPG, PNG, SVG
+          </span>
+        </div>
+      )}
     </div>
   );
 }

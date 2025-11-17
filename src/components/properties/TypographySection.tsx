@@ -8,6 +8,7 @@ import type { TextLayer } from "../../types/layer";
 import PropertySection from "./PropertySection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FieldGroup } from "@/components/ui/field-group";
 import {
   Select,
   SelectContent,
@@ -75,8 +76,7 @@ const TypographySection: FC<TypographySectionProps> = ({ layer, onUpdate }) => {
       icon={<Type size={14} />}
     >
       {/* Font Family */}
-      <div className="property-field">
-        <label>Font Family</label>
+      <FieldGroup label="Font Family">
         <Select
           value={layer.fontFamily || DEFAULT_FONT_FAMILY}
           onValueChange={handleFontFamilyChange}
@@ -92,14 +92,14 @@ const TypographySection: FC<TypographySectionProps> = ({ layer, onUpdate }) => {
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </FieldGroup>
 
       {/* Font Size */}
-      <div className="property-field">
-        <label>Font Size</label>
-        <div className="input-with-controls">
+      <FieldGroup label="Font Size">
+        <div className="grid grid-cols-[32px_1fr_32px] gap-1">
           <Button
             variant="neuro-ghost"
+            size="icon-sm"
             onClick={handleFontSizeDecrease}
             title="Decrease"
           >
@@ -115,18 +115,18 @@ const TypographySection: FC<TypographySectionProps> = ({ layer, onUpdate }) => {
           />
           <Button
             variant="neuro-ghost"
+            size="icon-sm"
             onClick={handleFontSizeIncrease}
             title="Increase"
           >
             +
           </Button>
         </div>
-      </div>
+      </FieldGroup>
 
       {/* Style (Bold, Italic) */}
-      <div className="property-field">
-        <label>Style</label>
-        <div className="button-group">
+      <FieldGroup label="Style">
+        <div className="flex gap-2">
           <Button
             variant={layer.bold ? "neuro" : "neuro-ghost"}
             size="sm"
@@ -146,12 +146,11 @@ const TypographySection: FC<TypographySectionProps> = ({ layer, onUpdate }) => {
             <em>I</em>
           </Button>
         </div>
-      </div>
+      </FieldGroup>
 
       {/* Alignment */}
-      <div className="property-field">
-        <label>Alignment</label>
-        <div className="button-group">
+      <FieldGroup label="Alignment">
+        <div className="flex gap-2">
           <Button
             variant={layer.align === "left" ? "neuro" : "neuro-ghost"}
             size="icon-sm"
@@ -180,103 +179,7 @@ const TypographySection: FC<TypographySectionProps> = ({ layer, onUpdate }) => {
             <AlignRight size={16} />
           </Button>
         </div>
-      </div>
-
-      <style>{`
-        .property-field {
-          display: flex;
-          flex-direction: column;
-          gap: 0.375rem;
-        }
-
-        .property-field label {
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: var(--color-text-secondary);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .property-field input,
-        .property-field select {
-          width: 100%;
-          padding: 0.5rem;
-          background: var(--color-bg-tertiary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          color: var(--color-text-primary);
-          font-size: 0.875rem;
-          transition: all var(--transition-fast);
-        }
-
-        .property-field input:focus,
-        .property-field select:focus {
-          outline: none;
-          border-color: var(--color-purple-primary);
-          box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2);
-        }
-
-        .input-with-controls {
-          display: grid;
-          grid-template-columns: 32px 1fr 32px;
-          gap: 0.25rem;
-        }
-
-        .input-with-controls button {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.5rem;
-          background: var(--color-bg-tertiary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          color: var(--color-text-secondary);
-          font-size: 1rem;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .input-with-controls button:hover {
-          background: rgba(167, 139, 250, 0.1);
-          border-color: var(--color-purple-primary);
-          color: var(--color-purple-primary);
-        }
-
-        .button-group {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .style-btn,
-        .align-btn {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.5rem;
-          background: var(--color-bg-tertiary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          color: var(--color-text-secondary);
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .style-btn:hover,
-        .align-btn:hover {
-          background: rgba(167, 139, 250, 0.1);
-          border-color: var(--color-purple-primary);
-          color: var(--color-purple-primary);
-        }
-
-        .style-btn.active,
-        .align-btn.active {
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
-          border-color: var(--color-purple-primary);
-          color: var(--color-purple-primary);
-          box-shadow: 0 0 10px rgba(167, 139, 250, 0.3);
-        }
-      `}</style>
+      </FieldGroup>
     </PropertySection>
   );
 };

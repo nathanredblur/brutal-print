@@ -16,28 +16,10 @@ interface ToastContainerProps {
 
 export default function ToastContainer({ toasts, onClose }: ToastContainerProps) {
   return (
-    <div className="toast-container">
+    <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none max-w-[400px]">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onClose={() => onClose(toast.id)} />
       ))}
-
-      <style>{`
-        .toast-container {
-          position: fixed;
-          top: 1rem;
-          right: 1rem;
-          z-index: 9999;
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-          pointer-events: none;
-          max-width: 400px;
-        }
-
-        .toast-container > * {
-          pointer-events: all;
-        }
-      `}</style>
     </div>
   );
 }
@@ -79,164 +61,85 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
     }
   };
 
-  const getColorClass = () => {
+  const getColorClasses = () => {
     switch (toast.type) {
       case 'success':
-        return 'toast-success';
+        return {
+          border: 'border-l-4 border-l-cyan-500',
+          icon: 'bg-cyan-500/20 text-cyan-500'
+        };
       case 'error':
-        return 'toast-error';
+        return {
+          border: 'border-l-4 border-l-purple-400',
+          icon: 'bg-purple-400/20 text-purple-400'
+        };
       case 'warning':
-        return 'toast-warning';
+        return {
+          border: 'border-l-4 border-l-amber-500',
+          icon: 'bg-amber-500/20 text-amber-500'
+        };
       case 'info':
       default:
-        return 'toast-info';
+        return {
+          border: 'border-l-4 border-l-blue-400',
+          icon: 'bg-blue-400/20 text-blue-400'
+        };
     }
   };
 
+  const colorClasses = getColorClasses();
+
   return (
     <div
-      className={`toast ${getColorClass()} ${isVisible && !isExiting ? 'toast-enter' : ''} ${
-        isExiting ? 'toast-exit' : ''
-      }`}
+      className={`
+        pointer-events-auto flex items-start gap-3 p-4 px-5
+        bg-gradient-to-br from-slate-900/95 to-slate-950/[0.98] backdrop-blur-xl
+        border border-slate-700 rounded-lg
+        shadow-2xl shadow-black/50 ring-1 ring-blue-500/10
+        min-w-[300px] max-w-[400px]
+        transition-all duration-300 ease-out
+        ${colorClasses.border}
+        ${isVisible && !isExiting ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full'}
+        ${isExiting ? 'opacity-0 translate-x-full' : ''}
+        sm:min-w-[300px] sm:max-w-[400px]
+        max-sm:min-w-[calc(100vw-2rem)] max-sm:max-w-[calc(100vw-2rem)]
+      `}
       role="alert"
     >
-      <div className="toast-icon">{getIcon()}</div>
-      <div className="toast-content">
-        <div className="toast-title">{toast.title}</div>
-        {toast.message && <div className="toast-message">{toast.message}</div>}
+      <div className={`shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-base font-bold ${colorClasses.icon}`}>
+        {getIcon()}
+      </div>
+      
+      <div className="flex-1 flex flex-col gap-1">
+        <div className="text-[0.95rem] font-semibold text-slate-100 tracking-wide">
+          {toast.title}
+        </div>
+        {toast.message && (
+          <div className="text-sm text-slate-400 leading-relaxed">
+            {toast.message}
+          </div>
+        )}
         {toast.action && (
           <Button 
             variant="neuro-ghost" 
             size="sm"
-            className="toast-action" 
+            className="mt-2 self-start" 
             onClick={toast.action.onClick}
           >
             {toast.action.label}
           </Button>
         )}
       </div>
+      
       <Button 
         variant="ghost" 
         size="icon-sm"
         onClick={handleClose} 
         aria-label="Close notification"
-        className="toast-close"
+        className="shrink-0"
       >
         <X className="w-4 h-4" />
       </Button>
-
-      <style>{`
-        .toast {
-          display: flex;
-          align-items: flex-start;
-          gap: 0.75rem;
-          padding: 1rem 1.25rem;
-          background: linear-gradient(135deg, rgba(21, 24, 54, 0.95) 0%, rgba(12, 15, 38, 0.98) 100%);
-          backdrop-filter: blur(20px);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-lg);
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.1);
-          min-width: 300px;
-          max-width: 400px;
-          opacity: 0;
-          transform: translateX(100%);
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .toast-enter {
-          opacity: 1;
-          transform: translateX(0);
-        }
-
-        .toast-exit {
-          opacity: 0;
-          transform: translateX(100%);
-        }
-
-        .toast-icon {
-          flex-shrink: 0;
-          width: 28px;
-          height: 28px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          font-size: 1rem;
-          font-weight: bold;
-        }
-
-        .toast-success {
-          border-left: 4px solid var(--color-cyan);
-        }
-
-        .toast-success .toast-icon {
-          background: rgba(6, 182, 212, 0.2);
-          color: var(--color-cyan);
-        }
-
-        .toast-error {
-          border-left: 4px solid var(--color-purple-accent);
-        }
-
-        .toast-error .toast-icon {
-          background: rgba(181, 107, 255, 0.2);
-          color: var(--color-purple-accent);
-        }
-
-        .toast-warning {
-          border-left: 4px solid #F59E0B;
-        }
-
-        .toast-warning .toast-icon {
-          background: rgba(245, 158, 11, 0.2);
-          color: #F59E0B;
-        }
-
-        .toast-info {
-          border-left: 4px solid var(--color-blue-accent);
-        }
-
-        .toast-info .toast-icon {
-          background: rgba(74, 163, 255, 0.2);
-          color: var(--color-blue-accent);
-        }
-
-        .toast-content {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-        }
-
-        .toast-title {
-          font-size: 0.95rem;
-          font-weight: 600;
-          color: var(--color-text-primary);
-          letter-spacing: 0.01em;
-        }
-
-        .toast-message {
-          font-size: 0.875rem;
-          color: var(--color-text-secondary);
-          line-height: 1.4;
-        }
-
-        .toast-action {
-          margin-top: 0.5rem;
-          align-self: flex-start;
-        }
-
-        .toast-close {
-          flex-shrink: 0;
-        }
-
-        @media (max-width: 640px) {
-          .toast {
-            min-width: calc(100vw - 2rem);
-            max-width: calc(100vw - 2rem);
-          }
-        }
-      `}</style>
     </div>
   );
 }
