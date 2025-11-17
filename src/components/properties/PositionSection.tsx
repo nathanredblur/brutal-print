@@ -16,6 +16,7 @@ const PositionSection: FC<PositionSectionProps> = ({ layer, onUpdate }) => {
   return (
     <PropertySection
       title="Position"
+      value="position"
       icon={<Move size={14} />}
     >
       <div className="property-grid">

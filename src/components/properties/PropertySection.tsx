@@ -1,117 +1,56 @@
 /**
  * PropertySection - Collapsible section component for properties panel
- * Based on Figma's design pattern
+ * Using shadcn/ui Accordion with Tailwind CSS styling
  */
 
-import { useState, type FC, type ReactNode } from "react";
-import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
+import type { FC, ReactNode } from "react";
+import {
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
+import { cn } from "@/lib/utils";
 
 interface PropertySectionProps {
   title: string;
-  defaultExpanded?: boolean;
+  value: string; // Unique value for accordion item
   children: ReactNode;
   icon?: ReactNode;
 }
 
 const PropertySection: FC<PropertySectionProps> = ({
   title,
-  defaultExpanded = true,
+  value,
   children,
   icon,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-
   return (
-    <div className="property-section">
-      <Button
-        variant="ghost"
-        className="section-header w-full justify-between"
-        onClick={() => setIsExpanded(!isExpanded)}
+    <AccordionItem
+      value={value}
+      className="border-b border-border last:border-b-0"
+    >
+      <AccordionTrigger
+        className={cn(
+          "flex items-center px-4 py-3 font-normal no-underline hover:no-underline",
+          "transition-colors hover:bg-purple-500/5"
+        )}
       >
-        <div className="section-title-wrapper">
-          {icon && <span className="section-icon">{icon}</span>}
-          <h3 className="section-title">{title}</h3>
+        <div className="flex items-center gap-2 flex-1">
+          {icon && (
+            <span className="flex items-center text-muted-foreground">
+              {icon}
+            </span>
+          )}
+          <h3 className="text-xs font-bold uppercase tracking-wider text-secondary-foreground m-0">
+            {title}
+          </h3>
         </div>
-        <ChevronDown
-          className={`chevron ${isExpanded ? "expanded" : ""}`}
-          size={12}
-        />
-      </Button>
+      </AccordionTrigger>
 
-      {isExpanded && <div className="section-content">{children}</div>}
-
-      <style>{`
-        .property-section {
-          border-bottom: 1px solid var(--color-border);
-        }
-
-        .section-header {
-          display: flex;
-          align-items: center;
-          padding: 0.75rem 0;
-          height: auto;
-        }
-
-        .section-header:hover {
-          background: rgba(167, 139, 250, 0.05);
-        }
-
-        .section-title-wrapper {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .section-icon {
-          display: flex;
-          align-items: center;
-          color: var(--color-text-muted);
-        }
-
-        .section-title {
-          font-size: 0.75rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          color: var(--color-text-secondary);
-          margin: 0;
-        }
-
-        .chevron {
-          transition: transform var(--transition-fast);
-          color: var(--color-text-muted);
-          flex-shrink: 0;
-        }
-
-        .chevron.expanded {
-          transform: rotate(0deg);
-        }
-
-        .chevron:not(.expanded) {
-          transform: rotate(-90deg);
-        }
-
-        .section-content {
-          padding-bottom: 1rem;
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-          animation: slideDown 0.2s ease-out;
-        }
-
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-4px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-    </div>
+      <AccordionContent className="px-4 pb-4 flex flex-col gap-3">
+        {children}
+      </AccordionContent>
+    </AccordionItem>
   );
 };
 

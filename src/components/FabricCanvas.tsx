@@ -9,8 +9,10 @@ import { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import * as fabric from "fabric";
 import type { Layer, ImageLayer, TextLayer } from "../types/layer";
 import { logger } from "../lib/logger";
+import { cn } from "../lib/utils";
 
 interface FabricCanvasProps {
+  className?: string;
   width: number;
   height: number;
   layers: Layer[];
@@ -39,6 +41,7 @@ interface FabricObjectWithData extends fabric.FabricObject {
 const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
   (
     {
+      className,
       width,
       height,
       layers,
@@ -52,6 +55,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fabricRef = useRef<fabric.Canvas | null>(null);
     const layerObjectsRef = useRef<Map<string, fabric.FabricObject>>(new Map());
+    const containerRef = useRef<HTMLDivElement>(null);
 
     // Throttling refs for real-time scaling
     const scalingThrottleRef = useRef<NodeJS.Timeout | null>(null);
@@ -262,6 +266,33 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       };
     }, []); // Only initialize once
 
+    // Handle click on canvas container (deselect when clicking on gray area)
+    useEffect(() => {
+      const handleClickOutside = (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        const container = containerRef.current;
+
+        // Check if click is inside the fabric canvas container
+        const isInsideContainer = container && container.contains(target);
+        // But NOT on the actual canvas element
+        const isCanvas = target.tagName === "CANVAS";
+
+        // Deselect if clicking on the gray area (not on canvas itself)
+        if (isInsideContainer && !isCanvas) {
+          onCanvasSelect?.();
+          logger.info(
+            "FabricCanvas",
+            "Clicked on canvas container (not on canvas) - deselecting"
+          );
+        }
+      };
+
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, [onCanvasSelect]);
+
     // Update canvas dimensions when they change
     useEffect(() => {
       const fabricCanvas = fabricRef.current;
@@ -304,8 +335,16 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           // Reorder object - move to correct z-index position
           const currentIndex = fabricCanvas.getObjects().indexOf(existingObj);
           if (currentIndex !== -1 && currentIndex !== index) {
+            // Preserve selection state during reordering
+            const wasSelected = fabricCanvas.getActiveObject() === existingObj;
+
             fabricCanvas.remove(existingObj);
             fabricCanvas.insertAt(index, existingObj);
+
+            // Restore selection if object was selected
+            if (wasSelected) {
+              fabricCanvas.setActiveObject(existingObj);
+            }
           }
         } else {
           // Create new object at specific index
@@ -789,23 +828,15 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
     }));
 
     return (
-      <div className="fabric-canvas-container">
-        <canvas ref={canvasRef} />
-
-        <style>{`
-          .fabric-canvas-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-          }
-
-          .fabric-canvas-container canvas {
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px var(--color-border);
-            border-radius: var(--radius-sm);
-          }
-        `}</style>
+      <div
+        className={cn(
+          "fabric-canvas-container",
+          "flex flex-1 justify-center items-center w-full h-full",
+          className
+        )}
+        ref={containerRef}
+      >
+        <canvas className="shadow-lg rounded-sm" ref={canvasRef} />
       </div>
     );
   }

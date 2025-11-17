@@ -129,7 +129,6 @@ async function loadSavedState() {
 
 export default function CanvasManager() {
   const fabricCanvasRef = useRef<FabricCanvasRef>(null);
-  const canvasContainerRef = useRef<HTMLDivElement>(null);
   const [activeTool, setActiveTool] = useState<Tool | null>(null);
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [showTextTool, setShowTextTool] = useState(false);
@@ -677,38 +676,8 @@ export default function CanvasManager() {
     setShowImageUploader(false);
     setShowTextTool(false);
     setAdvancedPanel(null);
-    logger.info("CanvasManager", "Canvas selected");
+    logger.info("CanvasManager", "Canvas container clicked - deselecting");
   }, [selectLayer]);
-
-  // Handle click outside canvas (deselect everything)
-  const handleClickOutside = useCallback(
-    (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const canvasContainer = canvasContainerRef.current;
-
-      // Check if click is outside the canvas container
-      if (canvasContainer && !canvasContainer.contains(target)) {
-        // Also check if it's not in any UI panel (layers, properties, tools, etc.)
-        const isInPanel = target.closest(
-          ".layers-panel, .properties-panel, .additional-panel, .tools-bar, .header"
-        );
-        if (!isInPanel) {
-          selectLayer(null);
-          setSelectionType(null);
-          logger.info("CanvasManager", "Clicked outside - deselected");
-        }
-      }
-    },
-    [selectLayer]
-  );
-
-  // Setup click outside listener
-  useEffect(() => {
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [handleClickOutside]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
@@ -845,20 +814,16 @@ export default function CanvasManager() {
         )}
 
         {/* Canvas Section */}
-        <div className="canvas-container">
-          <div className="canvas-section" ref={canvasContainerRef}>
-            <FabricCanvas
-              ref={fabricCanvasRef}
-              width={CANVAS_WIDTH}
-              height={canvasHeight}
-              layers={layers}
-              selectedLayerId={selectedLayerId}
-              onLayerUpdate={handleLayerUpdate}
-              onLayerSelect={handleLayerSelect}
-              onCanvasSelect={handleCanvasSelect}
-            />
-          </div>
-        </div>
+        <FabricCanvas
+          ref={fabricCanvasRef}
+          width={CANVAS_WIDTH}
+          height={canvasHeight}
+          layers={layers}
+          selectedLayerId={selectedLayerId}
+          onLayerUpdate={handleLayerUpdate}
+          onLayerSelect={handleLayerSelect}
+          onCanvasSelect={handleCanvasSelect}
+        />
 
         {/* Right Panel - Properties */}
         <PropertiesPanel
@@ -906,13 +871,6 @@ export default function CanvasManager() {
           gap: 0.75rem;
         }
 
-        .canvas-container {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-        }
-
         .canvas-section {
           flex: 1;
           background: var(--color-bg-secondary);
@@ -921,12 +879,6 @@ export default function CanvasManager() {
           justify-content: center;
           overflow: auto;
           padding: 1.5rem;
-        }
-
-        .canvas-section > div {
-          display: flex;
-          justify-content: center;
-          align-items: center;
         }
 
         .panel {

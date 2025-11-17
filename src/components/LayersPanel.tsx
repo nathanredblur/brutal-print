@@ -6,7 +6,18 @@
 import type { FC } from "react";
 import type { Layer } from "../types/layer";
 import { Button } from "@/components/ui/button";
-import { ChevronUp, ChevronDown, Eye, EyeOff, Lock, Unlock, Trash2, Image, Type, Layers } from "lucide-react";
+import {
+  ChevronUp,
+  ChevronDown,
+  Eye,
+  EyeOff,
+  Lock,
+  Unlock,
+  Trash2,
+  Image,
+  Type,
+  Layers,
+} from "lucide-react";
 
 interface LayersPanelProps {
   layers: Layer[];
@@ -28,6 +39,15 @@ const LayersPanel: FC<LayersPanelProps> = ({
   onMoveLayer,
 }) => {
   const selectedLayer = layers.find((l) => l.id === selectedLayerId);
+  const selectedIndex = selectedLayer
+    ? layers.findIndex((l) => l.id === selectedLayerId)
+    : -1;
+
+  // Check if can move up (towards end of array = higher z-index)
+  const canMoveUp = selectedLayer && selectedIndex < layers.length - 1;
+
+  // Check if can move down (towards start of array = lower z-index)
+  const canMoveDown = selectedLayer && selectedIndex > 0;
 
   return (
     <div className="layers-panel">
@@ -35,27 +55,39 @@ const LayersPanel: FC<LayersPanelProps> = ({
         <h2 className="layers-title">LAYERS</h2>
       </div>
 
-      {/* Layer order controls - inline with header when selected */}
-      {selectedLayer && (
-        <div className="layer-order-actions">
-          <Button
-            variant="neuro-icon"
-            size="icon-sm"
-            onClick={() => onMoveLayer(selectedLayer.id, "up")}
-            title="Bring forward"
-          >
-            <ChevronUp size={12} />
-          </Button>
-          <Button
-            variant="neuro-icon"
-            size="icon-sm"
-            onClick={() => onMoveLayer(selectedLayer.id, "down")}
-            title="Send backward"
-          >
-            <ChevronDown size={12} />
-          </Button>
-        </div>
-      )}
+      {/* Layer order controls - always visible, disabled when no selection */}
+      <div className="layer-order-actions">
+        <Button
+          variant="neuro-icon"
+          size="icon-sm"
+          onClick={() => selectedLayer && onMoveLayer(selectedLayer.id, "up")}
+          disabled={!canMoveUp}
+          title={
+            !selectedLayer
+              ? "Select a layer to reorder"
+              : !canMoveUp
+              ? "Layer is already at the top"
+              : "Bring forward"
+          }
+        >
+          <ChevronUp size={12} />
+        </Button>
+        <Button
+          variant="neuro-icon"
+          size="icon-sm"
+          onClick={() => selectedLayer && onMoveLayer(selectedLayer.id, "down")}
+          disabled={!canMoveDown}
+          title={
+            !selectedLayer
+              ? "Select a layer to reorder"
+              : !canMoveDown
+              ? "Layer is already at the bottom"
+              : "Send backward"
+          }
+        >
+          <ChevronDown size={12} />
+        </Button>
+      </div>
 
       {/* Layers list */}
       <div className="layers-list">
@@ -95,11 +127,7 @@ const LayersPanel: FC<LayersPanelProps> = ({
                   title={layer.visible ? "Hide" : "Show"}
                   className="h-6 w-6"
                 >
-                  {layer.visible ? (
-                    <Eye size={12} />
-                  ) : (
-                    <EyeOff size={12} />
-                  )}
+                  {layer.visible ? <Eye size={12} /> : <EyeOff size={12} />}
                 </Button>
 
                 <Button
@@ -112,11 +140,7 @@ const LayersPanel: FC<LayersPanelProps> = ({
                   title={layer.locked ? "Unlock" : "Lock"}
                   className="h-6 w-6"
                 >
-                  {layer.locked ? (
-                    <Lock size={12} />
-                  ) : (
-                    <Unlock size={12} />
-                  )}
+                  {layer.locked ? <Lock size={12} /> : <Unlock size={12} />}
                 </Button>
 
                 <Button

@@ -263,7 +263,7 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
   return (
     <PropertySection
       title="Filters"
-      defaultExpanded={true}
+      value="filters"
       icon={<Sun size={14} />}
     >
       {/* Dither Method */}

@@ -18,6 +18,7 @@ const SizeSection: FC<SizeSectionProps> = ({ layer, onUpdate }) => {
   return (
     <PropertySection
       title="Size"
+      value="size"
       icon={<Square size={14} />}
     >
       <div className="property-grid">

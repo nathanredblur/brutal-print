@@ -37,7 +37,7 @@ const TypographySection: FC<TypographySectionProps> = ({
   return (
     <PropertySection
       title="Typography"
-      defaultExpanded={true}
+      value="typography"
       icon={<Type size={14} />}
     >
       {/* Font Family */}
