@@ -6,7 +6,9 @@
 import { memo, useMemo, useCallback } from "react";
 import type { FC } from "react";
 import type { Layer } from "../types/layer";
+import { useConfirmDialog } from "../hooks/useConfirmDialog";
 import { Button } from "@/components/ui/button";
+import ConfirmDialog from "./ConfirmDialog";
 import {
   ChevronUp,
   ChevronDown,
@@ -39,6 +41,9 @@ const LayersPanel: FC<LayersPanelProps> = ({
   onRemoveLayer,
   onMoveLayer,
 }) => {
+  // Use confirm dialog
+  const { confirm: confirmDialog, dialogState } = useConfirmDialog();
+
   // Memoize reversed layers to avoid creating new array on each render
   const reversedLayers = useMemo(() => [...layers].reverse(), [layers]);
 
@@ -112,6 +117,7 @@ const LayersPanel: FC<LayersPanelProps> = ({
               onToggleVisibility={onToggleVisibility}
               onToggleLock={onToggleLock}
               onRemoveLayer={onRemoveLayer}
+              confirmDialog={confirmDialog}
             />
           ))
         )}
@@ -304,6 +310,17 @@ const LayersPanel: FC<LayersPanelProps> = ({
           color: #ef4444;
         }
       `}</style>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={dialogState.isOpen}
+        title={dialogState.title}
+        description={dialogState.description}
+        confirmText={dialogState.confirmText}
+        cancelText={dialogState.cancelText}
+        onConfirm={dialogState.onConfirm || (() => {})}
+        onCancel={dialogState.onCancel || (() => {})}
+      />
     </div>
   );
 };
@@ -316,6 +333,11 @@ interface LayerItemProps {
   onToggleVisibility: (layerId: string) => void;
   onToggleLock: (layerId: string) => void;
   onRemoveLayer: (layerId: string) => void;
+  confirmDialog: (
+    title: string,
+    description: string,
+    options?: { confirmText?: string; cancelText?: string }
+  ) => Promise<boolean>;
 }
 
 const LayerItem = memo<LayerItemProps>(({
@@ -325,6 +347,7 @@ const LayerItem = memo<LayerItemProps>(({
   onToggleVisibility,
   onToggleLock,
   onRemoveLayer,
+  confirmDialog,
 }) => {
   const handleSelect = useCallback(() => {
     onSelectLayer(layer.id);
@@ -340,12 +363,17 @@ const LayerItem = memo<LayerItemProps>(({
     onToggleLock(layer.id);
   }, [layer.id, onToggleLock]);
 
-  const handleRemove = useCallback((e: React.MouseEvent) => {
+  const handleRemove = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm(`Delete layer "${layer.name}"?`)) {
+    const confirmed = await confirmDialog(
+      "Delete Layer?",
+      `Are you sure you want to delete "${layer.name}"? This action cannot be undone.`,
+      { confirmText: "Delete", cancelText: "Cancel" }
+    );
+    if (confirmed) {
       onRemoveLayer(layer.id);
     }
-  }, [layer.id, layer.name, onRemoveLayer]);
+  }, [layer.id, layer.name, onRemoveLayer, confirmDialog]);
 
   return (
     <div

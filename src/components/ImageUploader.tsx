@@ -1,6 +1,7 @@
 // Image upload component - simplified to only handle upload
 import { useState, useRef, useCallback } from "react";
 import { Image } from "lucide-react";
+import { useToastContext } from "../contexts/ToastContext";
 
 interface ImageUploaderProps {
   onImageUploaded?: (imageDataUrl: string) => void;
@@ -10,11 +11,12 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
+  const toast = useToastContext();
 
   const handleFileSelect = useCallback(
     (file: File) => {
       if (!file.type.startsWith("image/")) {
-        alert("Please select an image file");
+        toast.error("Invalid file type", "Please select an image file (JPG, PNG, SVG)");
         return;
       }
 
@@ -27,7 +29,7 @@ export default function ImageUploader({ onImageUploaded }: ImageUploaderProps) {
       };
       reader.readAsDataURL(file);
     },
-    [onImageUploaded]
+    [onImageUploaded, toast]
   );
 
   const handleFileInput = useCallback(

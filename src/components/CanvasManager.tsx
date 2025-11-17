@@ -5,6 +5,7 @@ import { useToastContext } from "../contexts/ToastContext";
 import { useLayers } from "../hooks/useLayers";
 import { useCanvasPersistence } from "../hooks/useCanvasPersistence";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
+import { useConfirmDialog } from "../hooks/useConfirmDialog";
 import Header from "./Header";
 import LayersPanel from "./LayersPanel";
 import PropertiesPanel from "./PropertiesPanel";
@@ -13,6 +14,7 @@ import CanvasSettingsPanel from "./CanvasSettingsPanel";
 import ImageUploader from "./ImageUploader";
 import PrinterConnection from "./PrinterConnection";
 import TextGalleryPanel from "./TextGalleryPanel";
+import ConfirmDialog from "./ConfirmDialog";
 import FabricCanvas, { type FabricCanvasRef } from "./FabricCanvas";
 import { PRINTER_WIDTH } from "../lib/dithering";
 import { logger } from "../lib/logger";
@@ -167,6 +169,9 @@ export default function CanvasManager() {
 
   // Use toast notifications
   const toast = useToastContext();
+
+  // Use confirm dialog
+  const { confirm: confirmDialog, dialogState } = useConfirmDialog();
 
   // Use layer system with initial state
   const {
@@ -558,22 +563,25 @@ export default function CanvasManager() {
   );
 
   // Handle new canvas (clear all layers)
-  const handleNewCanvas = useCallback(() => {
+  const handleNewCanvas = useCallback(async () => {
     if (layers.length === 0) {
       toast.info("Empty canvas", "There are no layers to clear.");
       return;
     }
 
-    const confirmed = confirm(
-      "Are you sure you want to create a new canvas? This will delete all layers."
+    const confirmed = await confirmDialog(
+      "Create New Canvas?",
+      "Are you sure you want to create a new canvas? This will delete all layers.",
+      { confirmText: "Yes, clear all", cancelText: "Cancel" }
     );
+
     if (confirmed) {
       clearLayers();
       persistence.clearSavedState();
       toast.success("New canvas created!", "All layers have been deleted.");
       logger.info("CanvasManager", "New canvas created - all layers cleared");
     }
-  }, [layers.length, clearLayers, persistence, toast]);
+  }, [layers.length, clearLayers, persistence, toast, confirmDialog]);
 
   // Handle save
   const handleSave = useCallback(() => {
@@ -906,6 +914,17 @@ export default function CanvasManager() {
         }
 
       `}</style>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={dialogState.isOpen}
+        title={dialogState.title}
+        description={dialogState.description}
+        confirmText={dialogState.confirmText}
+        cancelText={dialogState.cancelText}
+        onConfirm={dialogState.onConfirm || (() => {})}
+        onCancel={dialogState.onCancel || (() => {})}
+      />
     </div>
   );
 }
