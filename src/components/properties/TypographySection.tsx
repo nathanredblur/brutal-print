@@ -8,23 +8,20 @@ import type { TextLayer } from "../../types/layer";
 import PropertySection from "./PropertySection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Type, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
+import { FONT_FAMILIES, DEFAULT_FONT_FAMILY } from "../../constants/fonts";
 
 interface TypographySectionProps {
   layer: TextLayer;
   onUpdate: (layerId: string, updates: Partial<TextLayer>) => void;
 }
-
-// Static font family options - no need to recreate on each render
-const FONT_FAMILIES = [
-  "Inter",
-  "Arial",
-  "Helvetica",
-  "Times New Roman",
-  "Courier New",
-  "Georgia",
-  "Verdana",
-] as const;
 
 const TypographySection: FC<TypographySectionProps> = ({ layer, onUpdate }) => {
   const handleFontSizeDecrease = useCallback(() => {
@@ -45,8 +42,8 @@ const TypographySection: FC<TypographySectionProps> = ({ layer, onUpdate }) => {
   );
 
   const handleFontFamilyChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      onUpdate(layer.id, { fontFamily: e.target.value });
+    (value: string) => {
+      onUpdate(layer.id, { fontFamily: value });
     },
     [layer.id, onUpdate]
   );
@@ -80,16 +77,21 @@ const TypographySection: FC<TypographySectionProps> = ({ layer, onUpdate }) => {
       {/* Font Family */}
       <div className="property-field">
         <label>Font Family</label>
-        <select
-          value={layer.fontFamily || "Inter"}
-          onChange={handleFontFamilyChange}
+        <Select
+          value={layer.fontFamily || DEFAULT_FONT_FAMILY}
+          onValueChange={handleFontFamilyChange}
         >
-          {FONT_FAMILIES.map((font) => (
-            <option key={font} value={font}>
-              {font}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {FONT_FAMILIES.map((font) => (
+              <SelectItem key={font.value} value={font.value}>
+                {font.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Font Size */}
@@ -98,7 +100,6 @@ const TypographySection: FC<TypographySectionProps> = ({ layer, onUpdate }) => {
         <div className="input-with-controls">
           <Button
             variant="neuro-ghost"
-            size="icon-sm"
             onClick={handleFontSizeDecrease}
             title="Decrease"
           >
@@ -114,7 +115,6 @@ const TypographySection: FC<TypographySectionProps> = ({ layer, onUpdate }) => {
           />
           <Button
             variant="neuro-ghost"
-            size="icon-sm"
             onClick={handleFontSizeIncrease}
             title="Increase"
           >

@@ -19,6 +19,7 @@ import { logger } from "../lib/logger";
 import type { Layer, ImageLayer, TextLayer } from "../types/layer";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { DEFAULT_FONT_FAMILY } from "../constants/fonts";
 
 type Tool = "image" | "text";
 type AdvancedPanel =
@@ -367,7 +368,7 @@ export default function CanvasManager() {
         x: options.x || 50,
         y: options.y || 50,
         fontSize: options.fontSize || 24,
-        fontFamily: options.fontFamily || "Inter",
+        fontFamily: options.fontFamily || DEFAULT_FONT_FAMILY,
         bold: options.bold || false,
         italic: options.italic || false,
         align: options.align || "left",

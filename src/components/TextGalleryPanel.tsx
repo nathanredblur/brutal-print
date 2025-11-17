@@ -9,6 +9,7 @@ import type { GalleryItem } from "./Gallery";
 import { textTemplates, type TextTemplateData } from "../data/textTemplates";
 import { Button } from "@/components/ui/button";
 import { X, Plus } from "lucide-react";
+import { DEFAULT_FONT_FAMILY } from "../constants/fonts";
 
 interface TextGalleryPanelProps {
   onAddText: (text: string, options: TextTemplateData) => void;
@@ -23,7 +24,7 @@ const TextGalleryPanel: FC<TextGalleryPanelProps> = ({
     onAddText("Double-click to edit", {
       text: "Double-click to edit",
       fontSize: 24,
-      fontFamily: "Inter, sans-serif",
+      fontFamily: DEFAULT_FONT_FAMILY,
       bold: false,
       italic: false,
       align: "left",
@@ -47,9 +48,9 @@ const TextGalleryPanel: FC<TextGalleryPanelProps> = ({
 
       {/* Add New Text Button */}
       <div className="add-text-section">
-        <Button 
-          variant="neuro" 
-          className="add-text-btn w-full" 
+        <Button
+          variant="neuro"
+          className="add-text-btn w-full"
           onClick={handleAddBlankText}
         >
           <Plus className="w-5 h-5" />
@@ -127,4 +128,3 @@ const TextGalleryPanel: FC<TextGalleryPanelProps> = ({
 };
 
 export default TextGalleryPanel;
-

@@ -7,6 +7,15 @@ import { memo, useState, useRef, useEffect, useCallback, type FC } from "react";
 import type { ImageLayer } from "../../types/layer";
 import PropertySection from "./PropertySection";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Sun, CircleOff } from "lucide-react";
 
 // Constants outside component - no need for useMemo
@@ -17,10 +26,6 @@ const DITHER_METHODS = [
   { id: "bayer", name: "Bayer Matrix" },
   { id: "pattern", name: "Halftone" },
 ] as const;
-
-// Shared slider className - defined once, used multiple times
-const SLIDER_CLASS_NAME =
-  "w-full h-1 bg-bg-secondary rounded-sm outline-none appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-purple-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:duration-200 [&::-webkit-slider-thumb]:hover:bg-purple-accent [&::-webkit-slider-thumb]:hover:shadow-[0_0_8px_rgba(167,139,250,0.4)] [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:bg-purple-primary [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:transition-all [&::-moz-range-thumb]:duration-200 [&::-moz-range-thumb]:hover:bg-purple-accent [&::-moz-range-thumb]:hover:shadow-[0_0_8px_rgba(167,139,250,0.4)]";
 
 interface ImageFiltersSectionProps {
   layer: ImageLayer;
@@ -186,8 +191,8 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
   );
 
   const handleDitherChange = useCallback(
-    (method: string) => {
-      reprocessWithUpdates({ ditherMethod: method });
+    (value: string) => {
+      reprocessWithUpdates({ ditherMethod: value });
     },
     [reprocessWithUpdates]
   );
@@ -303,17 +308,18 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
         <label className="text-xs font-semibold text-text-secondary uppercase tracking-wide">
           Dither Method
         </label>
-        <select
-          value={layer.ditherMethod}
-          onChange={(e) => handleDitherChange(e.target.value)}
-          className="w-full px-2 py-2 bg-bg-tertiary border border-border rounded-sm text-text-primary text-sm font-medium cursor-pointer transition-all duration-200 hover:border-purple-primary focus:outline-none focus:border-purple-primary focus:ring-2 focus:ring-purple-500/20"
-        >
-          {DITHER_METHODS.map((method) => (
-            <option key={method.id} value={method.id}>
-              {method.name}
-            </option>
-          ))}
-        </select>
+        <Select value={layer.ditherMethod} onValueChange={handleDitherChange}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {DITHER_METHODS.map((method) => (
+              <SelectItem key={method.id} value={method.id}>
+                {method.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Threshold - for methods that use it */}
@@ -328,16 +334,13 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
               {threshold}
             </span>
           </label>
-          <input
-            type="range"
-            min="0"
-            max="255"
-            value={threshold}
-            onChange={(e) => handleThresholdChange(parseInt(e.target.value))}
-            onPointerUp={handleThresholdRelease}
-            onMouseUp={handleThresholdRelease}
-            onTouchEnd={handleThresholdRelease}
-            className={SLIDER_CLASS_NAME}
+          <Slider
+            min={0}
+            max={255}
+            value={[threshold]}
+            onValueChange={(values) => handleThresholdChange(values[0])}
+            onValueCommit={handleThresholdRelease}
+            className="w-full"
           />
         </div>
       )}
@@ -351,16 +354,13 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
               {bayerMatrixSize}×{bayerMatrixSize}
             </span>
           </label>
-          <input
-            type="range"
-            min="2"
-            max="16"
-            value={bayerMatrixSize}
-            onChange={(e) => handleBayerMatrixChange(parseInt(e.target.value))}
-            onPointerUp={handleBayerMatrixRelease}
-            onMouseUp={handleBayerMatrixRelease}
-            onTouchEnd={handleBayerMatrixRelease}
-            className={SLIDER_CLASS_NAME}
+          <Slider
+            min={2}
+            max={16}
+            value={[bayerMatrixSize]}
+            onValueChange={(values) => handleBayerMatrixChange(values[0])}
+            onValueCommit={handleBayerMatrixRelease}
+            className="w-full"
           />
         </div>
       )}
@@ -374,16 +374,13 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
               {halftoneCellSize}px
             </span>
           </label>
-          <input
-            type="range"
-            min="2"
-            max="16"
-            value={halftoneCellSize}
-            onChange={(e) => handleHalftoneChange(parseInt(e.target.value))}
-            onPointerUp={handleHalftoneRelease}
-            onMouseUp={handleHalftoneRelease}
-            onTouchEnd={handleHalftoneRelease}
-            className={SLIDER_CLASS_NAME}
+          <Slider
+            min={2}
+            max={16}
+            value={[halftoneCellSize]}
+            onValueChange={(values) => handleHalftoneChange(values[0])}
+            onValueCommit={handleHalftoneRelease}
+            className="w-full"
           />
         </div>
       )}
@@ -396,16 +393,13 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
             {brightness}
           </span>
         </label>
-        <input
-          type="range"
-          min="0"
-          max="255"
-          value={brightness}
-          onChange={(e) => handleBrightnessChange(parseInt(e.target.value))}
-          onPointerUp={handleBrightnessRelease}
-          onMouseUp={handleBrightnessRelease}
-          onTouchEnd={handleBrightnessRelease}
-          className={SLIDER_CLASS_NAME}
+        <Slider
+          min={0}
+          max={255}
+          value={[brightness]}
+          onValueChange={(values) => handleBrightnessChange(values[0])}
+          onValueCommit={handleBrightnessRelease}
+          className="w-full"
         />
       </div>
 
@@ -417,42 +411,30 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
             {contrast}%
           </span>
         </label>
-        <input
-          type="range"
-          min="0"
-          max="200"
-          value={contrast}
-          onChange={(e) => handleContrastChange(parseInt(e.target.value))}
-          onPointerUp={handleContrastRelease}
-          onMouseUp={handleContrastRelease}
-          onTouchEnd={handleContrastRelease}
-          className={SLIDER_CLASS_NAME}
+        <Slider
+          min={0}
+          max={200}
+          value={[contrast]}
+          onValueChange={(values) => handleContrastChange(values[0])}
+          onValueCommit={handleContrastRelease}
+          className="w-full"
         />
       </div>
 
       {/* Invert Toggle */}
-      <div className="flex flex-col gap-2">
-        <Button
-          variant="neuro-ghost"
-          className="w-full justify-start text-xs"
-          onClick={handleInvertToggle}
+      <div className="flex items-center justify-between">
+        <label
+          htmlFor="invert-toggle"
+          className="flex items-center gap-2 text-xs font-semibold text-text-secondary uppercase tracking-wide cursor-pointer"
         >
           <CircleOff size={16} />
-          <span>Invert</span>
-          <div
-            className={`ml-auto w-8 h-4 rounded-full relative transition-all duration-200 ${
-              layer.invert
-                ? "bg-linear-to-br from-purple-dark to-blue-dark border-purple-primary"
-                : "bg-bg-secondary border border-border"
-            }`}
-          >
-            <div
-              className={`w-2.5 h-2.5 bg-text-primary rounded-full absolute top-0.5 transition-all duration-200 ${
-                layer.invert ? "left-[18px]" : "left-0.5"
-              }`}
-            />
-          </div>
-        </Button>
+          <span>Invert Colors</span>
+        </label>
+        <Switch
+          id="invert-toggle"
+          checked={layer.invert}
+          onCheckedChange={handleInvertToggle}
+        />
       </div>
     </PropertySection>
   );

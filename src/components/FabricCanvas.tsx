@@ -10,6 +10,7 @@ import * as fabric from "fabric";
 import type { Layer, ImageLayer, TextLayer } from "../types/layer";
 import { logger } from "../lib/logger";
 import { cn } from "../lib/utils";
+import { DEFAULT_FONT_FAMILY } from "../constants/fonts";
 
 interface FabricCanvasProps {
   className?: string;
@@ -806,7 +807,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           top: options.y || 50,
           width: 200, // Default width for textbox
           fontSize: options.fontSize || 24,
-          fontFamily: options.fontFamily || "Inter",
+          fontFamily: options.fontFamily || DEFAULT_FONT_FAMILY,
           fontWeight: options.bold ? "bold" : "normal",
           fontStyle: options.italic ? "italic" : "normal",
           textAlign: options.align || "left",

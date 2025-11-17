@@ -6,6 +6,7 @@
 import type { FC } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { Info } from "lucide-react";
 
 interface CanvasSettingsPanelProps {
@@ -44,13 +45,12 @@ const CanvasSettingsPanel: FC<CanvasSettingsPanelProps> = ({
           <span className="input-unit">px</span>
         </div>
 
-        <input
-          type="range"
-          min="200"
-          max="3000"
-          step="50"
-          value={canvasHeight}
-          onChange={(e) => onCanvasHeightChange(parseInt(e.target.value))}
+        <Slider
+          min={200}
+          max={3000}
+          step={50}
+          value={[canvasHeight]}
+          onValueChange={(values) => onCanvasHeightChange(values[0])}
           className="height-slider"
         />
       </div>
