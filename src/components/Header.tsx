@@ -3,8 +3,8 @@
  * Contains file menu, undo/redo, and print button
  */
 
-import { useState, type FC } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState, type FC } from "react";
+import { Button } from "@/components/ui/button";
 
 interface HeaderProps {
   onNewCanvas: () => void;
@@ -49,14 +49,24 @@ const Header: FC<HeaderProps> = ({
             onClick={() => setShowFileMenu(!showFileMenu)}
           >
             <span>File</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </Button>
 
           {showFileMenu && (
             <>
-              <div className="menu-overlay" onClick={() => setShowFileMenu(false)} />
+              <div
+                className="menu-overlay"
+                onClick={() => setShowFileMenu(false)}
+              />
               <div className="dropdown-menu">
                 <Button
                   variant="neuro-menu"
@@ -67,7 +77,14 @@ const Header: FC<HeaderProps> = ({
                   }}
                 >
                   <div className="flex items-center gap-3">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                       <polyline points="14 2 14 8 20 8" />
                     </svg>
@@ -87,7 +104,14 @@ const Header: FC<HeaderProps> = ({
                   }}
                 >
                   <div className="flex items-center gap-3">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
                       <polyline points="17 21 17 13 7 13 7 21" />
                       <polyline points="7 3 7 8 15 8" />
@@ -106,7 +130,14 @@ const Header: FC<HeaderProps> = ({
                   }}
                 >
                   <div className="flex items-center gap-3">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                       <polyline points="7 10 12 15 17 10" />
                       <line x1="12" y1="15" x2="12" y2="3" />
@@ -129,7 +160,14 @@ const Header: FC<HeaderProps> = ({
             disabled={!canUndo}
             title="Deshacer (Ctrl+Z)"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M3 7v6h6" />
               <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13" />
             </svg>
@@ -142,7 +180,14 @@ const Header: FC<HeaderProps> = ({
             disabled={!canRedo}
             title="Rehacer (Ctrl+Y)"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M21 7v6h-6" />
               <path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7" />
             </svg>
@@ -168,19 +213,34 @@ const Header: FC<HeaderProps> = ({
         >
           {isPrinting ? (
             <>
-              <svg className="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                className="spinner"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M21 12a9 9 0 11-6.219-8.56" />
               </svg>
               <span>Printing...</span>
             </>
           ) : (
             <>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <polyline points="6 9 6 2 18 2 18 9" />
                 <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
                 <rect x="6" y="14" width="12" height="8" />
               </svg>
-              <span>{isConnected ? 'Print' : 'Connect'}</span>
+              <span>{isConnected ? "Print" : "Connect"}</span>
             </>
           )}
         </Button>
@@ -317,4 +377,3 @@ const Header: FC<HeaderProps> = ({
 };
 
 export default Header;
-

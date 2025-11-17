@@ -71,6 +71,7 @@ const ToolsBar: FC<ToolsBarProps> = ({
             variant={
               activeTool === tool.id ? "neuro-tool-active" : "neuro-tool"
             }
+            size="xl"
             onClick={() => onToolSelect(tool.id)}
             title={`${tool.label} (${tool.shortcut})`}
             className="gap-1"
@@ -86,6 +87,7 @@ const ToolsBar: FC<ToolsBarProps> = ({
         {onOpenCanvasSettings && (
           <Button
             variant="neuro-tool"
+            size="xl"
             onClick={onOpenCanvasSettings}
             title="Canvas Settings"
             className="gap-1"
@@ -109,6 +111,7 @@ const ToolsBar: FC<ToolsBarProps> = ({
         {onOpenPrinterPanel && (
           <Button
             variant="neuro-tool"
+            size="xl"
             onClick={onOpenPrinterPanel}
             title="Printer Connection"
             className="gap-1"
