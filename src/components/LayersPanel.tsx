@@ -6,9 +6,8 @@
 import { memo, useMemo, useCallback } from "react";
 import type { FC } from "react";
 import type { Layer } from "../types/layer";
-import { useConfirmDialog } from "../hooks/useConfirmDialog";
+import { useConfirmDialogStore } from "../stores/useConfirmDialogStore";
 import { Button } from "@/components/ui/button";
-import ConfirmDialog from "./ConfirmDialog";
 import {
   ChevronUp,
   ChevronDown,
@@ -41,23 +40,23 @@ const LayersPanel: FC<LayersPanelProps> = ({
   onRemoveLayer,
   onMoveLayer,
 }) => {
-  // Use confirm dialog
-  const { confirm: confirmDialog, dialogState } = useConfirmDialog();
-
   // Memoize reversed layers to avoid creating new array on each render
   const reversedLayers = useMemo(() => [...layers].reverse(), [layers]);
 
   // Memoize selected layer info
-  const { selectedLayer, selectedIndex, canMoveUp, canMoveDown } = useMemo(() => {
-    const layer = layers.find((l) => l.id === selectedLayerId);
-    const index = layer ? layers.findIndex((l) => l.id === selectedLayerId) : -1;
-    return {
-      selectedLayer: layer,
-      selectedIndex: index,
-      canMoveUp: layer && index < layers.length - 1,
-      canMoveDown: layer && index > 0,
-    };
-  }, [layers, selectedLayerId]);
+  const { selectedLayer, selectedIndex, canMoveUp, canMoveDown } =
+    useMemo(() => {
+      const layer = layers.find((l) => l.id === selectedLayerId);
+      const index = layer
+        ? layers.findIndex((l) => l.id === selectedLayerId)
+        : -1;
+      return {
+        selectedLayer: layer,
+        selectedIndex: index,
+        canMoveUp: layer && index < layers.length - 1,
+        canMoveDown: layer && index > 0,
+      };
+    }, [layers, selectedLayerId]);
 
   return (
     <div className="layers-panel">
@@ -117,7 +116,6 @@ const LayersPanel: FC<LayersPanelProps> = ({
               onToggleVisibility={onToggleVisibility}
               onToggleLock={onToggleLock}
               onRemoveLayer={onRemoveLayer}
-              confirmDialog={confirmDialog}
             />
           ))
         )}
@@ -310,17 +308,6 @@ const LayersPanel: FC<LayersPanelProps> = ({
           color: #ef4444;
         }
       `}</style>
-
-      {/* Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={dialogState.isOpen}
-        title={dialogState.title}
-        description={dialogState.description}
-        confirmText={dialogState.confirmText}
-        cancelText={dialogState.cancelText}
-        onConfirm={dialogState.onConfirm || (() => {})}
-        onCancel={dialogState.onCancel || (() => {})}
-      />
     </div>
   );
 };
@@ -333,93 +320,100 @@ interface LayerItemProps {
   onToggleVisibility: (layerId: string) => void;
   onToggleLock: (layerId: string) => void;
   onRemoveLayer: (layerId: string) => void;
-  confirmDialog: (
-    title: string,
-    description: string,
-    options?: { confirmText?: string; cancelText?: string }
-  ) => Promise<boolean>;
 }
 
-const LayerItem = memo<LayerItemProps>(({
-  layer,
-  isSelected,
-  onSelectLayer,
-  onToggleVisibility,
-  onToggleLock,
-  onRemoveLayer,
-  confirmDialog,
-}) => {
-  const handleSelect = useCallback(() => {
-    onSelectLayer(layer.id);
-  }, [layer.id, onSelectLayer]);
+const LayerItem = memo<LayerItemProps>(
+  ({
+    layer,
+    isSelected,
+    onSelectLayer,
+    onToggleVisibility,
+    onToggleLock,
+    onRemoveLayer,
+  }) => {
+    const confirmDialog = useConfirmDialogStore((state) => state.confirm);
 
-  const handleToggleVisibility = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onToggleVisibility(layer.id);
-  }, [layer.id, onToggleVisibility]);
+    const handleSelect = useCallback(() => {
+      onSelectLayer(layer.id);
+    }, [layer.id, onSelectLayer]);
 
-  const handleToggleLock = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onToggleLock(layer.id);
-  }, [layer.id, onToggleLock]);
-
-  const handleRemove = useCallback(async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const confirmed = await confirmDialog(
-      "Delete Layer?",
-      `Are you sure you want to delete "${layer.name}"? This action cannot be undone.`,
-      { confirmText: "Delete", cancelText: "Cancel" }
+    const handleToggleVisibility = useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onToggleVisibility(layer.id);
+      },
+      [layer.id, onToggleVisibility]
     );
-    if (confirmed) {
-      onRemoveLayer(layer.id);
-    }
-  }, [layer.id, layer.name, onRemoveLayer, confirmDialog]);
 
-  return (
-    <div
-      className={`layer-item ${isSelected ? "selected" : ""}`}
-      onClick={handleSelect}
-    >
-      <div className="layer-icon">
-        {layer.type === "text" ? <Type size={14} /> : <Image size={14} />}
+    const handleToggleLock = useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onToggleLock(layer.id);
+      },
+      [layer.id, onToggleLock]
+    );
+
+    const handleRemove = useCallback(
+      async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const confirmed = await confirmDialog(
+          "Delete Layer?",
+          `Are you sure you want to delete "${layer.name}"? This action cannot be undone.`,
+          { confirmText: "Delete", cancelText: "Cancel" }
+        );
+        if (confirmed) {
+          onRemoveLayer(layer.id);
+        }
+      },
+      [layer.id, layer.name, onRemoveLayer, confirmDialog]
+    );
+
+    return (
+      <div
+        className={`layer-item ${isSelected ? "selected" : ""}`}
+        onClick={handleSelect}
+      >
+        <div className="layer-icon">
+          {layer.type === "text" ? <Type size={14} /> : <Image size={14} />}
+        </div>
+
+        <span className="layer-name">{layer.name}</span>
+
+        <div className="layer-actions">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={handleToggleVisibility}
+            title={layer.visible ? "Hide" : "Show"}
+            className="h-6 w-6"
+          >
+            {layer.visible ? <Eye size={12} /> : <EyeOff size={12} />}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={handleToggleLock}
+            title={layer.locked ? "Unlock" : "Lock"}
+            className="h-6 w-6"
+          >
+            {layer.locked ? <Lock size={12} /> : <Unlock size={12} />}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={handleRemove}
+            title="Delete"
+            className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
+          >
+            <Trash2 size={12} />
+          </Button>
+        </div>
       </div>
-
-      <span className="layer-name">{layer.name}</span>
-
-      <div className="layer-actions">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={handleToggleVisibility}
-          title={layer.visible ? "Hide" : "Show"}
-          className="h-6 w-6"
-        >
-          {layer.visible ? <Eye size={12} /> : <EyeOff size={12} />}
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={handleToggleLock}
-          title={layer.locked ? "Unlock" : "Lock"}
-          className="h-6 w-6"
-        >
-          {layer.locked ? <Lock size={12} /> : <Unlock size={12} />}
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={handleRemove}
-          title="Delete"
-          className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
-        >
-          <Trash2 size={12} />
-        </Button>
-      </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 LayerItem.displayName = "LayerItem";
 

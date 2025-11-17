@@ -5,7 +5,7 @@ import { useToastContext } from "../contexts/ToastContext";
 import { useLayers } from "../hooks/useLayers";
 import { useCanvasPersistence } from "../hooks/useCanvasPersistence";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
-import { useConfirmDialog } from "../hooks/useConfirmDialog";
+import { useConfirmDialogStore } from "../stores/useConfirmDialogStore";
 import Header from "./Header";
 import LayersPanel from "./LayersPanel";
 import PropertiesPanel from "./PropertiesPanel";
@@ -14,7 +14,7 @@ import CanvasSettingsPanel from "./CanvasSettingsPanel";
 import ImageUploader from "./ImageUploader";
 import PrinterConnection from "./PrinterConnection";
 import TextGalleryPanel from "./TextGalleryPanel";
-import ConfirmDialog from "./ConfirmDialog";
+import GlobalConfirmDialog from "./GlobalConfirmDialog";
 import FabricCanvas, { type FabricCanvasRef } from "./FabricCanvas";
 import { PRINTER_WIDTH } from "../lib/dithering";
 import { logger } from "../lib/logger";
@@ -170,8 +170,8 @@ export default function CanvasManager() {
   // Use toast notifications
   const toast = useToastContext();
 
-  // Use confirm dialog
-  const { confirm: confirmDialog, dialogState } = useConfirmDialog();
+  // Use confirm dialog store
+  const confirmDialog = useConfirmDialogStore((state) => state.confirm);
 
   // Use layer system with initial state
   const {
@@ -915,16 +915,8 @@ export default function CanvasManager() {
 
       `}</style>
 
-      {/* Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={dialogState.isOpen}
-        title={dialogState.title}
-        description={dialogState.description}
-        confirmText={dialogState.confirmText}
-        cancelText={dialogState.cancelText}
-        onConfirm={dialogState.onConfirm || (() => {})}
-        onCancel={dialogState.onCancel || (() => {})}
-      />
+      {/* Global Confirmation Dialog */}
+      <GlobalConfirmDialog />
     </div>
   );
 }
