@@ -95,6 +95,7 @@ For detailed setup, see **[GETTING_STARTED.md](./GETTING_STARTED.md)**.
 **Technical**
 
 - **[brutal-print.md](./brutal-print.md)** - Architecture & technical specification
+- **[COLOR_SYSTEM.md](./COLOR_SYSTEM.md)** - Neuro Core color system & Tailwind usage guide
 - **[CHANGELOG.md](./CHANGELOG.md)** - Version history (v1.0 - v1.8)
 - **[DEBUGGING.md](./DEBUGGING.md)** - Debug mode & troubleshooting
 - **[TESTING.md](./TESTING.md)** - Testing guide
@@ -152,7 +153,21 @@ See [CHANGELOG.md](./CHANGELOG.md) for complete history.
 - **Astro 4.x** + **React 18** + **TypeScript 5**
 - **Fabric.js** (interactive canvas)
 - **Tailwind CSS v4** (styling)
+- **shadcn/ui** (component library)
+- **Lucide Icons** (icon system)
 - **mxw01-thermal-printer** (printer library)
+
+### Component Installation
+
+To add new UI components:
+
+```bash
+pnpm dlx shadcn@latest add button
+```
+
+**Resources**:
+- [shadcn Components](https://ui.shadcn.com/docs/components) - Available UI components
+- [Lucide Icons](https://www.shadcn.io/icons/lucide) - Icon library (1,636 icons)
 
 ---
 

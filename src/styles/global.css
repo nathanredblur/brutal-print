@@ -63,25 +63,41 @@
   --transition-fast: 150ms ease-in-out;
   --transition-normal: 200ms ease-in-out;
   --transition-slow: 300ms ease-in-out;
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+
+  /* Tailwind Theme (adapted to Neuro Core) */
+  --radius: 0.375rem;
+  --background: #0A0E1A; /* bg-primary */
+  --foreground: #f5f7ff; /* text-primary */
+  
+  --card: #1E293B; /* bg-tertiary */
+  --card-foreground: #f5f7ff;
+  
+  --popover: #0F172A; /* bg-secondary */
+  --popover-foreground: #f5f7ff;
+  
+  /* Neuro Core Primary (Purple gradient) */
+  --primary: #7C3AED; /* purple-dark */
+  --primary-foreground: #f5f7ff;
+  
+  /* Secondary */
+  --secondary: #1E293B; /* bg-tertiary */
+  --secondary-foreground: #c7cfe6; /* text-secondary */
+  
+  /* Muted */
+  --muted: #334155; /* slate-dark */
+  --muted-foreground: #94A3B8; /* text-muted */
+  
+  /* Accent (Purple) */
+  --accent: rgba(167, 139, 250, 0.1); /* purple-primary with opacity */
+  --accent-foreground: #A78BFA; /* purple-primary */
+  
+  /* Destructive */
+  --destructive: #ef4444;
+  
+  /* Border */
+  --border: #2a2f48; /* color-border */
+  --input: #2a2f48;
+  --ring: #A78BFA; /* purple-primary */
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -217,10 +233,13 @@ body {
 }
 
 @theme inline {
+  /* Radius */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* Tailwind Theme Colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -239,19 +258,40 @@ body {
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* Neuro Core Custom Colors */
+  --color-purple-50: #faf5ff;
+  --color-purple-100: #f3e8ff;
+  --color-purple-200: #e9d5ff;
+  --color-purple-300: #d8b4fe;
+  --color-purple-400: #c084fc;
+  --color-purple-500: #a78bfa; /* purple-primary */
+  --color-purple-600: #7c3aed; /* purple-dark */
+  --color-purple-700: #6d28d9;
+  --color-purple-800: #5b21b6;
+  --color-purple-900: #4c1d95;
+  
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-200: #bfdbfe;
+  --color-blue-300: #93c5fd;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6; /* blue-primary */
+  --color-blue-600: #1e40af; /* blue-dark */
+  --color-blue-700: #1e3a8a;
+  --color-blue-800: #1e3a8a;
+  --color-blue-900: #1e293b;
+  
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8; /* text-muted */
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569; /* slate-medium */
+  --color-slate-700: #334155; /* slate-dark */
+  --color-slate-800: #1e293b; /* bg-tertiary */
+  --color-slate-900: #0f172a; /* bg-secondary */
 }
 
 .dark {

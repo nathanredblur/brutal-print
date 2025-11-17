@@ -4,6 +4,7 @@
  */
 
 import type { FC } from "react";
+import { Button } from "@/components/ui/button";
 
 type Tool = "image" | "text";
 
@@ -65,66 +66,67 @@ const ToolsBar: FC<ToolsBarProps> = ({
     <div className="tools-bar">
       <div className="tools-bar-content">
         {tools.map((tool) => (
-          <button
+          <Button
             key={tool.id}
-            className={`tool-btn ${activeTool === tool.id ? "active" : ""}`}
+            variant={
+              activeTool === tool.id ? "neuro-tool-active" : "neuro-tool"
+            }
             onClick={() => onToolSelect(tool.id)}
             title={`${tool.label} (${tool.shortcut})`}
+            className="gap-1"
           >
-            <div className="tool-icon">{tool.icon}</div>
-            <span className="tool-label">{tool.label}</span>
-          </button>
+            {tool.icon}
+            <span className="text-xs font-semibold">{tool.label}</span>
+          </Button>
         ))}
 
         <div className="separator" />
 
         {/* Canvas Settings */}
         {onOpenCanvasSettings && (
-          <button
-            className="tool-btn utility"
+          <Button
+            variant="neuro-tool"
             onClick={onOpenCanvasSettings}
             title="Canvas Settings"
+            className="gap-1"
           >
-            <div className="tool-icon">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <path d="M3 9h18M9 21V9" />
-              </svg>
-            </div>
-            <span className="tool-label">Canvas</span>
-          </button>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M3 9h18M9 21V9" />
+            </svg>
+            <span className="text-xs font-semibold">Canvas</span>
+          </Button>
         )}
 
         {/* Printer Connection */}
         {onOpenPrinterPanel && (
-          <button
-            className="tool-btn utility"
+          <Button
+            variant="neuro-tool"
             onClick={onOpenPrinterPanel}
             title="Printer Connection"
+            className="gap-1"
           >
-            <div className="tool-icon">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <polyline points="6 9 6 2 18 2 18 9" />
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                <rect x="6" y="14" width="12" height="8" />
-              </svg>
-            </div>
-            <span className="tool-label">Printer</span>
-          </button>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <polyline points="6 9 6 2 18 2 18 9" />
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+              <rect x="6" y="14" width="12" height="8" />
+            </svg>
+            <span className="text-xs font-semibold">Printer</span>
+          </Button>
         )}
       </div>
 
@@ -158,52 +160,6 @@ const ToolsBar: FC<ToolsBarProps> = ({
           margin: 0 0.25rem;
         }
 
-        .tool-btn {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.25rem;
-          padding: 0.75rem 1rem;
-          min-width: 80px;
-          background: var(--color-bg-tertiary);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-md);
-          color: var(--color-text-secondary);
-          cursor: pointer;
-          transition: all var(--transition-normal);
-        }
-
-        .tool-btn.utility {
-          background: transparent;
-          border-color: transparent;
-        }
-
-        .tool-btn:hover {
-          background: rgba(167, 139, 250, 0.1);
-          border-color: var(--color-purple-primary);
-          color: var(--color-purple-primary);
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(167, 139, 250, 0.2);
-        }
-
-        .tool-btn.active {
-          background: linear-gradient(135deg, rgba(124, 58, 237, 0.3) 0%, rgba(59, 130, 246, 0.3) 100%);
-          border-color: var(--color-purple-primary);
-          color: var(--color-purple-primary);
-          box-shadow: 0 0 20px rgba(167, 139, 250, 0.4);
-        }
-
-        .tool-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .tool-label {
-          font-size: 0.75rem;
-          font-weight: 600;
-        }
-
         @keyframes slideUp {
           from {
             opacity: 0;
@@ -220,4 +176,3 @@ const ToolsBar: FC<ToolsBarProps> = ({
 };
 
 export default ToolsBar;
-

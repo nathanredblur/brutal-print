@@ -4,6 +4,7 @@
  */
 
 import { useState, type FC } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface HeaderProps {
   onNewCanvas: () => void;
@@ -42,68 +43,78 @@ const Header: FC<HeaderProps> = ({
 
         {/* File Menu */}
         <div className="menu-container">
-          <button
-            className="menu-button"
+          <Button
+            variant="neuro-ghost"
+            size="sm"
             onClick={() => setShowFileMenu(!showFileMenu)}
           >
             <span>File</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="6 9 12 15 18 9" />
             </svg>
-          </button>
+          </Button>
 
           {showFileMenu && (
             <>
               <div className="menu-overlay" onClick={() => setShowFileMenu(false)} />
               <div className="dropdown-menu">
-                <button
-                  className="menu-item"
+                <Button
+                  variant="neuro-menu"
+                  className="w-full justify-between"
                   onClick={() => {
                     setShowFileMenu(false);
                     onNewCanvas();
                   }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                  </svg>
-                  <span>New</span>
-                  <span className="menu-shortcut">Ctrl+N</span>
-                </button>
+                  <div className="flex items-center gap-3">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    <span>New</span>
+                  </div>
+                  <span className="text-xs text-[#94A3B8]">Ctrl+N</span>
+                </Button>
 
                 <div className="menu-divider" />
 
-                <button
-                  className="menu-item"
+                <Button
+                  variant="neuro-menu"
+                  className="w-full justify-between"
                   onClick={() => {
                     setShowFileMenu(false);
                     onSave();
                   }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                    <polyline points="17 21 17 13 7 13 7 21" />
-                    <polyline points="7 3 7 8 15 8" />
-                  </svg>
-                  <span>Save</span>
-                  <span className="menu-shortcut">Ctrl+S</span>
-                </button>
+                  <div className="flex items-center gap-3">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                      <polyline points="17 21 17 13 7 13 7 21" />
+                      <polyline points="7 3 7 8 15 8" />
+                    </svg>
+                    <span>Save</span>
+                  </div>
+                  <span className="text-xs text-[#94A3B8]">Ctrl+S</span>
+                </Button>
 
-                <button
-                  className="menu-item"
+                <Button
+                  variant="neuro-menu"
+                  className="w-full justify-between"
                   onClick={() => {
                     setShowFileMenu(false);
                     onExport();
                   }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                  <span>Export</span>
-                  <span className="menu-shortcut">Ctrl+E</span>
-                </button>
+                  <div className="flex items-center gap-3">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    <span>Export</span>
+                  </div>
+                  <span className="text-xs text-[#94A3B8]">Ctrl+E</span>
+                </Button>
               </div>
             </>
           )}
@@ -111,8 +122,9 @@ const Header: FC<HeaderProps> = ({
 
         {/* Undo/Redo */}
         <div className="history-controls">
-          <button
-            className="icon-button"
+          <Button
+            variant="neuro-icon"
+            size="icon-sm"
             onClick={onUndo}
             disabled={!canUndo}
             title="Deshacer (Ctrl+Z)"
@@ -121,10 +133,11 @@ const Header: FC<HeaderProps> = ({
               <path d="M3 7v6h6" />
               <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13" />
             </svg>
-          </button>
+          </Button>
 
-          <button
-            className="icon-button"
+          <Button
+            variant="neuro-icon"
+            size="icon-sm"
             onClick={onRedo}
             disabled={!canRedo}
             title="Rehacer (Ctrl+Y)"
@@ -133,7 +146,7 @@ const Header: FC<HeaderProps> = ({
               <path d="M21 7v6h-6" />
               <path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7" />
             </svg>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -147,8 +160,8 @@ const Header: FC<HeaderProps> = ({
         )}
 
         {/* Print Button */}
-        <button
-          className="btn-print"
+        <Button
+          variant="neuro"
           onClick={onPrint}
           disabled={isPrinting}
           title={isConnected ? "Print" : "Connect printer"}
@@ -170,7 +183,7 @@ const Header: FC<HeaderProps> = ({
               <span>{isConnected ? 'Print' : 'Connect'}</span>
             </>
           )}
-        </button>
+        </Button>
       </div>
 
       <style>{`
@@ -217,27 +230,6 @@ const Header: FC<HeaderProps> = ({
           position: relative;
         }
 
-        .menu-button {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.5rem 1rem;
-          background: transparent;
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          color: var(--color-text-secondary);
-          font-size: 0.875rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .menu-button:hover {
-          background: rgba(167, 139, 250, 0.1);
-          border-color: var(--color-purple-primary);
-          color: var(--color-purple-primary);
-        }
-
         .menu-overlay {
           position: fixed;
           top: 0;
@@ -261,40 +253,6 @@ const Header: FC<HeaderProps> = ({
           overflow: hidden;
         }
 
-        .menu-item {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          width: 100%;
-          padding: 0.75rem 1rem;
-          background: transparent;
-          border: none;
-          color: var(--color-text-secondary);
-          font-size: 0.875rem;
-          font-weight: 500;
-          text-align: left;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .menu-item:hover {
-          background: rgba(167, 139, 250, 0.1);
-          color: var(--color-purple-primary);
-        }
-
-        .menu-item svg {
-          flex-shrink: 0;
-        }
-
-        .menu-item span:first-of-type {
-          flex: 1;
-        }
-
-        .menu-shortcut {
-          font-size: 0.75rem;
-          color: var(--color-text-muted);
-        }
-
         .menu-divider {
           height: 1px;
           background: var(--color-border);
@@ -304,31 +262,6 @@ const Header: FC<HeaderProps> = ({
         .history-controls {
           display: flex;
           gap: 0.25rem;
-        }
-
-        .icon-button {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 36px;
-          height: 36px;
-          background: transparent;
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          color: var(--color-text-secondary);
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-
-        .icon-button:hover:not(:disabled) {
-          background: rgba(167, 139, 250, 0.1);
-          border-color: var(--color-purple-primary);
-          color: var(--color-purple-primary);
-        }
-
-        .icon-button:disabled {
-          opacity: 0.3;
-          cursor: not-allowed;
         }
 
         .header-right {
@@ -364,32 +297,6 @@ const Header: FC<HeaderProps> = ({
           50% {
             opacity: 0.5;
           }
-        }
-
-        .btn-print {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.625rem 1.25rem;
-          background: linear-gradient(135deg, var(--color-purple-dark) 0%, var(--color-blue-dark) 100%);
-          border: none;
-          border-radius: var(--radius-md);
-          color: var(--color-text-primary);
-          font-size: 0.875rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all var(--transition-normal);
-          box-shadow: var(--shadow-md);
-        }
-
-        .btn-print:hover:not(:disabled) {
-          transform: translateY(-1px);
-          box-shadow: var(--glow-purple), var(--shadow-lg);
-        }
-
-        .btn-print:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
         }
 
         .spinner {

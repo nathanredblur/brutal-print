@@ -2,6 +2,7 @@
 import { usePrinterContext } from '../contexts/PrinterContext';
 import { logger } from '../lib/logger';
 import { useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface PrinterConnectionProps {
   onPrint?: () => void;
@@ -100,8 +101,9 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
       {/* Action Buttons */}
       <div className="connection-actions">
         {!isConnected ? (
-          <button 
-            className="btn-primary connect-btn"
+          <Button 
+            variant="neuro"
+            className="w-full"
             onClick={handleConnect}
             disabled={isPrinting}
           >
@@ -111,18 +113,20 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
               <path d="M6 14h12v8H6z"/>
             </svg>
             Connect Printer
-          </button>
+          </Button>
         ) : (
           <>
-            <button
-              className="btn-secondary"
+            <Button
+              variant="neuro-ghost"
+              className="flex-1"
               onClick={handleDisconnect}
               disabled={isPrinting}
             >
               Disconnect
-            </button>
-            <button
-              className="btn-primary"
+            </Button>
+            <Button
+              variant="neuro"
+              className="flex-1"
               onClick={handlePrint}
               disabled={isPrinting}
             >
@@ -141,7 +145,7 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
                   Print
                 </>
               )}
-            </button>
+            </Button>
           </>
         )}
       </div>
@@ -219,57 +223,6 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
         .connection-actions {
           display: flex;
           gap: 0.5rem;
-        }
-
-        .connection-actions button {
-          flex: 1;
-          padding: 0.75rem 1rem;
-          border-radius: var(--radius-md);
-          font-weight: 600;
-          font-size: 0.875rem;
-          border: none;
-          cursor: pointer;
-          transition: all var(--transition-normal);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-        }
-
-        .btn-primary {
-          background: linear-gradient(135deg, var(--color-purple-dark) 0%, var(--color-blue-dark) 100%);
-          color: var(--color-text-primary);
-        }
-
-        .btn-primary:hover:not(:disabled) {
-          transform: translateY(-1px);
-          box-shadow: var(--glow-purple);
-        }
-
-        .btn-primary:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .btn-secondary {
-          background: var(--color-bg-tertiary);
-          color: var(--color-text-secondary);
-          border: 1px solid var(--color-border);
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-          border-color: var(--color-purple-primary);
-          color: var(--color-text-primary);
-          background: rgba(167, 139, 250, 0.1);
-        }
-
-        .btn-secondary:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .connect-btn {
-          width: 100%;
         }
 
         .spinner {

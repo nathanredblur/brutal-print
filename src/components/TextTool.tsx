@@ -1,5 +1,7 @@
 // Text tool component for adding text to canvas
 import { useState, useCallback } from "react";
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 
 interface TextToolProps {
   onAddText: (text: string, options: TextOptions) => void;
@@ -59,9 +61,9 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
     <div className="text-tool">
       <div className="tool-header">
         <h3>Add Text</h3>
-        <button className="close-btn" onClick={onClose}>
-          ×
-        </button>
+        <Button variant="ghost" size="icon-sm" onClick={onClose}>
+          <X className="w-4 h-4" />
+        </Button>
       </div>
 
       <div className="tool-content">
@@ -110,20 +112,22 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
         <div className="control-group">
           <label>Style</label>
           <div className="style-buttons">
-            <button
-              className={`style-btn ${options.bold ? "active" : ""}`}
+            <Button
+              variant={options.bold ? "neuro" : "neuro-ghost"}
+              size="sm"
               onClick={() => updateOption("bold", !options.bold)}
               title="Bold"
             >
               <strong>B</strong>
-            </button>
-            <button
-              className={`style-btn ${options.italic ? "active" : ""}`}
+            </Button>
+            <Button
+              variant={options.italic ? "neuro" : "neuro-ghost"}
+              size="sm"
               onClick={() => updateOption("italic", !options.italic)}
               title="Italic"
             >
               <em>I</em>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -131,10 +135,9 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
         <div className="control-group">
           <label>Alignment</label>
           <div className="align-buttons">
-            <button
-              className={`align-btn ${
-                options.align === "left" ? "active" : ""
-              }`}
+            <Button
+              variant={options.align === "left" ? "neuro" : "neuro-ghost"}
+              size="icon-sm"
               onClick={() => updateOption("align", "left")}
               title="Align Left"
             >
@@ -150,11 +153,10 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
                 <line x1="3" y1="12" x2="15" y2="12" />
                 <line x1="3" y1="18" x2="18" y2="18" />
               </svg>
-            </button>
-            <button
-              className={`align-btn ${
-                options.align === "center" ? "active" : ""
-              }`}
+            </Button>
+            <Button
+              variant={options.align === "center" ? "neuro" : "neuro-ghost"}
+              size="icon-sm"
               onClick={() => updateOption("align", "center")}
               title="Align Center"
             >
@@ -170,11 +172,10 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
                 <line x1="6" y1="12" x2="18" y2="12" />
                 <line x1="5" y1="18" x2="19" y2="18" />
               </svg>
-            </button>
-            <button
-              className={`align-btn ${
-                options.align === "right" ? "active" : ""
-              }`}
+            </Button>
+            <Button
+              variant={options.align === "right" ? "neuro" : "neuro-ghost"}
+              size="icon-sm"
               onClick={() => updateOption("align", "right")}
               title="Align Right"
             >
@@ -190,7 +191,7 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
                 <line x1="9" y1="12" x2="21" y2="12" />
                 <line x1="6" y1="18" x2="21" y2="18" />
               </svg>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -240,12 +241,12 @@ export default function TextTool({ onAddText, onClose }: TextToolProps) {
 
         {/* Actions */}
         <div className="tool-actions">
-          <button className="btn-secondary" onClick={onClose}>
+          <Button variant="neuro-ghost" onClick={onClose} className="flex-1">
             Cancel
-          </button>
-          <button className="btn-primary" onClick={handleAddText}>
+          </Button>
+          <Button variant="neuro" onClick={handleAddText} className="flex-1">
             Add Text
-          </button>
+          </Button>
         </div>
       </div>
 
