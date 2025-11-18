@@ -825,6 +825,9 @@ export default function CanvasManager() {
             onLayerUpdate={handleLayerUpdate}
             onLayerSelect={handleLayerSelect}
             onCanvasSelect={handleCanvasSelect}
+            onToggleVisibility={toggleVisibility}
+            onToggleLock={toggleLock}
+            onRemoveLayer={removeLayer}
           />
         </div>
 

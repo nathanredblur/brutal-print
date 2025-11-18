@@ -167,12 +167,22 @@ export function useLayers(initialState?: Partial<LayerState>) {
 
   // Toggle lock
   const toggleLock = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      layers: prev.layers.map((layer) =>
-        layer.id === id ? { ...layer, locked: !layer.locked } : layer
-      ),
-    }));
+    setState((prev) => {
+      const layer = prev.layers.find((l) => l.id === id);
+      const isLocking = layer && !layer.locked; // Si la capa se está bloqueando (de false a true)
+
+      return {
+        ...prev,
+        layers: prev.layers.map((layer) =>
+          layer.id === id ? { ...layer, locked: !layer.locked } : layer
+        ),
+        // Si estamos bloqueando la capa seleccionada, deseleccionarla
+        selectedLayerId:
+          isLocking && prev.selectedLayerId === id
+            ? null
+            : prev.selectedLayerId,
+      };
+    });
   }, []);
 
   // Select layer

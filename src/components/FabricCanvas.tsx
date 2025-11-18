@@ -5,12 +5,29 @@
  * Uses Fabric.js for advanced canvas manipulation
  */
 
-import { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
+import {
+  useEffect,
+  useRef,
+  useImperativeHandle,
+  forwardRef,
+  useState,
+  useCallback,
+} from "react";
 import * as fabric from "fabric";
 import type { Layer, ImageLayer, TextLayer } from "../types/layer";
 import { logger } from "../lib/logger";
 import { cn } from "../lib/utils";
 import { DEFAULT_FONT_FAMILY } from "../constants/fonts";
+import { useConfirmDialogStore } from "../stores/useConfirmDialogStore";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import { Kbd } from "@/components/ui/kbd";
+import { Eye, EyeOff, Lock, Unlock, Trash2 } from "lucide-react";
 
 interface FabricCanvasProps {
   className?: string;
@@ -25,6 +42,9 @@ interface FabricCanvasProps {
   ) => void;
   onLayerSelect?: (layerId: string | null) => void;
   onCanvasSelect?: () => void;
+  onToggleVisibility?: (layerId: string) => void;
+  onToggleLock?: (layerId: string) => void;
+  onRemoveLayer?: (layerId: string) => void;
 }
 
 export interface FabricCanvasRef {
@@ -50,12 +70,20 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       onLayerUpdate,
       onLayerSelect,
       onCanvasSelect,
+      onToggleVisibility,
+      onToggleLock,
+      onRemoveLayer,
     },
     ref
   ) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fabricRef = useRef<fabric.Canvas | null>(null);
     const layerObjectsRef = useRef<Map<string, fabric.FabricObject>>(new Map());
+    const confirmDialog = useConfirmDialogStore((state) => state.confirm);
+
+    const [contextMenuLayerId, setContextMenuLayerId] = useState<string | null>(
+      null
+    );
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Throttling refs for real-time scaling
@@ -828,17 +856,139 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       },
     }));
 
+    // Context menu handlers
+    const handleContextMenuVisibility = useCallback(() => {
+      if (contextMenuLayerId && onToggleVisibility) {
+        onToggleVisibility(contextMenuLayerId);
+      }
+    }, [contextMenuLayerId, onToggleVisibility]);
+
+    const handleContextMenuLock = useCallback(() => {
+      if (contextMenuLayerId && onToggleLock) {
+        onToggleLock(contextMenuLayerId);
+      }
+    }, [contextMenuLayerId, onToggleLock]);
+
+    const handleContextMenuDelete = useCallback(async () => {
+      if (!contextMenuLayerId || !onRemoveLayer) return;
+
+      const layer = layers.find((l) => l.id === contextMenuLayerId);
+      if (!layer) return;
+
+      const confirmed = await confirmDialog(
+        "Delete Layer?",
+        `Are you sure you want to delete "${layer.name}"? This action cannot be undone.`,
+        { confirmText: "Delete", cancelText: "Cancel" }
+      );
+
+      if (confirmed) {
+        onRemoveLayer(contextMenuLayerId);
+      }
+    }, [contextMenuLayerId, layers, onRemoveLayer, confirmDialog]);
+
+    // Get current context menu layer
+    const contextMenuLayer = layers.find((l) => l.id === contextMenuLayerId);
+
+    // Handle right click to detect layer under cursor
+    const handleContextMenu = useCallback(
+      (e: React.MouseEvent) => {
+        const fabricCanvas = fabricRef.current;
+        if (!fabricCanvas) return;
+
+        // Get the object under the cursor
+        const pointer = fabricCanvas.getPointer(e.nativeEvent);
+        const objects = fabricCanvas.getObjects();
+
+        let targetObject: FabricObjectWithData | null = null;
+
+        // Find the topmost object under the cursor
+        for (let i = objects.length - 1; i >= 0; i--) {
+          const obj = objects[i] as FabricObjectWithData;
+          if (obj.containsPoint(pointer)) {
+            targetObject = obj;
+            break;
+          }
+        }
+
+        if (targetObject?.data?.layerId) {
+          const layerId = targetObject.data.layerId;
+          const layer = layers.find((l) => l.id === layerId);
+
+          setContextMenuLayerId(layerId);
+
+          // Si la capa NO está bloqueada, seleccionarla
+          if (layer && !layer.locked && onLayerSelect) {
+            onLayerSelect(layerId);
+          }
+        } else if (selectedLayerId) {
+          // Si no hay objeto bajo el cursor pero hay una capa seleccionada, usar esa
+          setContextMenuLayerId(selectedLayerId);
+        }
+      },
+      [layers, selectedLayerId, onLayerSelect]
+    );
+
     return (
-      <div
-        className={cn(
-          "fabric-canvas-container",
-          "flex flex-1 justify-center items-center w-full h-full",
-          className
-        )}
-        ref={containerRef}
+      <ContextMenu
+        onOpenChange={(open) => {
+          if (!open) {
+            setContextMenuLayerId(null);
+          }
+        }}
       >
-        <canvas className="shadow-lg rounded-sm" ref={canvasRef} />
-      </div>
+        <ContextMenuTrigger asChild>
+          <div
+            className={cn(
+              "fabric-canvas-container",
+              "flex flex-1 justify-center items-center w-full h-full",
+              className
+            )}
+            ref={containerRef}
+            onContextMenu={handleContextMenu}
+          >
+            <canvas className="shadow-lg rounded-sm" ref={canvasRef} />
+          </div>
+        </ContextMenuTrigger>
+
+        {contextMenuLayer && (
+          <ContextMenuContent className="w-64">
+            <ContextMenuItem onClick={handleContextMenuVisibility}>
+              {contextMenuLayer.visible ? (
+                <EyeOff size={16} />
+              ) : (
+                <Eye size={16} />
+              )}
+              <span>
+                {contextMenuLayer.visible ? "Hide Layer" : "Show Layer"}
+              </span>
+              <Kbd className="ml-auto">H</Kbd>
+            </ContextMenuItem>
+
+            <ContextMenuItem onClick={handleContextMenuLock}>
+              {contextMenuLayer.locked ? (
+                <Unlock size={16} />
+              ) : (
+                <Lock size={16} />
+              )}
+              <span>
+                {contextMenuLayer.locked ? "Unlock Layer" : "Lock Layer"}
+              </span>
+              <Kbd className="ml-auto">L</Kbd>
+            </ContextMenuItem>
+
+            <ContextMenuSeparator />
+
+            <ContextMenuItem
+              variant="destructive"
+              onClick={handleContextMenuDelete}
+            >
+              <Trash2 size={16} />
+              <span>Delete Layer</span>
+              <Kbd className="ml-auto">Del</Kbd>
+            </ContextMenuItem>
+          </ContextMenuContent>
+        )}
+      </ContextMenu>
     );
   }
 );

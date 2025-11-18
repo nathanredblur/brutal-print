@@ -5,6 +5,7 @@
 
 import { memo, useCallback, type FC, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { Image, Type, Layout, Printer } from "lucide-react";
 
 type Tool = "image" | "text";
@@ -63,7 +64,7 @@ const ToolsBar: FC<ToolsBarProps> = ({
           />
         ))}
 
-        <div className="w-px h-12 bg-slate-700 mx-1" />
+        <Separator orientation="vertical" className="h-12 mx-1" />
 
         {/* Canvas Settings */}
         {onOpenCanvasSettings && (
