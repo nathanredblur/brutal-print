@@ -3,8 +3,16 @@
  * Contains file menu, undo/redo, and print button
  */
 
-import { memo, useState, useCallback, type FC } from "react";
+import { memo, type FC } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Kbd } from "@/components/ui/kbd";
 import {
   FileText,
   Save,
@@ -41,31 +49,6 @@ const Header: FC<HeaderProps> = ({
   isPrinting = false,
   isConnected = false,
 }) => {
-  const [showFileMenu, setShowFileMenu] = useState(false);
-
-  const toggleFileMenu = useCallback(() => {
-    setShowFileMenu((prev) => !prev);
-  }, []);
-
-  const closeFileMenu = useCallback(() => {
-    setShowFileMenu(false);
-  }, []);
-
-  const handleNewCanvas = useCallback(() => {
-    setShowFileMenu(false);
-    onNewCanvas();
-  }, [onNewCanvas]);
-
-  const handleSave = useCallback(() => {
-    setShowFileMenu(false);
-    onSave();
-  }, [onSave]);
-
-  const handleExport = useCallback(() => {
-    setShowFileMenu(false);
-    onExport();
-  }, [onExport]);
-
   return (
     <header className="flex justify-between items-center px-6 py-3 bg-linear-to-br from-slate-900/60 to-slate-950/80 backdrop-blur-md border-b border-border z-100 animate-in slide-in-from-top duration-300">
       <div className="flex items-center gap-6">
@@ -77,57 +60,35 @@ const Header: FC<HeaderProps> = ({
         </div>
 
         {/* File Menu */}
-        <div className="relative">
-          <Button variant="neuro-ghost" size="sm" onClick={toggleFileMenu}>
-            <span>File</span>
-            <ChevronDown size={12} />
-          </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="neuro-ghost" size="sm">
+              <span>File</span>
+              <ChevronDown size={12} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-[240px] z-[150]">
+            <DropdownMenuItem onClick={onNewCanvas}>
+              <FileText size={16} />
+              <span>New</span>
+              <Kbd className="ml-auto">Ctrl+N</Kbd>
+            </DropdownMenuItem>
 
-          {showFileMenu && (
-            <>
-              <div className="fixed inset-0 z-99" onClick={closeFileMenu} />
-              <div className="absolute top-[calc(100%+0.5rem)] left-0 min-w-[240px] bg-bg-tertiary border border-border rounded-md shadow-xl z-100 animate-in slide-in-from-top-2 duration-200 overflow-hidden">
-                <Button
-                  variant="neuro-menu"
-                  className="w-full justify-between"
-                  onClick={handleNewCanvas}
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText size={16} />
-                    <span>New</span>
-                  </div>
-                  <span className="text-xs text-slate-400">Ctrl+N</span>
-                </Button>
+            <DropdownMenuSeparator />
 
-                <div className="h-px bg-border my-1" />
+            <DropdownMenuItem onClick={onSave}>
+              <Save size={16} />
+              <span>Save</span>
+              <Kbd className="ml-auto">Ctrl+S</Kbd>
+            </DropdownMenuItem>
 
-                <Button
-                  variant="neuro-menu"
-                  className="w-full justify-between"
-                  onClick={handleSave}
-                >
-                  <div className="flex items-center gap-3">
-                    <Save size={16} />
-                    <span>Save</span>
-                  </div>
-                  <span className="text-xs text-slate-400">Ctrl+S</span>
-                </Button>
-
-                <Button
-                  variant="neuro-menu"
-                  className="w-full justify-between"
-                  onClick={handleExport}
-                >
-                  <div className="flex items-center gap-3">
-                    <Download size={16} />
-                    <span>Export</span>
-                  </div>
-                  <span className="text-xs text-slate-400">Ctrl+E</span>
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
+            <DropdownMenuItem onClick={onExport}>
+              <Download size={16} />
+              <span>Export</span>
+              <Kbd className="ml-auto">Ctrl+E</Kbd>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Undo/Redo */}
         <div className="flex gap-1">
