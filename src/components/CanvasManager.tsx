@@ -6,6 +6,12 @@ import { useLayers } from "../hooks/useLayers";
 import { useCanvasPersistence } from "../hooks/useCanvasPersistence";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useConfirmDialogStore } from "../stores/useConfirmDialogStore";
+import {
+  DEFAULT_DITHER_METHOD,
+  DEFAULT_THRESHOLD,
+  DEFAULT_BRIGHTNESS,
+  DEFAULT_CONTRAST,
+} from "../constants/imageDefaults";
 import Header from "./Header";
 import LayersPanel from "./LayersPanel";
 import PropertiesPanel from "./PropertiesPanel";
@@ -221,26 +227,38 @@ export default function CanvasManager() {
       // Load image and process it
       const img = new Image();
       img.onload = async () => {
-        const { processImageForPrinter } = await import("../lib/dithering");
+        const { processImageForPrinter, binaryDataToCanvas } = await import(
+          "../lib/dithering"
+        );
 
         // Process with default settings
-        const { canvas } = processImageForPrinter(img, {
-          ditherMethod: "steinberg",
-          threshold: 128,
-          brightness: 128,
-          contrast: 100,
+        const { binaryData } = processImageForPrinter(img, {
+          ditherMethod: DEFAULT_DITHER_METHOD,
+          threshold: DEFAULT_THRESHOLD,
+          brightness: DEFAULT_BRIGHTNESS,
+          contrast: DEFAULT_CONTRAST,
           invert: false,
         });
 
-        addImageLayer(canvas, imageDataUrl, "steinberg", 128, false, {
-          name: layerName,
-          x: 0,
-          y: 0,
-        });
+        // Convert binary data to B&W canvas
+        const processedCanvas = binaryDataToCanvas(binaryData, 1);
+
+        addImageLayer(
+          processedCanvas,
+          imageDataUrl,
+          DEFAULT_DITHER_METHOD,
+          DEFAULT_THRESHOLD,
+          false,
+          {
+            name: layerName,
+            x: 0,
+            y: 0,
+          }
+        );
 
         logger.success(
           "CanvasManager",
-          "Image added as layer with original data"
+          "Image added as layer with dithering applied"
         );
         setShowImageUploader(false);
       };
@@ -283,8 +301,8 @@ export default function CanvasManager() {
 
     try {
       const printOptions = {
-        dither: "steinberg" as const,
-        brightness: 128,
+        dither: DEFAULT_DITHER_METHOD,
+        brightness: DEFAULT_BRIGHTNESS,
         intensity: 93,
       };
 
@@ -457,8 +475,8 @@ export default function CanvasManager() {
                 invert: imageLayer.invert,
                 targetWidth,
                 targetHeight,
-                brightness: imageLayer.brightness ?? 128,
-                contrast: imageLayer.contrast ?? 100,
+                brightness: imageLayer.brightness ?? DEFAULT_BRIGHTNESS,
+                contrast: imageLayer.contrast ?? DEFAULT_CONTRAST,
                 bayerMatrixSize: imageLayer.bayerMatrixSize ?? 4,
                 halftoneCellSize: imageLayer.halftoneCellSize ?? 4,
               }
@@ -724,6 +742,18 @@ export default function CanvasManager() {
     onMoveDown: (amount) => handleMoveElement("down", amount),
     onMoveLeft: (amount) => handleMoveElement("left", amount),
     onMoveRight: (amount) => handleMoveElement("right", amount),
+
+    // Layer actions
+    onToggleVisibility: () => {
+      if (selectedLayerId) {
+        toggleVisibility(selectedLayerId);
+      }
+    },
+    onToggleLock: () => {
+      if (selectedLayerId) {
+        toggleLock(selectedLayerId);
+      }
+    },
 
     // Document actions
     onUndo: () => {

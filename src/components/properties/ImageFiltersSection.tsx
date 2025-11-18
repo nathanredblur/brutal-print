@@ -16,6 +16,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DEFAULT_THRESHOLD,
+  DEFAULT_BRIGHTNESS,
+  DEFAULT_CONTRAST,
+  THRESHOLD_MIN,
+  THRESHOLD_MAX,
+  BRIGHTNESS_MIN,
+  BRIGHTNESS_MAX,
+  CONTRAST_MIN,
+  CONTRAST_MAX,
+} from "../../constants/imageDefaults";
 import { Sun, CircleOff } from "lucide-react";
 
 // Constants outside component - no need for useMemo
@@ -41,9 +52,13 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
   onReprocessImageLayer,
 }) => {
   // Local state for immediate UI feedback
-  const [threshold, setThreshold] = useState(layer.threshold || 128);
-  const [brightness, setBrightness] = useState(layer.brightness ?? 128);
-  const [contrast, setContrast] = useState(layer.contrast ?? 100);
+  const [threshold, setThreshold] = useState(
+    layer.threshold || DEFAULT_THRESHOLD
+  );
+  const [brightness, setBrightness] = useState(
+    layer.brightness ?? DEFAULT_BRIGHTNESS
+  );
+  const [contrast, setContrast] = useState(layer.contrast ?? DEFAULT_CONTRAST);
   const [bayerMatrixSize, setBayerMatrixSize] = useState(
     layer.bayerMatrixSize ?? 4
   );
@@ -62,9 +77,9 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
 
   // Update local state when switching to a different image
   useEffect(() => {
-    setThreshold(layer.threshold || 128);
-    setBrightness(layer.brightness ?? 128);
-    setContrast(layer.contrast ?? 100);
+    setThreshold(layer.threshold || DEFAULT_THRESHOLD);
+    setBrightness(layer.brightness ?? DEFAULT_BRIGHTNESS);
+    setContrast(layer.contrast ?? DEFAULT_CONTRAST);
     setBayerMatrixSize(layer.bayerMatrixSize ?? 4);
     setHalftoneCellSize(layer.halftoneCellSize ?? 4);
     // Clear any pending values when switching images
@@ -100,11 +115,11 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
         brightness:
           updates.brightness !== undefined
             ? updates.brightness
-            : layer.brightness ?? 128,
+            : layer.brightness ?? DEFAULT_BRIGHTNESS,
         contrast:
           updates.contrast !== undefined
             ? updates.contrast
-            : layer.contrast ?? 100,
+            : layer.contrast ?? DEFAULT_CONTRAST,
         bayerMatrixSize:
           updates.bayerMatrixSize !== undefined
             ? updates.bayerMatrixSize

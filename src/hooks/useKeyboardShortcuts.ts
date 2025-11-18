@@ -17,6 +17,10 @@ interface KeyboardShortcutHandlers {
   onMoveLeft?: (amount: number) => void;
   onMoveRight?: (amount: number) => void;
 
+  // Layer actions
+  onToggleVisibility?: () => void;
+  onToggleLock?: () => void;
+
   // Document actions
   onUndo?: () => void;
   onRedo?: () => void;
@@ -70,6 +74,20 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
         if (key === "Delete" || key === "Backspace") {
           e.preventDefault();
           handlers.onDeleteElement?.();
+          return;
+        }
+
+        // Toggle visibility (H)
+        if (key.toLowerCase() === "h" && !cmdOrCtrl) {
+          e.preventDefault();
+          handlers.onToggleVisibility?.();
+          return;
+        }
+
+        // Toggle lock (L)
+        if (key.toLowerCase() === "l" && !cmdOrCtrl) {
+          e.preventDefault();
+          handlers.onToggleLock?.();
           return;
         }
 

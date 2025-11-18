@@ -8,6 +8,11 @@
 import { useState, useCallback, useEffect } from "react";
 import type { Layer, LayerState, ImageLayer, TextLayer } from "../types/layer";
 import { logger } from "../lib/logger";
+import {
+  DEFAULT_BRIGHTNESS,
+  DEFAULT_CONTRAST,
+  DEFAULT_THRESHOLD,
+} from "../constants/imageDefaults";
 
 export function useLayers(initialState?: Partial<LayerState>) {
   const [state, setState] = useState<LayerState>({
@@ -49,7 +54,7 @@ export function useLayers(initialState?: Partial<LayerState>) {
       imageData: HTMLCanvasElement,
       originalImageData: string,
       ditherMethod: string,
-      threshold: number = 128,
+      threshold: number = DEFAULT_THRESHOLD,
       invert: boolean = false,
       options?: Partial<ImageLayer>
     ) => {
@@ -70,6 +75,8 @@ export function useLayers(initialState?: Partial<LayerState>) {
           originalImageData,
           ditherMethod,
           threshold,
+          brightness: DEFAULT_BRIGHTNESS,
+          contrast: DEFAULT_CONTRAST,
           invert,
         };
 
@@ -170,6 +177,7 @@ export function useLayers(initialState?: Partial<LayerState>) {
     setState((prev) => {
       const layer = prev.layers.find((l) => l.id === id);
       const isLocking = layer && !layer.locked; // Si la capa se está bloqueando (de false a true)
+      const isUnlocking = layer && layer.locked; // Si la capa se está desbloqueando (de true a false)
 
       return {
         ...prev,
@@ -177,9 +185,12 @@ export function useLayers(initialState?: Partial<LayerState>) {
           layer.id === id ? { ...layer, locked: !layer.locked } : layer
         ),
         // Si estamos bloqueando la capa seleccionada, deseleccionarla
+        // Si estamos desbloqueando, seleccionarla
         selectedLayerId:
           isLocking && prev.selectedLayerId === id
             ? null
+            : isUnlocking
+            ? id
             : prev.selectedLayerId,
       };
     });
@@ -326,8 +337,12 @@ export function useLayers(initialState?: Partial<LayerState>) {
                 ditherMethod: updates.ditherMethod ?? imageLayer.ditherMethod,
                 threshold: updates.threshold ?? imageLayer.threshold,
                 invert: updates.invert ?? imageLayer.invert,
-                brightness: updates.brightness ?? imageLayer.brightness ?? 128,
-                contrast: updates.contrast ?? imageLayer.contrast ?? 100,
+                brightness:
+                  updates.brightness ??
+                  imageLayer.brightness ??
+                  DEFAULT_BRIGHTNESS,
+                contrast:
+                  updates.contrast ?? imageLayer.contrast ?? DEFAULT_CONTRAST,
                 bayerMatrixSize:
                   updates.bayerMatrixSize ?? imageLayer.bayerMatrixSize ?? 4,
                 halftoneCellSize:

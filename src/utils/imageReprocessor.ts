@@ -8,6 +8,11 @@
 import { processImageForPrinter, binaryDataToCanvas } from "../lib/dithering";
 import type { DitherMethod } from "../lib/dithering";
 import { logger } from "../lib/logger";
+import {
+  DEFAULT_THRESHOLD,
+  DEFAULT_BRIGHTNESS,
+  DEFAULT_CONTRAST,
+} from "../constants/imageDefaults";
 
 export interface ReprocessOptions {
   threshold?: number;
@@ -82,9 +87,9 @@ export async function reprocessImage(
       try {
         const { binaryData } = processImageForPrinter(imgToProcess, {
           ditherMethod,
-          threshold: options?.threshold ?? 128,
-          brightness: options?.brightness ?? 128,
-          contrast: options?.contrast ?? 100,
+          threshold: options?.threshold ?? DEFAULT_THRESHOLD,
+          brightness: options?.brightness ?? DEFAULT_BRIGHTNESS,
+          contrast: options?.contrast ?? DEFAULT_CONTRAST,
           invert: options?.invert ?? false,
           bayerMatrixSize: options?.bayerMatrixSize ?? 4,
           halftoneCellSize: options?.halftoneCellSize ?? 4,
@@ -115,7 +120,7 @@ export async function reprocessImage(
 
               logger.info("imageReprocessor", "Image reprocessed and resized", {
                 ditherMethod,
-                threshold: options?.threshold ?? 128,
+                threshold: options?.threshold ?? DEFAULT_THRESHOLD,
                 invert: options?.invert ?? false,
                 size: { width: finalCanvas.width, height: finalCanvas.height },
               });
@@ -128,7 +133,7 @@ export async function reprocessImage(
 
         logger.info("imageReprocessor", "Image reprocessed", {
           ditherMethod,
-          threshold: options?.threshold ?? 128,
+          threshold: options?.threshold ?? DEFAULT_THRESHOLD,
           invert: options?.invert ?? false,
           size: { width: canvas.width, height: canvas.height },
           scaled: options?.targetWidth ? true : false,
