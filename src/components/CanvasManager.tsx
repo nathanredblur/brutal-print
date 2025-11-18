@@ -17,6 +17,7 @@ import LayersPanel from "./LayersPanel";
 import PropertiesPanel from "./PropertiesPanel";
 import ToolsBar from "./ToolsBar";
 import CanvasSettingsPanel from "./CanvasSettingsPanel";
+import AboutDialog from "./AboutDialog";
 import ImageUploader from "./ImageUploader";
 import PrinterConnection from "./PrinterConnection";
 import TextGalleryPanel from "./TextGalleryPanel";
@@ -144,6 +145,7 @@ export default function CanvasManager() {
   const [showTextTool, setShowTextTool] = useState(false);
   const [advancedPanel, setAdvancedPanel] = useState<AdvancedPanel>(null);
   const [selectionType, setSelectionType] = useState<SelectionType>(null);
+  const [showAboutDialog, setShowAboutDialog] = useState(false);
 
   // Keep a ref to always have fresh layers data
   const layersRef = useRef<Layer[]>([]);
@@ -362,6 +364,11 @@ export default function CanvasManager() {
     setActiveTool(null);
     setShowImageUploader(false);
     setShowTextTool(false);
+  }, []);
+
+  // Handle opening about dialog
+  const handleOpenAbout = useCallback(() => {
+    setShowAboutDialog(true);
   }, []);
 
   // Handle layer movement with direction (up/down)
@@ -879,7 +886,11 @@ export default function CanvasManager() {
         onToolSelect={handleToolSelect}
         onOpenCanvasSettings={handleOpenCanvasSettings}
         onOpenPrinterPanel={handleOpenPrinterPanel}
+        onOpenAbout={handleOpenAbout}
       />
+
+      {/* About Dialog */}
+      <AboutDialog open={showAboutDialog} onOpenChange={setShowAboutDialog} />
 
       {/* Global Confirmation Dialog */}
       <GlobalConfirmDialog />

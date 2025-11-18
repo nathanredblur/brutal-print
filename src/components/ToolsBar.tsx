@@ -6,7 +6,14 @@
 import { memo, useCallback, type FC, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Image, Type, Layout, Printer } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Kbd } from "@/components/ui/kbd";
+import { Image, Type, Layout, Printer, Info } from "lucide-react";
 
 type Tool = "image" | "text";
 
@@ -15,6 +22,7 @@ interface ToolsBarProps {
   onToolSelect: (tool: Tool) => void;
   onOpenCanvasSettings?: () => void;
   onOpenPrinterPanel?: () => void;
+  onOpenAbout?: () => void;
 }
 
 // Static tools configuration - no need for useMemo
@@ -43,6 +51,7 @@ const ToolsBar: FC<ToolsBarProps> = ({
   onToolSelect,
   onOpenCanvasSettings,
   onOpenPrinterPanel,
+  onOpenAbout,
 }) => {
   // Memoize tool selection handler
   const handleToolSelect = useCallback(
@@ -53,48 +62,83 @@ const ToolsBar: FC<ToolsBarProps> = ({
   );
 
   return (
-    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-4 fade-in duration-300">
-      <div className="flex items-center gap-2 p-2 bg-gradient-to-br from-slate-900/95 to-slate-950/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl shadow-black/40 ring-1 ring-purple-500/10">
-        {TOOLS.map((tool) => (
-          <ToolButton
-            key={tool.id}
-            tool={tool}
-            isActive={activeTool === tool.id}
-            onSelect={handleToolSelect}
-          />
-        ))}
+    <TooltipProvider delayDuration={300}>
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="flex items-center gap-2 p-2 bg-gradient-to-br from-slate-900/95 to-slate-950/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl shadow-black/40 ring-1 ring-purple-500/10">
+          {TOOLS.map((tool) => (
+            <ToolButton
+              key={tool.id}
+              tool={tool}
+              isActive={activeTool === tool.id}
+              onSelect={handleToolSelect}
+            />
+          ))}
 
-        <Separator orientation="vertical" className="h-12 mx-1" />
+          <Separator orientation="vertical" className="h-12 mx-1" />
 
-        {/* Canvas Settings */}
-        {onOpenCanvasSettings && (
-          <Button
-            variant="neuro-tool"
-            size="xl"
-            onClick={onOpenCanvasSettings}
-            title="Canvas Settings"
-            className="gap-1"
-          >
-            <Layout size={20} />
-            <span className="text-xs font-semibold">Canvas</span>
-          </Button>
-        )}
+          {/* Canvas Settings */}
+          {onOpenCanvasSettings && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="neuro-tool"
+                  size="xl"
+                  onClick={onOpenCanvasSettings}
+                  className="gap-1"
+                >
+                  <Layout size={20} />
+                  <span className="text-xs font-semibold">Canvas</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Canvas Settings</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
 
-        {/* Printer Connection */}
-        {onOpenPrinterPanel && (
-          <Button
-            variant="neuro-tool"
-            size="xl"
-            onClick={onOpenPrinterPanel}
-            title="Printer Connection"
-            className="gap-1"
-          >
-            <Printer size={20} />
-            <span className="text-xs font-semibold">Printer</span>
-          </Button>
-        )}
+          {/* Printer Connection */}
+          {onOpenPrinterPanel && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="neuro-tool"
+                  size="xl"
+                  onClick={onOpenPrinterPanel}
+                  className="gap-1"
+                >
+                  <Printer size={20} />
+                  <span className="text-xs font-semibold">Printer</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Connect Thermal Printer</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
+          <Separator orientation="vertical" className="h-12 mx-1" />
+
+          {/* About / Help */}
+          {onOpenAbout && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="neuro-tool"
+                  size="xl"
+                  onClick={onOpenAbout}
+                  className="gap-1"
+                >
+                  <Info size={20} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>About & Keyboard Shortcuts</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
 
@@ -116,16 +160,25 @@ const ToolButton = memo<ToolButtonProps>(({ tool, isActive, onSelect }) => {
   }, [tool.id, onSelect]);
 
   return (
-    <Button
-      variant={isActive ? "neuro-tool-active" : "neuro-tool"}
-      size="xl"
-      onClick={handleClick}
-      title={`${tool.label} (${tool.shortcut})`}
-      className="gap-1"
-    >
-      {tool.icon}
-      <span className="text-xs font-semibold">{tool.label}</span>
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant={isActive ? "neuro-tool-active" : "neuro-tool"}
+          size="xl"
+          onClick={handleClick}
+          className="gap-1"
+        >
+          {tool.icon}
+          <span className="text-xs font-semibold">{tool.label}</span>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <div className="flex items-center gap-2">
+          <span>{tool.label}</span>
+          <Kbd>{tool.shortcut}</Kbd>
+        </div>
+      </TooltipContent>
+    </Tooltip>
   );
 });
 
