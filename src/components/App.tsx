@@ -7,16 +7,17 @@
  */
 
 import { PrinterProvider } from '../contexts/PrinterContext';
-import { ToastProvider } from '../contexts/ToastContext';
+import { Toaster } from '@/components/ui/sonner';
 import CanvasManager from './CanvasManager';
 
 export default function App() {
   return (
-    <ToastProvider>
+    <>
       <PrinterProvider>
         <CanvasManager />
       </PrinterProvider>
-    </ToastProvider>
+      <Toaster position="top-right" />
+    </>
   );
 }
 

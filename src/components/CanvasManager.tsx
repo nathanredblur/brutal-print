@@ -1,7 +1,7 @@
 // Main canvas manager with all tools integrated
 import { useState, useRef, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 import { usePrinterContext } from "../contexts/PrinterContext";
-import { useToastContext } from "../contexts/ToastContext";
 import { useLayers } from "../hooks/useLayers";
 import { useCanvasPersistence } from "../hooks/useCanvasPersistence";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
@@ -168,9 +168,6 @@ export default function CanvasManager() {
   // Use shared printer context
   const { printCanvas, isConnected, isPrinting } = usePrinterContext();
 
-  // Use toast notifications
-  const toast = useToastContext();
-
   // Use confirm dialog store
   const confirmDialog = useConfirmDialogStore((state) => state.confirm);
 
@@ -263,10 +260,9 @@ export default function CanvasManager() {
       setActiveTool(null);
       setShowImageUploader(false);
       setShowTextTool(false);
-      toast.info(
-        "Connect printer",
-        "Please connect your thermal printer first."
-      );
+      toast.info("Connect printer", {
+        description: "Please connect your thermal printer first.",
+      });
       return;
     }
 
@@ -274,10 +270,9 @@ export default function CanvasManager() {
     const canvas = fabricCanvasRef.current?.exportToCanvas();
     if (!canvas) {
       logger.error("CanvasManager", "Canvas not available");
-      toast.error(
-        "Canvas not available",
-        "Please refresh the page and try again."
-      );
+      toast.error("Canvas not available", {
+        description: "Please refresh the page and try again.",
+      });
       return;
     }
 
@@ -299,13 +294,14 @@ export default function CanvasManager() {
       await printCanvas(canvas, printOptions);
 
       logger.success("CanvasManager", "Print completed!");
-      toast.success(
-        "¡Impresión completada!",
-        "Tu diseño ha sido enviado a la impresora."
-      );
+      toast.success("¡Impresión completada!", {
+        description: "Tu diseño ha sido enviado a la impresora.",
+      });
     } catch (error) {
       logger.error("CanvasManager", "Print failed", error);
-      toast.error("Impresión fallida", (error as Error).message);
+      toast.error("Impresión fallida", {
+        description: (error as Error).message,
+      });
     }
   }, [isConnected, isPrinting, printCanvas, toast]);
 
@@ -382,10 +378,9 @@ export default function CanvasManager() {
       });
 
       logger.success("CanvasManager", "Text added as layer");
-      toast.success(
-        "Text added!",
-        `${layerName} has been added to the canvas.`
-      );
+      toast.success("Text added!", {
+        description: `${layerName} has been added to the canvas.`,
+      });
       // Panel stays open to allow adding multiple text elements
     },
     [addTextLayer, layers.length, toast]
@@ -566,7 +561,9 @@ export default function CanvasManager() {
   // Handle new canvas (clear all layers)
   const handleNewCanvas = useCallback(async () => {
     if (layers.length === 0) {
-      toast.info("Empty canvas", "There are no layers to clear.");
+      toast.info("Empty canvas", {
+        description: "There are no layers to clear.",
+      });
       return;
     }
 
@@ -579,7 +576,9 @@ export default function CanvasManager() {
     if (confirmed) {
       clearLayers();
       persistence.clearSavedState();
-      toast.success("New canvas created!", "All layers have been deleted.");
+      toast.success("New canvas created!", {
+        description: "All layers have been deleted.",
+      });
       logger.info("CanvasManager", "New canvas created - all layers cleared");
     }
   }, [layers.length, clearLayers, persistence, toast, confirmDialog]);
@@ -587,7 +586,9 @@ export default function CanvasManager() {
   // Handle save
   const handleSave = useCallback(() => {
     // Save is automatic via persistence, just show confirmation
-    toast.success("Saved!", "Your work is automatically saved.");
+    toast.success("Saved!", {
+      description: "Your work is automatically saved.",
+    });
     logger.info("CanvasManager", "Manual save triggered");
   }, [toast]);
 
@@ -605,14 +606,18 @@ export default function CanvasManager() {
 
       const canvas = fabricCanvasRef.current?.exportToCanvas();
       if (!canvas) {
-        toast.error("Export error", "Canvas not available.");
+        toast.error("Export error", {
+          description: "Canvas not available.",
+        });
         return;
       }
 
       // Export as PNG
       canvas.toBlob((blob) => {
         if (!blob) {
-          toast.error("Export error", "Could not create image.");
+          toast.error("Export error", {
+            description: "Could not create image.",
+          });
           return;
         }
 
@@ -623,7 +628,9 @@ export default function CanvasManager() {
         link.click();
         URL.revokeObjectURL(url);
 
-        toast.success("Exported!", "Your design has been downloaded.");
+        toast.success("Exported!", {
+          description: "Your design has been downloaded.",
+        });
         logger.info("CanvasManager", "Canvas exported as PNG");
 
         // Restore selection if needed
@@ -633,7 +640,9 @@ export default function CanvasManager() {
       });
     } catch (error) {
       logger.error("CanvasManager", "Export failed", error);
-      toast.error("Export error", (error as Error).message);
+      toast.error("Export error", {
+        description: (error as Error).message,
+      });
     }
   }, [toast, selectedLayerId, selectLayer]);
 
@@ -643,7 +652,9 @@ export default function CanvasManager() {
       return;
     }
     removeLayer(selectedLayerId);
-    toast.info("Element deleted", "The selected element has been removed.");
+    toast.info("Element deleted", {
+      description: "The selected element has been removed.",
+    });
     logger.info("CanvasManager", "Element deleted via keyboard shortcut", {
       layerId: selectedLayerId,
     });
@@ -717,11 +728,15 @@ export default function CanvasManager() {
     // Document actions
     onUndo: () => {
       // TODO: Implement undo/redo system
-      toast.info("Coming soon", "Undo/Redo will be available soon.");
+      toast.info("Coming soon", {
+        description: "Undo/Redo will be available soon.",
+      });
     },
     onRedo: () => {
       // TODO: Implement undo/redo system
-      toast.info("Coming soon", "Undo/Redo will be available soon.");
+      toast.info("Coming soon", {
+        description: "Undo/Redo will be available soon.",
+      });
     },
     onSave: handleSave,
     onExport: handleExport,
