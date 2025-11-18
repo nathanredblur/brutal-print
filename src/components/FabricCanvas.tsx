@@ -18,6 +18,14 @@ import type { Layer, ImageLayer, TextLayer } from "../types/layer";
 import { logger } from "../lib/logger";
 import { cn } from "../lib/utils";
 import { DEFAULT_FONT_FAMILY } from "../constants/fonts";
+import {
+  SELECTION_COLOR,
+  SELECTION_BORDER_COLOR,
+  SELECTION_LINE_WIDTH,
+  HOVER_STROKE_COLOR,
+  HOVER_STROKE_WIDTH,
+  getDefaultObjectStyles,
+} from "../constants/canvasStyles";
 import { useConfirmDialogStore } from "../stores/useConfirmDialogStore";
 import {
   ContextMenu,
@@ -56,7 +64,9 @@ export interface FabricCanvasRef {
 
 // Helper type for Fabric objects with custom data
 interface FabricObjectWithData extends fabric.FabricObject {
-  data?: { layerId: string };
+  data?: {
+    layerId: string;
+  };
 }
 
 const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
@@ -95,6 +105,9 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       wasScaled: boolean;
     } | null>(null);
 
+    // Ref for tracking hovered object (for custom border rendering)
+    const hoveredObjectRef = useRef<FabricObjectWithData | null>(null);
+
     // Initialize Fabric canvas
     useEffect(() => {
       if (!canvasRef.current) return;
@@ -108,6 +121,10 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
         // Disable image smoothing globally for pixel-perfect 1-bit rendering
         enableRetinaScaling: false,
         imageSmoothingEnabled: false,
+        // Global selection styling - purple border
+        selectionColor: SELECTION_COLOR,
+        selectionBorderColor: SELECTION_BORDER_COLOR,
+        selectionLineWidth: SELECTION_LINE_WIDTH,
       });
 
       fabricRef.current = fabricCanvas;
@@ -207,6 +224,57 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           // Update the layer with new text content
           onLayerUpdate?.(layerId, { text: newText } as any);
         }
+      });
+
+      // Handle mouse over - track hovered object
+      fabricCanvas.on("mouse:over", (e: any) => {
+        const obj = e.target as FabricObjectWithData;
+        if (obj && obj.data?.layerId) {
+          const isSelected = fabricCanvas.getActiveObject() === obj;
+          if (!isSelected) {
+            hoveredObjectRef.current = obj;
+            fabricCanvas.renderAll();
+          }
+        }
+      });
+
+      // Handle mouse out - clear hovered object
+      fabricCanvas.on("mouse:out", (e: any) => {
+        const obj = e.target as FabricObjectWithData;
+        if (obj && obj.data?.layerId) {
+          const isSelected = fabricCanvas.getActiveObject() === obj;
+          if (!isSelected && hoveredObjectRef.current === obj) {
+            hoveredObjectRef.current = null;
+            fabricCanvas.renderAll();
+          }
+        }
+      });
+
+      // Custom rendering: draw border on hovered object
+      fabricCanvas.on("after:render", () => {
+        const hoveredObj = hoveredObjectRef.current;
+        if (!hoveredObj) return;
+
+        const ctx = fabricCanvas.getContext();
+        const zoom = fabricCanvas.getZoom();
+
+        // Get object's bounding rectangle
+        const boundingRect = hoveredObj.getBoundingRect();
+
+        // Draw purple border
+        ctx.save();
+        ctx.strokeStyle = HOVER_STROKE_COLOR;
+        ctx.lineWidth = HOVER_STROKE_WIDTH;
+        ctx.setLineDash([]);
+
+        ctx.strokeRect(
+          boundingRect.left,
+          boundingRect.top,
+          boundingRect.width,
+          boundingRect.height
+        );
+
+        ctx.restore();
       });
 
       // Handle object modifications (drag, resize, rotate) - FINAL value
@@ -432,6 +500,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           opacity: layer.opacity,
           // Disable image smoothing for crisp 1-bit rendering
           imageSmoothing: false,
+          // Apply default border styling
+          ...getDefaultObjectStyles(),
         }) as FabricObjectWithData;
 
         logger.debug("FabricCanvas", "Image object created", {
@@ -458,6 +528,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           selectable: !layer.locked,
           editable: !layer.locked,
           opacity: layer.opacity,
+          // Apply default border styling
+          ...getDefaultObjectStyles(),
         }) as FabricObjectWithData;
 
         // Disable top and bottom middle controls
@@ -818,6 +890,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           top: 0,
           selectable: true,
           imageSmoothing: false, // Crisp 1-bit rendering
+          // Apply default border styling
+          ...getDefaultObjectStyles(),
         }) as FabricObjectWithData;
         img.data = { layerId };
         fabricCanvas.add(img);
@@ -842,6 +916,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           fill: options.color || "#000000",
           selectable: true,
           editable: true,
+          // Apply default border styling
+          ...getDefaultObjectStyles(),
         }) as FabricObjectWithData;
 
         // Disable top and bottom middle controls
