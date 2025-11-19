@@ -21,43 +21,41 @@ import {
   Type,
   Layers,
 } from "lucide-react";
+import {
+  useLayersStore,
+  selectSelectedLayer,
+  selectSelectedLayerIndex,
+} from "@/stores/useLayersStore";
 
-interface LayersPanelProps {
-  layers: Layer[];
-  selectedLayerId: string | null;
-  onSelectLayer: (layerId: string | null) => void;
-  onToggleVisibility: (layerId: string) => void;
-  onToggleLock: (layerId: string) => void;
-  onRemoveLayer: (layerId: string) => void;
-  onMoveLayer: (layerId: string, direction: "up" | "down") => void;
-}
+const LayersPanel = () => {
+  const layers = useLayersStore((state) => state.layers);
+  const selectedLayerId = useLayersStore((state) => state.selectedLayerId);
+  const selectedLayer = useLayersStore(selectSelectedLayer);
+  const selectedLayerIndex = useLayersStore(selectSelectedLayerIndex);
 
-const LayersPanel: FC<LayersPanelProps> = ({
-  layers,
-  selectedLayerId,
-  onSelectLayer,
-  onToggleVisibility,
-  onToggleLock,
-  onRemoveLayer,
-  onMoveLayer,
-}) => {
+  const canMoveUp = selectedLayerIndex < layers.length - 1;
+  const canMoveDown = selectedLayerIndex > 0;
   // Memoize reversed layers to avoid creating new array on each render
   const reversedLayers = useMemo(() => [...layers].reverse(), [layers]);
 
-  // Memoize selected layer info
-  const { selectedLayer, selectedIndex, canMoveUp, canMoveDown } =
-    useMemo(() => {
-      const layer = layers.find((l) => l.id === selectedLayerId);
-      const index = layer
-        ? layers.findIndex((l) => l.id === selectedLayerId)
-        : -1;
-      return {
-        selectedLayer: layer,
-        selectedIndex: index,
-        canMoveUp: layer && index < layers.length - 1,
-        canMoveDown: layer && index > 0,
-      };
-    }, [layers, selectedLayerId]);
+  // Actions
+  const selectLayer = useLayersStore((state) => state.selectLayer);
+  const toggleVisibility = useLayersStore((state) => state.toggleVisibility);
+  const toggleLock = useLayersStore((state) => state.toggleLock);
+  const removeLayer = useLayersStore((state) => state.removeLayer);
+  const moveLayer = useLayersStore((state) => state.moveLayer);
+
+  // Handle layer movement with direction (up/down)
+  const onMoveLayer = (layerId: string, direction: "up" | "down") => {
+    const currentIndex = layers.findIndex((l) => l.id === layerId);
+    if (currentIndex === -1) return;
+
+    if (direction === "up" && currentIndex < layers.length - 1) {
+      moveLayer(currentIndex, currentIndex + 1);
+    } else if (direction === "down" && currentIndex > 0) {
+      moveLayer(currentIndex, currentIndex - 1);
+    }
+  };
 
   return (
     <div className="w-60 bg-gradient-to-br from-slate-900/60 to-slate-950/80 backdrop-blur-md border-r border-slate-700 flex flex-col overflow-hidden">
@@ -116,10 +114,10 @@ const LayersPanel: FC<LayersPanelProps> = ({
               key={layer.id}
               layer={layer}
               isSelected={selectedLayerId === layer.id}
-              onSelectLayer={onSelectLayer}
-              onToggleVisibility={onToggleVisibility}
-              onToggleLock={onToggleLock}
-              onRemoveLayer={onRemoveLayer}
+              onSelectLayer={selectLayer}
+              onToggleVisibility={toggleVisibility}
+              onToggleLock={toggleLock}
+              onRemoveLayer={removeLayer}
             />
           ))
         )}

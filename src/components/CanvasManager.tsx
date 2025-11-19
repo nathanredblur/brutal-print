@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { usePrinterContext } from "../contexts/PrinterContext";
-import { useLayersStore } from "../stores/useLayersStore";
+import { useLayersStore, selectSelectedLayer } from "../stores/useLayersStore";
 import { useCanvasPersistence } from "../hooks/useCanvasPersistence";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useConfirmDialogStore } from "../stores/useConfirmDialogStore";
@@ -68,7 +68,7 @@ export default function CanvasManager() {
   // Use Zustand store for layers
   const layers = useLayersStore((state) => state.layers);
   const selectedLayerId = useLayersStore((state) => state.selectedLayerId);
-  const selectedLayer = useLayersStore((state) => state.selectedLayer);
+  const selectedLayer = useLayersStore(selectSelectedLayer);
   const addImageLayer = useLayersStore((state) => state.addImageLayer);
   const addTextLayer = useLayersStore((state) => state.addTextLayer);
   const removeLayer = useLayersStore((state) => state.removeLayer);
@@ -686,15 +686,7 @@ export default function CanvasManager() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left Panel - Always shows Layers */}
-        <LayersPanel
-          layers={layers}
-          selectedLayerId={selectedLayerId}
-          onSelectLayer={handleLayerSelect}
-          onToggleVisibility={toggleVisibility}
-          onToggleLock={toggleLock}
-          onRemoveLayer={removeLayer}
-          onMoveLayer={handleMoveLayerByDirection}
-        />
+        <LayersPanel />
 
         {/* Additional left panels - appear conditionally */}
         {(showImageUploader || showTextTool || advancedPanel) && (

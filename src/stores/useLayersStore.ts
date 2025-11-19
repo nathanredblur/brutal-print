@@ -13,9 +13,6 @@ import {
 } from "../constants/imageDefaults";
 
 interface LayersStore extends LayerState {
-  // Computed values
-  selectedLayer: Layer | null;
-
   // Actions
   addImageLayer: (
     imageData: HTMLCanvasElement,
@@ -71,12 +68,6 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
   layers: [],
   selectedLayerId: null,
   nextId: 1,
-
-  // Computed value
-  get selectedLayer() {
-    const state = get();
-    return state.layers.find((l) => l.id === state.selectedLayerId) || null;
-  },
 
   // Actions
   addImageLayer: (
@@ -365,3 +356,13 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
     });
   },
 }));
+
+// ✅ Selector helper - Se ejecuta automáticamente cuando cambian layers o selectedLayerId
+export const selectSelectedLayer = (state: LayersStore): Layer | null => {
+  return state.layers.find((l) => l.id === state.selectedLayerId) || null;
+};
+
+// Selector para obtener el índice de la capa seleccionada
+export const selectSelectedLayerIndex = (state: LayersStore): number => {
+  return state.layers.findIndex((l) => l.id === state.selectedLayerId);
+};
