@@ -77,8 +77,6 @@ export default function CanvasManager() {
   const selectLayer = useLayersStore((state) => state.selectLayer);
   const moveLayer = useLayersStore((state) => state.moveLayer);
   const updateLayer = useLayersStore((state) => state.updateLayer);
-  const updateTextLayer = useLayersStore((state) => state.updateTextLayer);
-  const updateImageLayer = useLayersStore((state) => state.updateImageLayer);
   const reprocessImageLayer = useLayersStore(
     (state) => state.reprocessImageLayer
   );
@@ -751,15 +749,7 @@ export default function CanvasManager() {
         </div>
 
         {/* Right Panel - Properties */}
-        <PropertiesPanel
-          selectedLayer={selectedLayer}
-          selectionType={selectionType}
-          onUpdateLayer={updateLayer}
-          onUpdateTextLayer={updateTextLayer}
-          onUpdateImageLayer={updateImageLayer}
-          onReprocessImageLayer={handleReprocessImageLayer}
-          onOpenAdvancedPanel={handleOpenAdvancedPanel}
-        />
+        <PropertiesPanel />
       </div>
 
       {/* Floating Tools Bar */}

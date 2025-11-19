@@ -37,10 +37,6 @@ interface LayersStore extends LayerState {
 
   updateLayer: (id: string, updates: Partial<Layer>) => void;
 
-  updateTextLayer: (id: string, updates: Partial<TextLayer>) => void;
-
-  updateImageLayer: (id: string, updates: Partial<ImageLayer>) => void;
-
   reprocessImageLayer: (
     id: string,
     newImageData: HTMLCanvasElement,
@@ -225,34 +221,6 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
     });
 
     logger.debug("useLayersStore", "Layer updated", { id, updates });
-  },
-
-  updateTextLayer: (id, updates) => {
-    const state = get();
-    set({
-      layers: state.layers.map((layer) => {
-        if (layer.id === id && layer.type === "text") {
-          return { ...layer, ...updates };
-        }
-        return layer;
-      }),
-    });
-
-    logger.debug("useLayersStore", "Text layer updated", { id, updates });
-  },
-
-  updateImageLayer: (id, updates) => {
-    const state = get();
-    set({
-      layers: state.layers.map((layer) => {
-        if (layer.id === id && layer.type === "image") {
-          return { ...layer, ...updates };
-        }
-        return layer;
-      }),
-    });
-
-    logger.debug("useLayersStore", "Image layer updated", { id, updates });
   },
 
   reprocessImageLayer: (id, newImageData, updates) => {
