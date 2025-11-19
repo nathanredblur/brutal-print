@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { usePrinterContext } from "../contexts/PrinterContext";
-import { useLayers } from "../hooks/useLayers";
+import { useLayersStore } from "../stores/useLayersStore";
 import { useCanvasPersistence } from "../hooks/useCanvasPersistence";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useConfirmDialogStore } from "../stores/useConfirmDialogStore";
@@ -43,101 +43,6 @@ type AdvancedPanel =
 // Special selection state for canvas itself
 type SelectionType = "layer" | "canvas" | null;
 
-// Helper function to load state from localStorage (outside component)
-async function loadSavedState() {
-  // Check if we're in browser environment
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  try {
-    // Load from localStorage
-    const stored = localStorage.getItem("thermal-print-studio-canvas-state");
-    if (!stored) return null;
-
-    const state = JSON.parse(stored);
-    if (!state.layers || state.layers.length === 0) return null;
-
-    // Restore HTMLCanvasElement from base64 (must wait for images to load)
-    const restoredLayers = await Promise.all(
-      state.layers.map(async (layer: any) => {
-        if (layer.type === "image") {
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-          if (!ctx) {
-            logger.error(
-              "loadSavedState",
-              "Failed to get 2d context",
-              layer.id
-            );
-            return layer;
-          }
-
-          // Wait for image to load
-          const img = new Image();
-          try {
-            await new Promise<void>((resolve, reject) => {
-              img.onload = () => {
-                logger.debug("loadSavedState", "Image loaded successfully", {
-                  layerId: layer.id,
-                  imgSize: `${img.naturalWidth}x${img.naturalHeight}`,
-                  targetSize: `${layer.width}x${layer.height}`,
-                });
-                resolve();
-              };
-              img.onerror = (e) => {
-                logger.error("loadSavedState", "Image load error", {
-                  layerId: layer.id,
-                  error: e,
-                });
-                reject(e);
-              };
-              img.src = layer.imageData;
-            });
-
-            canvas.width = layer.width;
-            canvas.height = layer.height;
-            ctx.drawImage(img, 0, 0, layer.width, layer.height);
-
-            // Verify canvas has actual pixel data
-            const testData = ctx.getImageData(0, 0, 1, 1);
-            logger.debug("loadSavedState", "Canvas drawn", {
-              layerId: layer.id,
-              canvasSize: `${canvas.width}x${canvas.height}`,
-              hasPixels: testData.data.some((v) => v > 0),
-            });
-
-            return {
-              ...layer,
-              imageData: canvas,
-            };
-          } catch (error) {
-            logger.error("loadSavedState", "Failed to restore image layer", {
-              layerId: layer.id,
-              error,
-            });
-            return layer;
-          }
-        }
-        return layer;
-      })
-    );
-
-    logger.info("loadSavedState", "State loaded from localStorage", {
-      layerCount: restoredLayers.length,
-      canvasHeight: state.canvasHeight,
-    });
-
-    return {
-      ...state,
-      layers: restoredLayers,
-    };
-  } catch (error) {
-    logger.error("loadSavedState", "Failed to load state", error);
-    return null;
-  }
-}
-
 export default function CanvasManager() {
   const fabricCanvasRef = useRef<FabricCanvasRef>(null);
   const [activeTool, setActiveTool] = useState<Tool | null>(null);
@@ -150,28 +55,9 @@ export default function CanvasManager() {
   // Keep a ref to always have fresh layers data
   const layersRef = useRef<Layer[]>([]);
 
-  // Initialize with null to match server render, load after hydration
-  const [savedState, setSavedState] = useState<any>(null);
-
-  // Load saved state after component mounts (client-side only)
-  useEffect(() => {
-    loadSavedState().then((state) => {
-      if (state) {
-        setSavedState(state);
-      }
-    });
-  }, []);
-
   // Canvas dimensions
   const CANVAS_WIDTH = PRINTER_WIDTH;
   const [canvasHeight, setCanvasHeight] = useState(800);
-
-  // Update canvas height when saved state loads
-  useEffect(() => {
-    if (savedState?.canvasHeight) {
-      setCanvasHeight(savedState.canvasHeight);
-    }
-  }, [savedState]);
 
   // Use shared printer context
   const { printCanvas, isConnected, isPrinting } = usePrinterContext();
@@ -179,25 +65,24 @@ export default function CanvasManager() {
   // Use confirm dialog store
   const confirmDialog = useConfirmDialogStore((state) => state.confirm);
 
-  // Use layer system with initial state
-  const {
-    layers,
-    selectedLayerId,
-    selectedLayer,
-    nextId,
-    addImageLayer,
-    addTextLayer,
-    removeLayer,
-    toggleVisibility,
-    toggleLock,
-    selectLayer,
-    moveLayer,
-    updateLayer,
-    updateTextLayer,
-    updateImageLayer,
-    reprocessImageLayer,
-    clearLayers,
-  } = useLayers(savedState);
+  // Use Zustand store for layers
+  const layers = useLayersStore((state) => state.layers);
+  const selectedLayerId = useLayersStore((state) => state.selectedLayerId);
+  const selectedLayer = useLayersStore((state) => state.selectedLayer);
+  const addImageLayer = useLayersStore((state) => state.addImageLayer);
+  const addTextLayer = useLayersStore((state) => state.addTextLayer);
+  const removeLayer = useLayersStore((state) => state.removeLayer);
+  const toggleVisibility = useLayersStore((state) => state.toggleVisibility);
+  const toggleLock = useLayersStore((state) => state.toggleLock);
+  const selectLayer = useLayersStore((state) => state.selectLayer);
+  const moveLayer = useLayersStore((state) => state.moveLayer);
+  const updateLayer = useLayersStore((state) => state.updateLayer);
+  const updateTextLayer = useLayersStore((state) => state.updateTextLayer);
+  const updateImageLayer = useLayersStore((state) => state.updateImageLayer);
+  const reprocessImageLayer = useLayersStore(
+    (state) => state.reprocessImageLayer
+  );
+  const clearLayers = useLayersStore((state) => state.clearLayers);
 
   // Keep layersRef updated with the latest layers
   useEffect(() => {
@@ -205,12 +90,17 @@ export default function CanvasManager() {
   }, [layers]);
 
   // Enable persistence (auto-save)
-  const persistence = useCanvasPersistence(
-    layers,
-    canvasHeight,
-    selectedLayerId,
-    nextId
-  );
+  const persistence = useCanvasPersistence(canvasHeight);
+
+  // Load saved state after component mounts (client-side only)
+  useEffect(() => {
+    persistence.loadState().then((state) => {
+      if (state) {
+        setCanvasHeight(state.canvasHeight || 800);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Log printer state changes (only when they actually change)
   useEffect(() => {

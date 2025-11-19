@@ -6,7 +6,6 @@
 import { memo, useState, useRef, useEffect, useCallback, type FC } from "react";
 import type { ImageLayer } from "../../types/layer";
 import PropertySection from "./PropertySection";
-import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -20,12 +19,6 @@ import {
   DEFAULT_THRESHOLD,
   DEFAULT_BRIGHTNESS,
   DEFAULT_CONTRAST,
-  THRESHOLD_MIN,
-  THRESHOLD_MAX,
-  BRIGHTNESS_MIN,
-  BRIGHTNESS_MAX,
-  CONTRAST_MIN,
-  CONTRAST_MAX,
 } from "../../constants/imageDefaults";
 import { Sun, CircleOff } from "lucide-react";
 

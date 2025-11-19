@@ -3,10 +3,12 @@
  * 
  * Saves and restores canvas state from localStorage
  * Includes layers (except HTMLCanvasElement data) and canvas height
+ * Now works with Zustand store
  */
 
 import { useEffect, useCallback } from 'react';
 import type { Layer, ImageLayer } from '../types/layer';
+import { useLayersStore } from '../stores/useLayersStore';
 import { logger } from '../lib/logger';
 
 const STORAGE_KEY = 'thermal-print-studio-canvas-state';
@@ -20,12 +22,13 @@ export interface CanvasState {
   savedAt: string;
 }
 
-export function useCanvasPersistence(
-  layers: Layer[],
-  canvasHeight: number,
-  selectedLayerId: string | null,
-  nextId: number
-) {
+export function useCanvasPersistence(canvasHeight: number) {
+  // Get state from Zustand store
+  const layers = useLayersStore((state) => state.layers);
+  const selectedLayerId = useLayersStore((state) => state.selectedLayerId);
+  const nextId = useLayersStore((state) => state.nextId);
+  const loadState = useLayersStore((state) => state.loadState);
+
   // Save state to localStorage
   const saveState = useCallback(() => {
     try {
@@ -59,8 +62,8 @@ export function useCanvasPersistence(
     }
   }, [layers, canvasHeight, selectedLayerId, nextId]);
 
-  // Load state from localStorage
-  const loadState = useCallback(async (): Promise<Partial<CanvasState> | null> => {
+  // Load state from localStorage and update Zustand store
+  const loadStateFromStorage = useCallback(async (): Promise<Partial<CanvasState> | null> => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) return null;
@@ -103,6 +106,13 @@ export function useCanvasPersistence(
         savedAt: state.savedAt,
       });
 
+      // Update Zustand store with loaded state
+      loadState({
+        layers: restoredLayers,
+        selectedLayerId: state.selectedLayerId,
+        nextId: state.nextId,
+      });
+
       return {
         ...state,
         layers: restoredLayers,
@@ -111,7 +121,7 @@ export function useCanvasPersistence(
       logger.error('useCanvasPersistence', 'Failed to load state', error);
       return null;
     }
-  }, []);
+  }, [loadState]);
 
   // Clear saved state
   const clearSavedState = useCallback(() => {
@@ -136,7 +146,7 @@ export function useCanvasPersistence(
 
   return {
     saveState,
-    loadState,
+    loadState: loadStateFromStorage,
     clearSavedState,
   };
 }
