@@ -17,11 +17,13 @@ interface LayersStore extends LayerState {
   copiedLayer: Layer | null;
 
   // Actions
-  copyLayer: (id: string) => void;
+  copyLayer: (id?: string) => void;
   pasteLayer: (x?: number, y?: number) => void;
-  duplicateLayer: (id: string) => void;
-  moveLayerToFront: (id: string) => void;
-  moveLayerToBack: (id: string) => void;
+  duplicateLayer: (id?: string) => void;
+  moveLayerUp: (id?: string) => void;
+  moveLayerDown: (id?: string) => void;
+  moveLayerToFront: (id?: string) => void;
+  moveLayerToBack: (id?: string) => void;
 
   addImageLayer: (
     imageData: HTMLCanvasElement,
@@ -78,7 +80,13 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
   // Copy/Paste Actions
   copyLayer: (id) => {
     const state = get();
-    const layer = state.layers.find((l) => l.id === id);
+    const layerId = id ?? state.selectedLayerId;
+    if (!layerId) {
+      logger.warn("useLayersStore", "No layer selected to copy");
+      return;
+    }
+
+    const layer = state.layers.find((l) => l.id === layerId);
     if (layer) {
       set({ copiedLayer: { ...layer } });
       logger.info("useLayersStore", "Layer copied to clipboard", {
@@ -118,7 +126,13 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
 
   duplicateLayer: (id) => {
     const state = get();
-    const layer = state.layers.find((l) => l.id === id);
+    const layerId = id ?? state.selectedLayerId;
+    if (!layerId) {
+      logger.warn("useLayersStore", "No layer selected to duplicate");
+      return;
+    }
+
+    const layer = state.layers.find((l) => l.id === layerId);
     if (!layer) return;
 
     const newLayer = {
@@ -130,7 +144,7 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
     };
 
     logger.info("useLayersStore", "Layer duplicated", {
-      originalId: id,
+      originalId: layerId,
       newId: newLayer.id,
     });
 
@@ -141,29 +155,79 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
     });
   },
 
+  moveLayerUp: (id) => {
+    const state = get();
+    const layerId = id ?? state.selectedLayerId;
+    if (!layerId) {
+      logger.warn("useLayersStore", "No layer selected to move up");
+      return;
+    }
+
+    const index = state.layers.findIndex((l) => l.id === layerId);
+    if (index === -1 || index === state.layers.length - 1) return;
+
+    const newLayers = [...state.layers];
+    const [layer] = newLayers.splice(index, 1);
+    newLayers.splice(index + 1, 0, layer);
+
+    logger.debug("useLayersStore", "Layer moved up", { id: layerId });
+    set({ layers: newLayers });
+  },
+
+  moveLayerDown: (id) => {
+    const state = get();
+    const layerId = id ?? state.selectedLayerId;
+    if (!layerId) {
+      logger.warn("useLayersStore", "No layer selected to move down");
+      return;
+    }
+
+    const index = state.layers.findIndex((l) => l.id === layerId);
+    if (index === -1 || index === 0) return;
+
+    const newLayers = [...state.layers];
+    const [layer] = newLayers.splice(index, 1);
+    newLayers.splice(index - 1, 0, layer);
+
+    logger.debug("useLayersStore", "Layer moved down", { id: layerId });
+    set({ layers: newLayers });
+  },
+
   moveLayerToFront: (id) => {
     const state = get();
-    const index = state.layers.findIndex((l) => l.id === id);
+    const layerId = id ?? state.selectedLayerId;
+    if (!layerId) {
+      logger.warn("useLayersStore", "No layer selected to move to front");
+      return;
+    }
+
+    const index = state.layers.findIndex((l) => l.id === layerId);
     if (index === -1 || index === state.layers.length - 1) return;
 
     const newLayers = [...state.layers];
     const [layer] = newLayers.splice(index, 1);
     newLayers.push(layer);
 
-    logger.debug("useLayersStore", "Layer moved to front", { id });
+    logger.debug("useLayersStore", "Layer moved to front", { id: layerId });
     set({ layers: newLayers });
   },
 
   moveLayerToBack: (id) => {
     const state = get();
-    const index = state.layers.findIndex((l) => l.id === id);
+    const layerId = id ?? state.selectedLayerId;
+    if (!layerId) {
+      logger.warn("useLayersStore", "No layer selected to move to back");
+      return;
+    }
+
+    const index = state.layers.findIndex((l) => l.id === layerId);
     if (index === -1 || index === 0) return;
 
     const newLayers = [...state.layers];
     const [layer] = newLayers.splice(index, 1);
     newLayers.unshift(layer);
 
-    logger.debug("useLayersStore", "Layer moved to back", { id });
+    logger.debug("useLayersStore", "Layer moved to back", { id: layerId });
     set({ layers: newLayers });
   },
 

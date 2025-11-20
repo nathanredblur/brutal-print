@@ -1,5 +1,5 @@
 // Main canvas manager with all tools integrated
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { usePrinterContext } from "../contexts/PrinterContext";
 import { useLayersStore, selectSelectedLayer } from "../stores/useLayersStore";
@@ -617,47 +617,6 @@ export default function CanvasManager() {
     logger.info("CanvasManager", "Canvas container clicked - deselecting");
   }, [selectLayer]);
 
-  // Handle layer reordering
-  const handleMoveLayerUp = useCallback(() => {
-    if (!selectedLayerId) return;
-    const index = layers.findIndex((l) => l.id === selectedLayerId);
-    if (index === -1 || index === layers.length - 1) return;
-    moveLayer(index, index + 1);
-  }, [selectedLayerId, layers, moveLayer]);
-
-  const handleMoveLayerDown = useCallback(() => {
-    if (!selectedLayerId) return;
-    const index = layers.findIndex((l) => l.id === selectedLayerId);
-    if (index === -1 || index === 0) return;
-    moveLayer(index, index - 1);
-  }, [selectedLayerId, layers, moveLayer]);
-
-  const moveLayerToFront = useLayersStore((state) => state.moveLayerToFront);
-  const moveLayerToBack = useLayersStore((state) => state.moveLayerToBack);
-
-  const handleMoveLayerToFront = useCallback(() => {
-    if (!selectedLayerId) return;
-    moveLayerToFront(selectedLayerId);
-  }, [selectedLayerId, moveLayerToFront]);
-
-  const handleMoveLayerToBack = useCallback(() => {
-    if (!selectedLayerId) return;
-    moveLayerToBack(selectedLayerId);
-  }, [selectedLayerId, moveLayerToBack]);
-
-  // Calculate if layer can move up/down
-  const canMoveUp = useMemo(() => {
-    if (!selectedLayerId) return false;
-    const index = layers.findIndex((l) => l.id === selectedLayerId);
-    return index < layers.length - 1;
-  }, [selectedLayerId, layers]);
-
-  const canMoveDown = useMemo(() => {
-    if (!selectedLayerId) return false;
-    const index = layers.findIndex((l) => l.id === selectedLayerId);
-    return index > 0;
-  }, [selectedLayerId, layers]);
-
   // Keyboard shortcuts
   useKeyboardShortcuts({
     // Tool shortcuts (removed onSelectTool - selection is always available)
@@ -695,8 +654,8 @@ export default function CanvasManager() {
       }
     },
     onCopyLayer: () => {
+      copyLayer();
       if (selectedLayerId) {
-        copyLayer(selectedLayerId);
         toast.success("Layer copied", {
           description: "Press Cmd+V to paste",
         });
@@ -713,8 +672,8 @@ export default function CanvasManager() {
       }
     },
     onDuplicateLayer: () => {
+      duplicateLayer();
       if (selectedLayerId) {
-        duplicateLayer(selectedLayerId);
         toast.success("Layer duplicated");
       }
     },
@@ -749,34 +708,6 @@ export default function CanvasManager() {
         canRedo={false}
         isPrinting={isPrinting}
         isConnected={isConnected}
-        selectedLayerId={selectedLayerId}
-        copiedLayer={copiedLayer}
-        onCopyLayer={() => {
-          if (selectedLayerId) {
-            copyLayer(selectedLayerId);
-            toast.success("Layer copied", {
-              description: "Press Cmd+V to paste",
-            });
-          }
-        }}
-        onPasteLayer={() => {
-          if (copiedLayer) {
-            pasteLayer();
-            toast.success("Layer pasted");
-          }
-        }}
-        onDuplicateLayer={() => {
-          if (selectedLayerId) {
-            duplicateLayer(selectedLayerId);
-            toast.success("Layer duplicated");
-          }
-        }}
-        onMoveLayerUp={handleMoveLayerUp}
-        onMoveLayerDown={handleMoveLayerDown}
-        onMoveLayerToFront={handleMoveLayerToFront}
-        onMoveLayerToBack={handleMoveLayerToBack}
-        canMoveUp={canMoveUp}
-        canMoveDown={canMoveDown}
       />
 
       <div className="flex flex-1 overflow-hidden">

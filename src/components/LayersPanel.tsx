@@ -43,19 +43,8 @@ const LayersPanel = () => {
   const toggleVisibility = useLayersStore((state) => state.toggleVisibility);
   const toggleLock = useLayersStore((state) => state.toggleLock);
   const removeLayer = useLayersStore((state) => state.removeLayer);
-  const moveLayer = useLayersStore((state) => state.moveLayer);
-
-  // Handle layer movement with direction (up/down)
-  const onMoveLayer = (layerId: string, direction: "up" | "down") => {
-    const currentIndex = layers.findIndex((l) => l.id === layerId);
-    if (currentIndex === -1) return;
-
-    if (direction === "up" && currentIndex < layers.length - 1) {
-      moveLayer(currentIndex, currentIndex + 1);
-    } else if (direction === "down" && currentIndex > 0) {
-      moveLayer(currentIndex, currentIndex - 1);
-    }
-  };
+  const moveLayerUp = useLayersStore((state) => state.moveLayerUp);
+  const moveLayerDown = useLayersStore((state) => state.moveLayerDown);
 
   return (
     <div className="w-60 bg-gradient-to-br from-slate-900/60 to-slate-950/80 backdrop-blur-md border-r border-slate-700 flex flex-col overflow-hidden">
@@ -71,7 +60,7 @@ const LayersPanel = () => {
         <Button
           variant="neuro-icon"
           size="icon-sm"
-          onClick={() => selectedLayer && onMoveLayer(selectedLayer.id, "up")}
+          onClick={() => moveLayerUp()}
           disabled={!canMoveUp}
           title={
             !selectedLayer
@@ -86,7 +75,7 @@ const LayersPanel = () => {
         <Button
           variant="neuro-icon"
           size="icon-sm"
-          onClick={() => selectedLayer && onMoveLayer(selectedLayer.id, "down")}
+          onClick={() => moveLayerDown()}
           disabled={!canMoveDown}
           title={
             !selectedLayer

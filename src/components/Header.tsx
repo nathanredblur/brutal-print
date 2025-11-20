@@ -3,7 +3,7 @@
  * Contains file menu, undo/redo, and print button
  */
 
-import { memo, type FC } from "react";
+import { memo, useMemo, type FC } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -30,6 +30,8 @@ import {
   ChevronsUp,
   ChevronsDown,
 } from "lucide-react";
+import { useLayersStore } from "@/stores/useLayersStore";
+import { toast } from "sonner";
 
 interface HeaderProps {
   onNewCanvas: () => void;
@@ -42,18 +44,6 @@ interface HeaderProps {
   onRedo?: () => void;
   isPrinting?: boolean;
   isConnected?: boolean;
-  // Edit menu actions
-  selectedLayerId?: string | null;
-  copiedLayer?: any;
-  onCopyLayer?: () => void;
-  onPasteLayer?: () => void;
-  onDuplicateLayer?: () => void;
-  onMoveLayerUp?: () => void;
-  onMoveLayerDown?: () => void;
-  onMoveLayerToFront?: () => void;
-  onMoveLayerToBack?: () => void;
-  canMoveUp?: boolean;
-  canMoveDown?: boolean;
 }
 
 const Header: FC<HeaderProps> = ({
@@ -67,18 +57,28 @@ const Header: FC<HeaderProps> = ({
   onRedo,
   isPrinting = false,
   isConnected = false,
-  selectedLayerId,
-  copiedLayer,
-  onCopyLayer,
-  onPasteLayer,
-  onDuplicateLayer,
-  onMoveLayerUp,
-  onMoveLayerDown,
-  onMoveLayerToFront,
-  onMoveLayerToBack,
-  canMoveUp = false,
-  canMoveDown = false,
 }) => {
+  // Get layer state from Zustand store
+  const layers = useLayersStore((state) => state.layers);
+  const selectedLayerId = useLayersStore((state) => state.selectedLayerId);
+  const copiedLayer = useLayersStore((state) => state.copiedLayer);
+  const copyLayer = useLayersStore((state) => state.copyLayer);
+  const pasteLayer = useLayersStore((state) => state.pasteLayer);
+  const duplicateLayer = useLayersStore((state) => state.duplicateLayer);
+  const moveLayerUp = useLayersStore((state) => state.moveLayerUp);
+  const moveLayerDown = useLayersStore((state) => state.moveLayerDown);
+  const moveLayerToFront = useLayersStore((state) => state.moveLayerToFront);
+  const moveLayerToBack = useLayersStore((state) => state.moveLayerToBack);
+
+  // Calculate if layer can move up/down
+  const { canMoveUp, canMoveDown } = useMemo(() => {
+    if (!selectedLayerId) return { canMoveUp: false, canMoveDown: false };
+    const index = layers.findIndex((l) => l.id === selectedLayerId);
+    return {
+      canMoveUp: index < layers.length - 1,
+      canMoveDown: index > 0,
+    };
+  }, [selectedLayerId, layers]);
   return (
     <header className="flex justify-between items-center px-6 py-3 bg-linear-to-br from-slate-900/60 to-slate-950/80 backdrop-blur-md border-b border-border z-100 animate-in slide-in-from-top duration-300">
       <div className="flex items-center gap-6">
@@ -130,7 +130,7 @@ const Header: FC<HeaderProps> = ({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="min-w-[240px] z-[150]">
             <DropdownMenuItem
-              onClick={onCopyLayer}
+              onClick={() => copyLayer()}
               disabled={!selectedLayerId}
             >
               <Copy size={16} />
@@ -139,7 +139,7 @@ const Header: FC<HeaderProps> = ({
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              onClick={onPasteLayer}
+              onClick={() => pasteLayer()}
               disabled={!copiedLayer}
             >
               <Clipboard size={16} />
@@ -148,7 +148,7 @@ const Header: FC<HeaderProps> = ({
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              onClick={onDuplicateLayer}
+              onClick={() => duplicateLayer()}
               disabled={!selectedLayerId}
             >
               <CopyPlus size={16} />
@@ -159,7 +159,7 @@ const Header: FC<HeaderProps> = ({
             <DropdownMenuSeparator />
 
             <DropdownMenuItem
-              onClick={onMoveLayerUp}
+              onClick={() => moveLayerUp()}
               disabled={!selectedLayerId || !canMoveUp}
             >
               <ArrowUp size={16} />
@@ -167,7 +167,7 @@ const Header: FC<HeaderProps> = ({
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              onClick={onMoveLayerDown}
+              onClick={() => moveLayerDown()}
               disabled={!selectedLayerId || !canMoveDown}
             >
               <ArrowDown size={16} />
@@ -177,7 +177,7 @@ const Header: FC<HeaderProps> = ({
             <DropdownMenuSeparator />
 
             <DropdownMenuItem
-              onClick={onMoveLayerToFront}
+              onClick={() => moveLayerToFront()}
               disabled={!selectedLayerId || !canMoveUp}
             >
               <ChevronsUp size={16} />
@@ -185,7 +185,7 @@ const Header: FC<HeaderProps> = ({
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              onClick={onMoveLayerToBack}
+              onClick={() => moveLayerToBack()}
               disabled={!selectedLayerId || !canMoveDown}
             >
               <ChevronsDown size={16} />
@@ -288,18 +288,7 @@ const arePropsEqual = (
     prevProps.canUndo === nextProps.canUndo &&
     prevProps.canRedo === nextProps.canRedo &&
     prevProps.onUndo === nextProps.onUndo &&
-    prevProps.onRedo === nextProps.onRedo &&
-    prevProps.selectedLayerId === nextProps.selectedLayerId &&
-    prevProps.copiedLayer === nextProps.copiedLayer &&
-    prevProps.onCopyLayer === nextProps.onCopyLayer &&
-    prevProps.onPasteLayer === nextProps.onPasteLayer &&
-    prevProps.onDuplicateLayer === nextProps.onDuplicateLayer &&
-    prevProps.onMoveLayerUp === nextProps.onMoveLayerUp &&
-    prevProps.onMoveLayerDown === nextProps.onMoveLayerDown &&
-    prevProps.onMoveLayerToFront === nextProps.onMoveLayerToFront &&
-    prevProps.onMoveLayerToBack === nextProps.onMoveLayerToBack &&
-    prevProps.canMoveUp === nextProps.canMoveUp &&
-    prevProps.canMoveDown === nextProps.canMoveDown
+    prevProps.onRedo === nextProps.onRedo
     // Intentionally ignore isPrinting and isConnected
     // as they only affect PrintSection which is memoized separately
   );
