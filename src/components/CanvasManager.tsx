@@ -404,38 +404,6 @@ export default function CanvasManager() {
   );
 
   // Handle new canvas (clear all layers)
-  const handleNewCanvas = useCallback(async () => {
-    if (layers.length === 0) {
-      toast.info("Empty canvas", {
-        description: "There are no layers to clear.",
-      });
-      return;
-    }
-
-    const confirmed = await confirmDialog(
-      "Create New Canvas?",
-      "Are you sure you want to create a new canvas? This will delete all layers.",
-      { confirmText: "Yes, clear all", cancelText: "Cancel" }
-    );
-
-    if (confirmed) {
-      clearLayers();
-      persistence.clearSavedState();
-      toast.success("New canvas created!", {
-        description: "All layers have been deleted.",
-      });
-      logger.info("CanvasManager", "New canvas created - all layers cleared");
-    }
-  }, [layers.length, clearLayers, persistence, toast, confirmDialog]);
-
-  // Handle save
-  const handleSave = useCallback(() => {
-    // Save is automatic via persistence, just show confirmation
-    toast.success("Saved!", {
-      description: "Your work is automatically saved.",
-    });
-    logger.info("CanvasManager", "Manual save triggered");
-  }, [toast]);
 
   // Handle export
   const handleExport = useCallback(async () => {
@@ -501,7 +469,9 @@ export default function CanvasManager() {
   // Keyboard shortcuts
   // Keyboard shortcuts - now consuming stores directly
   useKeyboardShortcuts({
-    // Document actions (only these need to be passed)
+    // Only export needs canvas ref access
+    onExport: handleExport,
+    // Undo/Redo for future implementation
     onUndo: () => {
       // TODO: Implement undo/redo system
       toast.info("Coming soon", {
@@ -514,17 +484,12 @@ export default function CanvasManager() {
         description: "Undo/Redo will be available soon.",
       });
     },
-    onSave: handleSave,
-    onExport: handleExport,
-    onNewCanvas: handleNewCanvas,
   });
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <Header
-        onNewCanvas={handleNewCanvas}
-        onSave={handleSave}
         onExport={handleExport}
         onPrint={handlePrint}
         canUndo={false}

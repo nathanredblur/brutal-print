@@ -60,7 +60,8 @@ export default function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
               <ShortcutItem label="Duplicate Layer" shortcut="Ctrl+D" />
               <ShortcutItem label="Move Layer (1px)" shortcut="←↑→↓" />
               <ShortcutItem label="Move Layer (10px)" shortcut="Shift+←↑→↓" />
-              <ShortcutItem label="New Canvas" shortcut="Ctrl+N" />
+              <ShortcutItem label="New Project" shortcut="Ctrl+N" />
+              <ShortcutItem label="Open Project" shortcut="Ctrl+O" />
               <ShortcutItem label="Save Project" shortcut="Ctrl+S" />
               <ShortcutItem label="Export Image" shortcut="Ctrl+E" />
             </div>

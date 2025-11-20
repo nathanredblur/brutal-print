@@ -3,19 +3,23 @@
  * Manages keyboard shortcuts for the application
  *
  * This hook consumes Zustand stores directly to avoid prop drilling.
- * Only document-level actions (save, export, new canvas) need to be passed as handlers.
+ * Only export action needs to be passed (requires canvas ref access).
  */
 
 import { useEffect } from "react";
 import { useUIStore, ActivePanel } from "../stores/useUIStore";
 import { useLayersStore } from "../stores/useLayersStore";
 import { toast } from "sonner";
+import {
+  handleNewProject,
+  handleOpenProject,
+  handleSaveProject,
+} from "../utils/projectActions";
 
 interface KeyboardShortcutHandlers {
-  // Document actions (these need to be passed from parent)
-  onSave?: () => void;
+  // Only export needs canvas ref, so it must be passed from parent
   onExport?: () => void;
-  onNewCanvas?: () => void;
+  // Undo/Redo for future implementation
   onUndo?: () => void;
   onRedo?: () => void;
 }
@@ -209,7 +213,14 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
       // Save (Cmd/Ctrl + S)
       if (cmdOrCtrl && key.toLowerCase() === "s") {
         e.preventDefault();
-        handlers.onSave?.();
+        handleSaveProject();
+        return;
+      }
+
+      // Open (Cmd/Ctrl + O)
+      if (cmdOrCtrl && key.toLowerCase() === "o") {
+        e.preventDefault();
+        handleOpenProject();
         return;
       }
 
@@ -223,7 +234,7 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
       // New canvas (Cmd/Ctrl + N)
       if (cmdOrCtrl && key.toLowerCase() === "n") {
         e.preventDefault();
-        handlers.onNewCanvas?.();
+        handleNewProject();
         return;
       }
     };
