@@ -1,8 +1,10 @@
 // Main canvas manager with all tools integrated
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { usePrinterStore } from "../stores/usePrinterStore";
 import { useLayersStore, selectSelectedLayer } from "../stores/useLayersStore";
+import { useCanvasStore } from "../stores/useCanvasStore";
+import { useUIStore, ActivePanel } from "../stores/useUIStore";
 import { useCanvasPersistence } from "../hooks/useCanvasPersistence";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useConfirmDialogStore } from "../stores/useConfirmDialogStore";
@@ -29,33 +31,24 @@ import type { Layer, ImageLayer } from "../types/layer";
 import { Panel } from "@/components/ui/panel";
 import { DEFAULT_FONT_FAMILY } from "../constants/fonts";
 
-type Tool = "image" | "text";
-type AdvancedPanel =
-  | "font"
-  | "filter"
-  | "position"
-  | "printer"
-  | "canvas"
-  | null;
-
-// Special selection state for canvas itself
-type SelectionType = "layer" | "canvas" | null;
-
 export default function CanvasManager() {
   const fabricCanvasRef = useRef<FabricCanvasRef>(null);
-  const [activeTool, setActiveTool] = useState<Tool | null>(null);
-  const [showImageUploader, setShowImageUploader] = useState(false);
-  const [showTextTool, setShowTextTool] = useState(false);
-  const [advancedPanel, setAdvancedPanel] = useState<AdvancedPanel>(null);
-  const [selectionType, setSelectionType] = useState<SelectionType>(null);
-  const [showAboutDialog, setShowAboutDialog] = useState(false);
 
   // Keep a ref to always have fresh layers data
   const layersRef = useRef<Layer[]>([]);
 
   // Canvas dimensions
   const CANVAS_WIDTH = PRINTER_WIDTH;
-  const [canvasHeight, setCanvasHeight] = useState(800);
+  const canvasHeight = useCanvasStore((state) => state.canvasHeight);
+  const setCanvasHeight = useCanvasStore((state) => state.setCanvasHeight);
+
+  // UI Store
+  const activePanel = useUIStore((state) => state.activePanel);
+  const setActivePanel = useUIStore((state) => state.setActivePanel);
+  const closeActivePanel = useUIStore((state) => state.closeActivePanel);
+  const showAboutDialog = useUIStore((state) => state.showAboutDialog);
+  const setShowAboutDialog = useUIStore((state) => state.setShowAboutDialog);
+  const setSelectionType = useUIStore((state) => state.setSelectionType);
 
   // Use printer store
   const printCanvas = usePrinterStore((state) => state.printCanvas);
@@ -154,11 +147,11 @@ export default function CanvasManager() {
           "CanvasManager",
           "Image added as layer with dithering applied"
         );
-        setShowImageUploader(false);
+        closeActivePanel();
       };
       img.src = imageDataUrl;
     },
-    [addImageLayer, layers.length]
+    [addImageLayer, layers.length, closeActivePanel]
   );
 
   const handlePrint = useCallback(async () => {
@@ -168,10 +161,7 @@ export default function CanvasManager() {
     // If printer not connected, open printer panel
     if (!isConnected) {
       logger.info("CanvasManager", "Opening printer connection panel");
-      setAdvancedPanel("printer");
-      setActiveTool(null);
-      setShowImageUploader(false);
-      setShowTextTool(false);
+      setActivePanel(ActivePanel.PrintSettings);
       toast.info("Connect printer", {
         description: "Please connect your thermal printer first.",
       });
@@ -215,68 +205,7 @@ export default function CanvasManager() {
         description: (error as Error).message,
       });
     }
-  }, [isConnected, isPrinting, printCanvas, toast]);
-
-  const handleToolSelect = useCallback((tool: Tool) => {
-    setActiveTool(tool);
-    if (tool === "image") {
-      setShowImageUploader(true);
-      setShowTextTool(false);
-      setAdvancedPanel(null);
-    } else if (tool === "text") {
-      setShowTextTool(true);
-      setShowImageUploader(false);
-      setAdvancedPanel(null);
-    } else if (tool === "select") {
-      setShowImageUploader(false);
-      setShowTextTool(false);
-      setAdvancedPanel(null);
-    }
-  }, []);
-
-  // Handle opening advanced panels
-  const handleOpenAdvancedPanel = useCallback((panelType: AdvancedPanel) => {
-    setAdvancedPanel(panelType);
-    // Close tools when opening advanced panels
-    setShowImageUploader(false);
-    setShowTextTool(false);
-  }, []);
-
-  // Handle opening canvas settings from toolbar
-  const handleOpenCanvasSettings = useCallback(() => {
-    setAdvancedPanel("canvas");
-    setActiveTool(null);
-    setShowImageUploader(false);
-    setShowTextTool(false);
-  }, []);
-
-  // Handle opening printer panel from toolbar
-  const handleOpenPrinterPanel = useCallback(() => {
-    setAdvancedPanel("printer");
-    setActiveTool(null);
-    setShowImageUploader(false);
-    setShowTextTool(false);
-  }, []);
-
-  // Handle opening about dialog
-  const handleOpenAbout = useCallback(() => {
-    setShowAboutDialog(true);
-  }, []);
-
-  // Handle layer movement with direction (up/down)
-  const handleMoveLayerByDirection = useCallback(
-    (layerId: string, direction: "up" | "down") => {
-      const currentIndex = layers.findIndex((l) => l.id === layerId);
-      if (currentIndex === -1) return;
-
-      if (direction === "up" && currentIndex < layers.length - 1) {
-        moveLayer(currentIndex, currentIndex + 1);
-      } else if (direction === "down" && currentIndex > 0) {
-        moveLayer(currentIndex, currentIndex - 1);
-      }
-    },
-    [layers, moveLayer]
-  );
+  }, [isConnected, printCanvas, toast, setActivePanel]);
 
   const handleAddText = useCallback(
     (text: string, options: any) => {
@@ -610,28 +539,19 @@ export default function CanvasManager() {
   const handleCanvasSelect = useCallback(() => {
     selectLayer(null);
     setSelectionType("canvas");
-    setActiveTool(null);
-    setShowImageUploader(false);
-    setShowTextTool(false);
-    setAdvancedPanel(null);
+    closeActivePanel();
     logger.info("CanvasManager", "Canvas container clicked - deselecting");
-  }, [selectLayer]);
+  }, [selectLayer, setSelectionType, closeActivePanel]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
-    // Tool shortcuts (removed onSelectTool - selection is always available)
+    // Tool shortcuts
     onImageTool: () => {
-      setActiveTool("image");
-      setShowImageUploader(true);
-      setShowTextTool(false);
-      setAdvancedPanel(null);
+      setActivePanel(ActivePanel.ImagePanel);
       setSelectionType(null);
     },
     onTextTool: () => {
-      setActiveTool("text");
-      setShowImageUploader(false);
-      setShowTextTool(true);
-      setAdvancedPanel(null);
+      setActivePanel(ActivePanel.TextPanel);
       setSelectionType(null);
     },
 
@@ -713,21 +633,18 @@ export default function CanvasManager() {
         <LayersPanel />
 
         {/* Additional left panels - appear conditionally */}
-        {(showImageUploader || showTextTool || advancedPanel) && (
+        {activePanel && (
           <div className="w-[280px] bg-gradient-to-br from-slate-900/60 to-slate-950/80 backdrop-blur-md border-r border-slate-700 p-3 overflow-y-auto flex flex-col gap-3">
             {/* Printer Panel */}
-            {advancedPanel === "printer" && (
-              <Panel title="Printer" onClose={() => setAdvancedPanel(null)}>
+            {activePanel === ActivePanel.PrintSettings && (
+              <Panel title="Printer" onClose={closeActivePanel}>
                 <PrinterConnection onPrint={handlePrint} />
               </Panel>
             )}
 
             {/* Canvas Settings Panel */}
-            {advancedPanel === "canvas" && (
-              <Panel
-                title="Canvas Settings"
-                onClose={() => setAdvancedPanel(null)}
-              >
+            {activePanel === ActivePanel.CanvasSettings && (
+              <Panel title="Canvas Settings" onClose={closeActivePanel}>
                 <CanvasSettingsPanel
                   canvasHeight={canvasHeight}
                   onCanvasHeightChange={handleCanvasHeightChange}
@@ -736,21 +653,18 @@ export default function CanvasManager() {
             )}
 
             {/* Image Uploader */}
-            {showImageUploader && !advancedPanel && (
-              <Panel
-                title="Upload Image"
-                onClose={() => setShowImageUploader(false)}
-              >
+            {activePanel === ActivePanel.ImagePanel && (
+              <Panel title="Upload Image" onClose={closeActivePanel}>
                 <ImageUploader onImageUploaded={handleImageUploaded} />
               </Panel>
             )}
 
             {/* Text Gallery Panel */}
-            {showTextTool && !advancedPanel && (
+            {activePanel === ActivePanel.TextPanel && (
               <div className="bg-slate-800/50 border border-slate-700 rounded-md p-3">
                 <TextGalleryPanel
                   onAddText={handleAddText}
-                  onClose={() => setShowTextTool(false)}
+                  onClose={closeActivePanel}
                 />
               </div>
             )}
@@ -790,13 +704,7 @@ export default function CanvasManager() {
       </div>
 
       {/* Floating Tools Bar */}
-      <ToolsBar
-        activeTool={activeTool}
-        onToolSelect={handleToolSelect}
-        onOpenCanvasSettings={handleOpenCanvasSettings}
-        onOpenPrinterPanel={handleOpenPrinterPanel}
-        onOpenAbout={handleOpenAbout}
-      />
+      <ToolsBar />
 
       {/* About Dialog */}
       <AboutDialog open={showAboutDialog} onOpenChange={setShowAboutDialog} />
