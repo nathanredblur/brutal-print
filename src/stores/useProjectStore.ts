@@ -45,9 +45,24 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       const layersState = useLayersStore.getState();
       const canvasState = useCanvasStore.getState();
 
+      // Serialize layers (convert canvas to base64 for image layers)
+      const serializedLayers = layersState.layers.map((layer) => {
+        if (layer.type === "image") {
+          const imageLayer = layer as any;
+          return {
+            ...layer,
+            // Convert HTMLCanvasElement to base64 string
+            imageData: imageLayer.imageData?.toDataURL
+              ? imageLayer.imageData.toDataURL("image/png")
+              : null,
+          };
+        }
+        return layer;
+      });
+
       const projectData: ProjectData = {
         version: "1.0.0",
-        layers: layersState.layers,
+        layers: serializedLayers,
         canvasHeight: canvasState.canvasHeight,
         savedAt: new Date().toISOString(),
       };
@@ -126,49 +141,101 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
           // Clear current state
           layersState.clearLayers();
 
-          // Load layers
-          projectData.layers.forEach((layer) => {
-            // Re-add layers to the store
-            // Note: Image layers will need special handling for canvas data
+          // Load layers sequentially to maintain correct order
+          // This is important because layers have z-index based on their order
+          for (const layer of projectData.layers) {
             if (layer.type === "image") {
-              // For image layers, we need to reconstruct the canvas
-              const img = new Image();
-              img.onload = () => {
-                const canvas = document.createElement("canvas");
-                canvas.width = layer.width;
-                canvas.height = layer.height;
-                const ctx = canvas.getContext("2d");
-                if (ctx) {
-                  ctx.drawImage(img, 0, 0);
-                  layersState.addImageLayer(
-                    canvas,
-                    (layer as any).originalImageData || "",
-                    (layer as any).ditherMethod || "steinberg",
-                    (layer as any).threshold,
-                    (layer as any).invert,
-                    {
-                      id: layer.id,
-                      name: layer.name,
-                      x: layer.x,
-                      y: layer.y,
-                      visible: layer.visible,
-                      locked: layer.locked,
-                    }
-                  );
-                }
-              };
-              // Load image from base64 if available
-              if ((layer as any).imageData) {
-                img.src = (layer as any).imageData;
+              // For image layers, we need to reconstruct the canvas from base64
+              const imageLayer = layer as any;
+
+              if (!imageLayer.imageData) {
+                logger.warn(
+                  "useProjectStore",
+                  "Image layer missing imageData",
+                  {
+                    id: layer.id,
+                    name: layer.name,
+                  }
+                );
+                continue;
               }
+
+              // Load image and wait for it to complete before moving to next layer
+              await new Promise<void>((resolveImage, rejectImage) => {
+                const img = new Image();
+
+                img.onload = () => {
+                  try {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = layer.width;
+                    canvas.height = layer.height;
+                    const ctx = canvas.getContext("2d");
+
+                    if (ctx) {
+                      ctx.drawImage(img, 0, 0);
+                      layersState.addImageLayer(
+                        canvas,
+                        imageLayer.originalImageData || "",
+                        imageLayer.ditherMethod || "steinberg",
+                        imageLayer.threshold,
+                        imageLayer.invert,
+                        {
+                          id: layer.id,
+                          name: layer.name,
+                          x: layer.x,
+                          y: layer.y,
+                          width: layer.width,
+                          height: layer.height,
+                          visible: layer.visible,
+                          locked: layer.locked,
+                          opacity: layer.opacity,
+                          rotation: layer.rotation,
+                        }
+                      );
+
+                      logger.debug("useProjectStore", "Image layer loaded", {
+                        id: layer.id,
+                        name: layer.name,
+                      });
+
+                      resolveImage();
+                    } else {
+                      rejectImage(new Error("Failed to get canvas context"));
+                    }
+                  } catch (error) {
+                    logger.error(
+                      "useProjectStore",
+                      "Failed to load image layer",
+                      error
+                    );
+                    rejectImage(error);
+                  }
+                };
+
+                img.onerror = () => {
+                  logger.error("useProjectStore", "Failed to load image", {
+                    id: layer.id,
+                    name: layer.name,
+                  });
+                  rejectImage(new Error("Failed to load image"));
+                };
+
+                img.src = imageLayer.imageData;
+              });
             } else if (layer.type === "text") {
+              // Text layers can be loaded synchronously
               layersState.addTextLayer((layer as any).text || "", {
                 ...layer,
                 id: layer.id,
                 name: layer.name,
               });
+
+              logger.debug("useProjectStore", "Text layer loaded", {
+                id: layer.id,
+                name: layer.name,
+              });
             }
-          });
+          }
 
           // Load canvas settings
           canvasState.setCanvasHeight(projectData.canvasHeight);

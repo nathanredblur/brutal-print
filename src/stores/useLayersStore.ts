@@ -255,17 +255,19 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
   ) => {
     const state = get();
     const newLayer: ImageLayer = {
-      id: `layer-${state.nextId}`,
+      id: options?.id || `layer-${state.nextId}`,
       type: "image",
       name: options?.name || `Image ${state.nextId}`,
-      visible: true,
-      locked: false,
+      visible: options?.visible ?? true,
+      locked: options?.locked ?? false,
       x: options?.x ?? 0,
       y: options?.y ?? 0,
-      width: imageData.width,
-      height: imageData.height,
-      opacity: 1,
-      rotation: 0,
+      // Use options width/height if provided (for loading saved projects)
+      // Otherwise use the imageData dimensions
+      width: options?.width ?? imageData.width,
+      height: options?.height ?? imageData.height,
+      opacity: options?.opacity ?? 1,
+      rotation: options?.rotation ?? 0,
       imageData,
       originalImageData,
       ditherMethod,
@@ -452,8 +454,10 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
               updates.bayerMatrixSize ?? imageLayer.bayerMatrixSize ?? 4,
             halftoneCellSize:
               updates.halftoneCellSize ?? imageLayer.halftoneCellSize ?? 4,
-            width: newImageData.width,
-            height: newImageData.height,
+            // ✅ KEEP the layer's current width/height (user may have resized)
+            // Only update if the canvas dimensions actually changed
+            width: imageLayer.width,
+            height: imageLayer.height,
           };
 
           logger.info("useLayersStore", "📊 Layer state AFTER update", {
