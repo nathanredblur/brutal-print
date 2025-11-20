@@ -31,7 +31,7 @@ import {
   ChevronsDown,
 } from "lucide-react";
 import { useLayersStore } from "@/stores/useLayersStore";
-import { toast } from "sonner";
+import { usePrinterStore } from "@/stores/usePrinterStore";
 
 interface HeaderProps {
   onNewCanvas: () => void;
@@ -42,8 +42,6 @@ interface HeaderProps {
   canRedo?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
-  isPrinting?: boolean;
-  isConnected?: boolean;
 }
 
 const Header: FC<HeaderProps> = ({
@@ -55,8 +53,6 @@ const Header: FC<HeaderProps> = ({
   canRedo = false,
   onUndo,
   onRedo,
-  isPrinting = false,
-  isConnected = false,
 }) => {
   // Get layer state from Zustand store
   const layers = useLayersStore((state) => state.layers);
@@ -218,11 +214,7 @@ const Header: FC<HeaderProps> = ({
         </div>
       </div>
 
-      <PrintSection
-        isConnected={isConnected}
-        isPrinting={isPrinting}
-        onPrint={onPrint}
-      />
+      <PrintSection onPrint={onPrint} />
     </header>
   );
 };
@@ -230,46 +222,46 @@ const Header: FC<HeaderProps> = ({
 // Separate PrintSection component to avoid re-rendering entire Header
 // when isPrinting or isConnected changes
 interface PrintSectionProps {
-  isConnected: boolean;
-  isPrinting: boolean;
   onPrint: () => void;
 }
 
-const PrintSection = memo<PrintSectionProps>(
-  ({ isConnected, isPrinting, onPrint }) => {
-    return (
-      <div className="flex items-center gap-4">
-        {/* Connection status indicator */}
-        {isConnected && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-sm text-sm text-cyan">
-            <div className="w-2 h-2 bg-cyan rounded-full animate-pulse" />
-            <span>Printer connected</span>
-          </div>
-        )}
+const PrintSection = memo<PrintSectionProps>(({ onPrint }) => {
+  // Get printer state from Zustand store
+  const isConnected = usePrinterStore((state) => state.isConnected);
+  const isPrinting = usePrinterStore((state) => state.isPrinting);
 
-        {/* Print Button */}
-        <Button
-          variant="neuro"
-          onClick={onPrint}
-          disabled={isPrinting}
-          title={isConnected ? "Print" : "Connect printer"}
-        >
-          {isPrinting ? (
-            <>
-              <Loader2 size={20} className="animate-spin" />
-              <span>Printing...</span>
-            </>
-          ) : (
-            <>
-              <Printer size={20} />
-              <span>{isConnected ? "Print" : "Connect"}</span>
-            </>
-          )}
-        </Button>
-      </div>
-    );
-  }
-);
+  return (
+    <div className="flex items-center gap-4">
+      {/* Connection status indicator */}
+      {isConnected && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-sm text-sm text-cyan">
+          <div className="w-2 h-2 bg-cyan rounded-full animate-pulse" />
+          <span>Printer connected</span>
+        </div>
+      )}
+
+      {/* Print Button */}
+      <Button
+        variant="neuro"
+        onClick={onPrint}
+        disabled={isPrinting}
+        title={isConnected ? "Print" : "Connect printer"}
+      >
+        {isPrinting ? (
+          <>
+            <Loader2 size={20} className="animate-spin" />
+            <span>Printing...</span>
+          </>
+        ) : (
+          <>
+            <Printer size={20} />
+            <span>{isConnected ? "Print" : "Connect"}</span>
+          </>
+        )}
+      </Button>
+    </div>
+  );
+});
 
 PrintSection.displayName = "PrintSection";
 

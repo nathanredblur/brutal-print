@@ -1,7 +1,7 @@
 // Main canvas manager with all tools integrated
 import { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { usePrinterContext } from "../contexts/PrinterContext";
+import { usePrinterStore } from "../stores/usePrinterStore";
 import { useLayersStore, selectSelectedLayer } from "../stores/useLayersStore";
 import { useCanvasPersistence } from "../hooks/useCanvasPersistence";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
@@ -25,10 +25,8 @@ import GlobalConfirmDialog from "./GlobalConfirmDialog";
 import FabricCanvas, { type FabricCanvasRef } from "./FabricCanvas";
 import { PRINTER_WIDTH } from "../lib/dithering";
 import { logger } from "../lib/logger";
-import type { Layer, ImageLayer, TextLayer } from "../types/layer";
-import { Button } from "@/components/ui/button";
+import type { Layer, ImageLayer } from "../types/layer";
 import { Panel } from "@/components/ui/panel";
-import { X } from "lucide-react";
 import { DEFAULT_FONT_FAMILY } from "../constants/fonts";
 
 type Tool = "image" | "text";
@@ -59,8 +57,10 @@ export default function CanvasManager() {
   const CANVAS_WIDTH = PRINTER_WIDTH;
   const [canvasHeight, setCanvasHeight] = useState(800);
 
-  // Use shared printer context
-  const { printCanvas, isConnected, isPrinting } = usePrinterContext();
+  // Use printer store
+  const printCanvas = usePrinterStore((state) => state.printCanvas);
+  const isConnected = usePrinterStore((state) => state.isConnected);
+  const isPrinting = usePrinterStore((state) => state.isPrinting);
 
   // Use confirm dialog store
   const confirmDialog = useConfirmDialogStore((state) => state.confirm);
@@ -109,7 +109,7 @@ export default function CanvasManager() {
     logger.logState("CanvasManager", "Printer connection state", {
       isConnected,
       isPrinting,
-      source: "usePrinterContext (shared)",
+      source: "usePrinterStore (Zustand)",
     });
   }, [isConnected, isPrinting]);
 
@@ -706,8 +706,6 @@ export default function CanvasManager() {
         onPrint={handlePrint}
         canUndo={false}
         canRedo={false}
-        isPrinting={isPrinting}
-        isConnected={isConnected}
       />
 
       <div className="flex flex-1 overflow-hidden">

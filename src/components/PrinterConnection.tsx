@@ -1,27 +1,26 @@
 // Printer connection component with status display
-import { usePrinterContext } from '../contexts/PrinterContext';
-import { logger } from '../lib/logger';
-import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Battery, Printer } from 'lucide-react';
+import { usePrinterStore } from "../stores/usePrinterStore";
+import { logger } from "../lib/logger";
+import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Battery, Printer } from "lucide-react";
 
 interface PrinterConnectionProps {
   onPrint?: () => void;
 }
 
 export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
-  // Use shared printer context instead of separate hook instance
-  const {
-    isConnected,
-    isPrinting,
-    printerState,
-    statusMessage,
-    connectPrinter,
-    disconnect,
-  } = usePrinterContext();
-  
-  const batteryLevel = printerState?.batteryLevel || null;
-  
+  // Use Zustand store directly
+  const isConnected = usePrinterStore((state) => state.isConnected);
+  const isPrinting = usePrinterStore((state) => state.isPrinting);
+  const printerState = usePrinterStore((state) => state.printerState);
+  const statusMessage = usePrinterStore((state) => state.statusMessage);
+  const connectPrinter = usePrinterStore((state) => state.connectPrinter);
+  const disconnect = usePrinterStore((state) => state.disconnect);
+
+  // TODO: Check if PrinterState has battery property
+  const batteryLevel = (printerState as any)?.battery || null;
+
   // Log state changes (only when they actually change)
   useEffect(() => {
     logger.info("PrinterConnection", "Component state updated", {
@@ -29,18 +28,21 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
       isPrinting,
       statusMessage,
       batteryLevel,
-      source: "usePrinterContext (shared)"
+      source: "usePrinterStore (Zustand)",
     });
   }, [isConnected, isPrinting, statusMessage, batteryLevel]);
 
   const handleConnect = async () => {
     logger.separator("PRINTER CONNECTION UI");
     logger.info("PrinterConnection", "Connect button clicked");
-    
+
     try {
       logger.info("PrinterConnection", "Calling connectPrinter()...");
       await connectPrinter();
-      logger.success("PrinterConnection", "connectPrinter() completed successfully");
+      logger.success(
+        "PrinterConnection",
+        "connectPrinter() completed successfully"
+      );
     } catch (err) {
       logger.error("PrinterConnection", "Connection error", err);
     }
@@ -48,7 +50,7 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
 
   const handleDisconnect = async () => {
     logger.info("PrinterConnection", "Disconnect button clicked");
-    
+
     try {
       await disconnect();
       logger.success("PrinterConnection", "Disconnected successfully");
@@ -63,7 +65,7 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
       isPrinting,
       hasOnPrintCallback: !!onPrint,
     });
-    
+
     if (onPrint) {
       logger.info("PrinterConnection", "Calling onPrint callback");
       onPrint();
@@ -77,15 +79,18 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
       {/* Connection Status */}
       <div className="flex justify-between items-center p-3 bg-slate-800/50 border border-slate-700 rounded-lg">
         <div className="flex items-center gap-2">
-          <div className={`
+          <div
+            className={`
             w-2 h-2 rounded-full 
-            ${isConnected 
-              ? 'bg-green-500 shadow-lg shadow-green-500/50 animate-pulse' 
-              : 'bg-slate-500'
+            ${
+              isConnected
+                ? "bg-green-500 shadow-lg shadow-green-500/50 animate-pulse"
+                : "bg-slate-500"
             }
-          `} />
+          `}
+          />
           <span className="text-sm text-slate-200 font-semibold">
-            {isConnected ? 'Connected' : 'Not Connected'}
+            {isConnected ? "Connected" : "Not Connected"}
           </span>
         </div>
 
@@ -105,7 +110,7 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
       {/* Action Buttons */}
       <div className="flex gap-2">
         {!isConnected ? (
-          <Button 
+          <Button
             variant="neuro"
             className="w-full"
             onClick={handleConnect}
@@ -148,4 +153,3 @@ export default function PrinterConnection({ onPrint }: PrinterConnectionProps) {
     </div>
   );
 }
-
