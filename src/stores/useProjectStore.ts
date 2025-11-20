@@ -71,6 +71,12 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
       set({ isDirty: false });
 
+      // If no project name was set, extract it from filename
+      if (!state.projectName) {
+        const nameWithoutExtension = filename.replace(/\.thermal$/, "");
+        set({ projectName: nameWithoutExtension });
+      }
+
       logger.success("useProjectStore", "Project saved successfully", {
         filename,
         layersCount: projectData.layers.length,

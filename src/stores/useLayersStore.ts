@@ -11,6 +11,7 @@ import {
   DEFAULT_CONTRAST,
   DEFAULT_THRESHOLD,
 } from "../constants/imageDefaults";
+import { markProjectDirty } from "../utils/markProjectDirty";
 
 interface LayersStore extends LayerState {
   // Clipboard
@@ -122,6 +123,8 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
       selectedLayerId: newLayer.id,
       nextId: state.nextId + 1,
     });
+
+    markProjectDirty();
   },
 
   duplicateLayer: (id) => {
@@ -153,6 +156,8 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
       selectedLayerId: newLayer.id,
       nextId: state.nextId + 1,
     });
+
+    markProjectDirty();
   },
 
   moveLayerUp: (id) => {
@@ -172,6 +177,8 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
 
     logger.debug("useLayersStore", "Layer moved up", { id: layerId });
     set({ layers: newLayers });
+
+    markProjectDirty();
   },
 
   moveLayerDown: (id) => {
@@ -191,6 +198,8 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
 
     logger.debug("useLayersStore", "Layer moved down", { id: layerId });
     set({ layers: newLayers });
+
+    markProjectDirty();
   },
 
   moveLayerToFront: (id) => {
@@ -210,6 +219,8 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
 
     logger.debug("useLayersStore", "Layer moved to front", { id: layerId });
     set({ layers: newLayers });
+
+    markProjectDirty();
   },
 
   moveLayerToBack: (id) => {
@@ -229,6 +240,8 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
 
     logger.debug("useLayersStore", "Layer moved to back", { id: layerId });
     set({ layers: newLayers });
+
+    markProjectDirty();
   },
 
   // Actions
@@ -276,6 +289,8 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
       selectedLayerId: newLayer.id,
       nextId: state.nextId + 1,
     });
+
+    markProjectDirty();
   },
 
   addTextLayer: (text, options) => {
@@ -313,6 +328,8 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
       selectedLayerId: newLayer.id,
       nextId: state.nextId + 1,
     });
+
+    markProjectDirty();
   },
 
   removeLayer: (id) => {
@@ -329,6 +346,8 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
       selectedLayerId:
         state.selectedLayerId === id ? null : state.selectedLayerId,
     });
+
+    markProjectDirty();
   },
 
   toggleVisibility: (id) => {
@@ -338,6 +357,8 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
         layer.id === id ? { ...layer, visible: !layer.visible } : layer
       ),
     });
+
+    markProjectDirty();
   },
 
   toggleLock: (id) => {
@@ -357,6 +378,8 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
           ? id
           : state.selectedLayerId,
     });
+
+    markProjectDirty();
   },
 
   selectLayer: (id) => {
@@ -376,6 +399,8 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
     });
 
     set({ layers: newLayers });
+
+    markProjectDirty();
   },
 
   updateLayer: (id, updates) => {
@@ -387,6 +412,8 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
     });
 
     logger.debug("useLayersStore", "Layer updated", { id, updates });
+
+    markProjectDirty();
   },
 
   reprocessImageLayer: (id, newImageData, updates) => {
@@ -457,6 +484,8 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
         finalSize: { width: newImageData.width, height: newImageData.height },
       }
     );
+
+    markProjectDirty();
   },
 
   renameLayer: (id, name) => {
@@ -466,6 +495,8 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
         layer.id === id ? { ...layer, name } : layer
       ),
     });
+
+    markProjectDirty();
   },
 
   clearLayers: () => {

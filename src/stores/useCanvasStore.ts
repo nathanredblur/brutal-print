@@ -6,6 +6,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { logger } from "../lib/logger";
+import { markProjectDirty } from "../utils/markProjectDirty";
 
 interface CanvasStore {
   canvasHeight: number;
@@ -19,6 +20,7 @@ export const useCanvasStore = create<CanvasStore>()(
       setCanvasHeight: (height) => {
         logger.info("useCanvasStore", "Canvas height changed", { height });
         set({ canvasHeight: height });
+        markProjectDirty();
       },
     }),
     {
