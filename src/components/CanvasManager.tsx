@@ -48,7 +48,6 @@ export default function CanvasManager() {
   const closeActivePanel = useUIStore((state) => state.closeActivePanel);
   const showAboutDialog = useUIStore((state) => state.showAboutDialog);
   const setShowAboutDialog = useUIStore((state) => state.setShowAboutDialog);
-  const setSelectionType = useUIStore((state) => state.setSelectionType);
 
   // Use printer store
   const printCanvas = usePrinterStore((state) => state.printCanvas);
@@ -492,113 +491,17 @@ export default function CanvasManager() {
     }
   }, [toast, selectedLayerId, selectLayer]);
 
-  // Handle delete element
-  const handleDeleteElement = useCallback(() => {
-    if (!selectedLayerId) {
-      return;
-    }
-    removeLayer(selectedLayerId);
-    toast.info("Element deleted", {
-      description: "The selected element has been removed.",
-    });
-    logger.info("CanvasManager", "Element deleted via keyboard shortcut", {
-      layerId: selectedLayerId,
-    });
-  }, [selectedLayerId, removeLayer, toast]);
-
-  // Handle element movement with arrow keys
-  const handleMoveElement = useCallback(
-    (direction: "up" | "down" | "left" | "right", amount: number = 1) => {
-      if (!selectedLayerId || !selectedLayer) {
-        return;
-      }
-
-      const updates: Partial<Layer> = {};
-
-      switch (direction) {
-        case "up":
-          updates.y = selectedLayer.y - amount;
-          break;
-        case "down":
-          updates.y = selectedLayer.y + amount;
-          break;
-        case "left":
-          updates.x = selectedLayer.x - amount;
-          break;
-        case "right":
-          updates.x = selectedLayer.x + amount;
-          break;
-      }
-
-      updateLayer(selectedLayerId, updates);
-    },
-    [selectedLayerId, selectedLayer, updateLayer]
-  );
-
   // Handle canvas selection (when clicking on empty canvas area)
   const handleCanvasSelect = useCallback(() => {
     selectLayer(null);
-    setSelectionType("canvas");
     closeActivePanel();
     logger.info("CanvasManager", "Canvas container clicked - deselecting");
-  }, [selectLayer, setSelectionType, closeActivePanel]);
+  }, [selectLayer, closeActivePanel]);
 
   // Keyboard shortcuts
+  // Keyboard shortcuts - now consuming stores directly
   useKeyboardShortcuts({
-    // Tool shortcuts
-    onImageTool: () => {
-      setActivePanel(ActivePanel.ImagePanel);
-      setSelectionType(null);
-    },
-    onTextTool: () => {
-      setActivePanel(ActivePanel.TextPanel);
-      setSelectionType(null);
-    },
-
-    // Element actions
-    onDeleteElement: handleDeleteElement,
-    onMoveUp: (amount) => handleMoveElement("up", amount),
-    onMoveDown: (amount) => handleMoveElement("down", amount),
-    onMoveLeft: (amount) => handleMoveElement("left", amount),
-    onMoveRight: (amount) => handleMoveElement("right", amount),
-
-    // Layer actions
-    onToggleVisibility: () => {
-      if (selectedLayerId) {
-        toggleVisibility(selectedLayerId);
-      }
-    },
-    onToggleLock: () => {
-      if (selectedLayerId) {
-        toggleLock(selectedLayerId);
-      }
-    },
-    onCopyLayer: () => {
-      copyLayer();
-      if (selectedLayerId) {
-        toast.success("Layer copied", {
-          description: "Press Cmd+V to paste",
-        });
-      }
-    },
-    onPasteLayer: () => {
-      if (copiedLayer) {
-        pasteLayer();
-        toast.success("Layer pasted");
-      } else {
-        toast.info("No layer to paste", {
-          description: "Copy a layer first with Cmd+C",
-        });
-      }
-    },
-    onDuplicateLayer: () => {
-      duplicateLayer();
-      if (selectedLayerId) {
-        toast.success("Layer duplicated");
-      }
-    },
-
-    // Document actions
+    // Document actions (only these need to be passed)
     onUndo: () => {
       // TODO: Implement undo/redo system
       toast.info("Coming soon", {

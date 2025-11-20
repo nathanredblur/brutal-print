@@ -23,14 +23,10 @@ interface UIStore {
   // Dialog states
   showAboutDialog: boolean;
 
-  // Selection type
-  selectionType: "layer" | "canvas" | null;
-
   // Actions
   setActivePanel: (panel: ActivePanelType) => void;
   closeActivePanel: () => void;
   setShowAboutDialog: (show: boolean) => void;
-  setSelectionType: (type: "layer" | "canvas" | null) => void;
 
   // Helper getters (computed values)
   isImagePanelOpen: () => boolean;
@@ -43,7 +39,6 @@ export const useUIStore = create<UIStore>((set, get) => ({
   // Initial state
   activePanel: null,
   showAboutDialog: false,
-  selectionType: null,
 
   // Set active panel (closes any other panel)
   setActivePanel: (panel) => {
@@ -80,11 +75,6 @@ export const useUIStore = create<UIStore>((set, get) => ({
   setShowAboutDialog: (show) => {
     logger.info("useUIStore", "Setting about dialog visibility", { show });
     set({ showAboutDialog: show });
-  },
-
-  // Set selection type
-  setSelectionType: (type) => {
-    set({ selectionType: type });
   },
 
   // Helper getters

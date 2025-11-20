@@ -1,35 +1,23 @@
 /**
  * useKeyboardShortcuts Hook
  * Manages keyboard shortcuts for the application
+ *
+ * This hook consumes Zustand stores directly to avoid prop drilling.
+ * Only document-level actions (save, export, new canvas) need to be passed as handlers.
  */
 
 import { useEffect } from "react";
+import { useUIStore, ActivePanel } from "../stores/useUIStore";
+import { useLayersStore } from "../stores/useLayersStore";
+import { toast } from "sonner";
 
 interface KeyboardShortcutHandlers {
-  // Tool shortcuts
-  onImageTool?: () => void;
-  onTextTool?: () => void;
-
-  // Element actions (amount is the number of pixels to move)
-  onDeleteElement?: () => void;
-  onMoveUp?: (amount: number) => void;
-  onMoveDown?: (amount: number) => void;
-  onMoveLeft?: (amount: number) => void;
-  onMoveRight?: (amount: number) => void;
-
-  // Layer actions
-  onToggleVisibility?: () => void;
-  onToggleLock?: () => void;
-  onCopyLayer?: () => void;
-  onPasteLayer?: () => void;
-  onDuplicateLayer?: () => void;
-
-  // Document actions
-  onUndo?: () => void;
-  onRedo?: () => void;
+  // Document actions (these need to be passed from parent)
   onSave?: () => void;
   onExport?: () => void;
   onNewCanvas?: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 /**
@@ -52,6 +40,20 @@ const isTyping = (): boolean => {
 };
 
 export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
+  // Get store actions and state
+  const setActivePanel = useUIStore((state) => state.setActivePanel);
+
+  const layers = useLayersStore((state) => state.layers);
+  const selectedLayerId = useLayersStore((state) => state.selectedLayerId);
+  const copiedLayer = useLayersStore((state) => state.copiedLayer);
+  const removeLayer = useLayersStore((state) => state.removeLayer);
+  const toggleVisibility = useLayersStore((state) => state.toggleVisibility);
+  const toggleLock = useLayersStore((state) => state.toggleLock);
+  const copyLayer = useLayersStore((state) => state.copyLayer);
+  const pasteLayer = useLayersStore((state) => state.pasteLayer);
+  const duplicateLayer = useLayersStore((state) => state.duplicateLayer);
+  const updateLayer = useLayersStore((state) => state.updateLayer);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const { key, ctrlKey, metaKey, shiftKey } = e;
@@ -62,35 +64,42 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
         // Image tool (I)
         if (key.toLowerCase() === "i" && !cmdOrCtrl) {
           e.preventDefault();
-          handlers.onImageTool?.();
+          setActivePanel(ActivePanel.ImagePanel);
           return;
         }
 
         // Text tool (T)
         if (key.toLowerCase() === "t" && !cmdOrCtrl) {
           e.preventDefault();
-          handlers.onTextTool?.();
+          setActivePanel(ActivePanel.TextPanel);
           return;
         }
 
         // Delete element (Delete or Backspace)
         if (key === "Delete" || key === "Backspace") {
           e.preventDefault();
-          handlers.onDeleteElement?.();
+          if (selectedLayerId) {
+            removeLayer(selectedLayerId);
+            toast.success("Layer deleted");
+          }
           return;
         }
 
         // Toggle visibility (H)
         if (key.toLowerCase() === "h" && !cmdOrCtrl) {
           e.preventDefault();
-          handlers.onToggleVisibility?.();
+          if (selectedLayerId) {
+            toggleVisibility(selectedLayerId);
+          }
           return;
         }
 
         // Toggle lock (L)
         if (key.toLowerCase() === "l" && !cmdOrCtrl) {
           e.preventDefault();
-          handlers.onToggleLock?.();
+          if (selectedLayerId) {
+            toggleLock(selectedLayerId);
+          }
           return;
         }
 
@@ -99,49 +108,84 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
 
         if (key === "ArrowUp") {
           e.preventDefault();
-          handlers.onMoveUp?.(moveAmount);
+          if (selectedLayerId) {
+            const layer = layers.find((l) => l.id === selectedLayerId);
+            if (layer) {
+              updateLayer(selectedLayerId, { y: layer.y - moveAmount });
+            }
+          }
           return;
         }
 
         if (key === "ArrowDown") {
           e.preventDefault();
-          handlers.onMoveDown?.(moveAmount);
+          if (selectedLayerId) {
+            const layer = layers.find((l) => l.id === selectedLayerId);
+            if (layer) {
+              updateLayer(selectedLayerId, { y: layer.y + moveAmount });
+            }
+          }
           return;
         }
 
         if (key === "ArrowLeft") {
           e.preventDefault();
-          handlers.onMoveLeft?.(moveAmount);
+          if (selectedLayerId) {
+            const layer = layers.find((l) => l.id === selectedLayerId);
+            if (layer) {
+              updateLayer(selectedLayerId, { x: layer.x - moveAmount });
+            }
+          }
           return;
         }
 
         if (key === "ArrowRight") {
           e.preventDefault();
-          handlers.onMoveRight?.(moveAmount);
+          if (selectedLayerId) {
+            const layer = layers.find((l) => l.id === selectedLayerId);
+            if (layer) {
+              updateLayer(selectedLayerId, { x: layer.x + moveAmount });
+            }
+          }
           return;
         }
       }
 
-      // Document shortcuts - work even when typing (standard behavior)
+      // Document shortcuts - work even when not typing
 
       // Copy (Cmd/Ctrl + C)
       if (cmdOrCtrl && key.toLowerCase() === "c" && !isTyping()) {
         e.preventDefault();
-        handlers.onCopyLayer?.();
+        copyLayer();
+        if (selectedLayerId) {
+          toast.success("Layer copied", {
+            description: "Press Cmd+V to paste",
+          });
+        }
         return;
       }
 
       // Paste (Cmd/Ctrl + V)
       if (cmdOrCtrl && key.toLowerCase() === "v" && !isTyping()) {
         e.preventDefault();
-        handlers.onPasteLayer?.();
+        if (copiedLayer) {
+          pasteLayer();
+          toast.success("Layer pasted");
+        } else {
+          toast.info("No layer to paste", {
+            description: "Copy a layer first with Cmd+C",
+          });
+        }
         return;
       }
 
       // Duplicate (Cmd/Ctrl + D)
       if (cmdOrCtrl && key.toLowerCase() === "d" && !isTyping()) {
         e.preventDefault();
-        handlers.onDuplicateLayer?.();
+        duplicateLayer();
+        if (selectedLayerId) {
+          toast.success("Layer duplicated");
+        }
         return;
       }
 
@@ -189,5 +233,18 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [handlers]);
+  }, [
+    handlers,
+    setActivePanel,
+    layers,
+    selectedLayerId,
+    copiedLayer,
+    removeLayer,
+    toggleVisibility,
+    toggleLock,
+    copyLayer,
+    pasteLayer,
+    duplicateLayer,
+    updateLayer,
+  ]);
 }
