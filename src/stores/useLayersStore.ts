@@ -13,7 +13,16 @@ import {
 } from "../constants/imageDefaults";
 
 interface LayersStore extends LayerState {
+  // Clipboard
+  copiedLayer: Layer | null;
+
   // Actions
+  copyLayer: (id: string) => void;
+  pasteLayer: (x?: number, y?: number) => void;
+  duplicateLayer: (id: string) => void;
+  moveLayerToFront: (id: string) => void;
+  moveLayerToBack: (id: string) => void;
+
   addImageLayer: (
     imageData: HTMLCanvasElement,
     originalImageData: string,
@@ -64,6 +73,99 @@ export const useLayersStore = create<LayersStore>((set, get) => ({
   layers: [],
   selectedLayerId: null,
   nextId: 1,
+  copiedLayer: null,
+
+  // Copy/Paste Actions
+  copyLayer: (id) => {
+    const state = get();
+    const layer = state.layers.find((l) => l.id === id);
+    if (layer) {
+      set({ copiedLayer: { ...layer } });
+      logger.info("useLayersStore", "Layer copied to clipboard", {
+        id: layer.id,
+        name: layer.name,
+      });
+    }
+  },
+
+  pasteLayer: (x, y) => {
+    const state = get();
+    if (!state.copiedLayer) {
+      logger.warn("useLayersStore", "No layer in clipboard to paste");
+      return;
+    }
+
+    const newLayer = {
+      ...state.copiedLayer,
+      id: `layer-${state.nextId}`,
+      name: `${state.copiedLayer.name} (Copy)`,
+      x: x ?? state.copiedLayer.x + 20,
+      y: y ?? state.copiedLayer.y + 20,
+    };
+
+    logger.info("useLayersStore", "Layer pasted", {
+      originalId: state.copiedLayer.id,
+      newId: newLayer.id,
+      position: { x: newLayer.x, y: newLayer.y },
+    });
+
+    set({
+      layers: [...state.layers, newLayer],
+      selectedLayerId: newLayer.id,
+      nextId: state.nextId + 1,
+    });
+  },
+
+  duplicateLayer: (id) => {
+    const state = get();
+    const layer = state.layers.find((l) => l.id === id);
+    if (!layer) return;
+
+    const newLayer = {
+      ...layer,
+      id: `layer-${state.nextId}`,
+      name: `${layer.name} (Copy)`,
+      x: layer.x + 20,
+      y: layer.y + 20,
+    };
+
+    logger.info("useLayersStore", "Layer duplicated", {
+      originalId: id,
+      newId: newLayer.id,
+    });
+
+    set({
+      layers: [...state.layers, newLayer],
+      selectedLayerId: newLayer.id,
+      nextId: state.nextId + 1,
+    });
+  },
+
+  moveLayerToFront: (id) => {
+    const state = get();
+    const index = state.layers.findIndex((l) => l.id === id);
+    if (index === -1 || index === state.layers.length - 1) return;
+
+    const newLayers = [...state.layers];
+    const [layer] = newLayers.splice(index, 1);
+    newLayers.push(layer);
+
+    logger.debug("useLayersStore", "Layer moved to front", { id });
+    set({ layers: newLayers });
+  },
+
+  moveLayerToBack: (id) => {
+    const state = get();
+    const index = state.layers.findIndex((l) => l.id === id);
+    if (index === -1 || index === 0) return;
+
+    const newLayers = [...state.layers];
+    const [layer] = newLayers.splice(index, 1);
+    newLayers.unshift(layer);
+
+    logger.debug("useLayersStore", "Layer moved to back", { id });
+    set({ layers: newLayers });
+  },
 
   // Actions
   addImageLayer: (

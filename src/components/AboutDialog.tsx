@@ -55,6 +55,9 @@ export default function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
               <ShortcutItem label="Toggle Visibility" shortcut="H" />
               <ShortcutItem label="Toggle Lock" shortcut="L" />
               <ShortcutItem label="Delete Layer" shortcut="Del" />
+              <ShortcutItem label="Copy Layer" shortcut="Ctrl+C" />
+              <ShortcutItem label="Paste Layer" shortcut="Ctrl+V" />
+              <ShortcutItem label="Duplicate Layer" shortcut="Ctrl+D" />
               <ShortcutItem label="Move Layer (1px)" shortcut="←↑→↓" />
               <ShortcutItem label="Move Layer (10px)" shortcut="Shift+←↑→↓" />
               <ShortcutItem label="New Canvas" shortcut="Ctrl+N" />

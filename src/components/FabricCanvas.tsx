@@ -35,7 +35,15 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { Kbd } from "@/components/ui/kbd";
-import { Eye, EyeOff, Lock, Unlock, Trash2 } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  Unlock,
+  Trash2,
+  Copy,
+  Clipboard,
+} from "lucide-react";
 
 interface FabricCanvasProps {
   className?: string;
@@ -53,6 +61,9 @@ interface FabricCanvasProps {
   onToggleVisibility?: (layerId: string) => void;
   onToggleLock?: (layerId: string) => void;
   onRemoveLayer?: (layerId: string) => void;
+  onCopyLayer?: (layerId: string) => void;
+  onPasteLayer?: (x?: number, y?: number) => void;
+  hasCopiedLayer?: boolean;
 }
 
 export interface FabricCanvasRef {
@@ -83,6 +94,9 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       onToggleVisibility,
       onToggleLock,
       onRemoveLayer,
+      onCopyLayer,
+      onPasteLayer,
+      hasCopiedLayer = false,
     },
     ref
   ) => {
@@ -94,6 +108,10 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
     const [contextMenuLayerId, setContextMenuLayerId] = useState<string | null>(
       null
     );
+    const [contextMenuPosition, setContextMenuPosition] = useState<{
+      x: number;
+      y: number;
+    } | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Throttling refs for real-time scaling
@@ -962,6 +980,18 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       }
     }, [contextMenuLayerId, layers, onRemoveLayer, confirmDialog]);
 
+    const handleContextMenuCopy = useCallback(() => {
+      if (contextMenuLayerId && onCopyLayer) {
+        onCopyLayer(contextMenuLayerId);
+      }
+    }, [contextMenuLayerId, onCopyLayer]);
+
+    const handleContextMenuPaste = useCallback(() => {
+      if (onPasteLayer && contextMenuPosition) {
+        onPasteLayer(contextMenuPosition.x, contextMenuPosition.y);
+      }
+    }, [onPasteLayer, contextMenuPosition]);
+
     // Get current context menu layer
     const contextMenuLayer = layers.find((l) => l.id === contextMenuLayerId);
 
@@ -974,6 +1004,9 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
         // Get the object under the cursor
         const pointer = fabricCanvas.getPointer(e.nativeEvent);
         const objects = fabricCanvas.getObjects();
+
+        // Save mouse position for paste
+        setContextMenuPosition({ x: pointer.x, y: pointer.y });
 
         let targetObject: FabricObjectWithData | null = null;
 
@@ -1026,44 +1059,62 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           </div>
         </ContextMenuTrigger>
 
-        {contextMenuLayer && (
-          <ContextMenuContent className="w-64">
-            <ContextMenuItem onClick={handleContextMenuVisibility}>
-              {contextMenuLayer.visible ? (
-                <EyeOff size={16} />
-              ) : (
-                <Eye size={16} />
-              )}
-              <span>
-                {contextMenuLayer.visible ? "Hide Layer" : "Show Layer"}
-              </span>
-              <Kbd className="ml-auto">H</Kbd>
-            </ContextMenuItem>
+        <ContextMenuContent className="w-64">
+          {contextMenuLayer ? (
+            <>
+              <ContextMenuItem onClick={handleContextMenuCopy}>
+                <Copy size={16} />
+                <span>Copy Layer</span>
+                <Kbd className="ml-auto">Ctrl+C</Kbd>
+              </ContextMenuItem>
 
-            <ContextMenuItem onClick={handleContextMenuLock}>
-              {contextMenuLayer.locked ? (
-                <Unlock size={16} />
-              ) : (
-                <Lock size={16} />
-              )}
-              <span>
-                {contextMenuLayer.locked ? "Unlock Layer" : "Lock Layer"}
-              </span>
-              <Kbd className="ml-auto">L</Kbd>
-            </ContextMenuItem>
+              <ContextMenuSeparator />
 
-            <ContextMenuSeparator />
+              <ContextMenuItem onClick={handleContextMenuVisibility}>
+                {contextMenuLayer.visible ? (
+                  <EyeOff size={16} />
+                ) : (
+                  <Eye size={16} />
+                )}
+                <span>
+                  {contextMenuLayer.visible ? "Hide Layer" : "Show Layer"}
+                </span>
+                <Kbd className="ml-auto">H</Kbd>
+              </ContextMenuItem>
 
-            <ContextMenuItem
-              variant="destructive"
-              onClick={handleContextMenuDelete}
-            >
-              <Trash2 size={16} />
-              <span>Delete Layer</span>
-              <Kbd className="ml-auto">Del</Kbd>
-            </ContextMenuItem>
-          </ContextMenuContent>
-        )}
+              <ContextMenuItem onClick={handleContextMenuLock}>
+                {contextMenuLayer.locked ? (
+                  <Unlock size={16} />
+                ) : (
+                  <Lock size={16} />
+                )}
+                <span>
+                  {contextMenuLayer.locked ? "Unlock Layer" : "Lock Layer"}
+                </span>
+                <Kbd className="ml-auto">L</Kbd>
+              </ContextMenuItem>
+
+              <ContextMenuSeparator />
+
+              <ContextMenuItem
+                variant="destructive"
+                onClick={handleContextMenuDelete}
+              >
+                <Trash2 size={16} />
+                <span>Delete Layer</span>
+                <Kbd className="ml-auto">Del</Kbd>
+              </ContextMenuItem>
+            </>
+          ) : (
+            hasCopiedLayer && (
+              <ContextMenuItem onClick={handleContextMenuPaste}>
+                <Clipboard size={16} />
+                <span>Paste Here</span>
+                <Kbd className="ml-auto">Ctrl+V</Kbd>
+              </ContextMenuItem>
+            )
+          )}
+        </ContextMenuContent>
       </ContextMenu>
     );
   }

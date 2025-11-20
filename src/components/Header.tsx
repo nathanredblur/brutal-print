@@ -22,6 +22,13 @@ import {
   Printer,
   ChevronDown,
   Loader2,
+  Copy,
+  Clipboard,
+  CopyPlus,
+  ArrowUp,
+  ArrowDown,
+  ChevronsUp,
+  ChevronsDown,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -35,6 +42,18 @@ interface HeaderProps {
   onRedo?: () => void;
   isPrinting?: boolean;
   isConnected?: boolean;
+  // Edit menu actions
+  selectedLayerId?: string | null;
+  copiedLayer?: any;
+  onCopyLayer?: () => void;
+  onPasteLayer?: () => void;
+  onDuplicateLayer?: () => void;
+  onMoveLayerUp?: () => void;
+  onMoveLayerDown?: () => void;
+  onMoveLayerToFront?: () => void;
+  onMoveLayerToBack?: () => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }
 
 const Header: FC<HeaderProps> = ({
@@ -48,6 +67,17 @@ const Header: FC<HeaderProps> = ({
   onRedo,
   isPrinting = false,
   isConnected = false,
+  selectedLayerId,
+  copiedLayer,
+  onCopyLayer,
+  onPasteLayer,
+  onDuplicateLayer,
+  onMoveLayerUp,
+  onMoveLayerDown,
+  onMoveLayerToFront,
+  onMoveLayerToBack,
+  canMoveUp = false,
+  canMoveDown = false,
 }) => {
   return (
     <header className="flex justify-between items-center px-6 py-3 bg-linear-to-br from-slate-900/60 to-slate-950/80 backdrop-blur-md border-b border-border z-100 animate-in slide-in-from-top duration-300">
@@ -86,6 +116,80 @@ const Header: FC<HeaderProps> = ({
               <Download size={16} />
               <span>Export</span>
               <Kbd className="ml-auto">Ctrl+E</Kbd>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Edit Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="neuro-ghost" size="sm">
+              <span>Edit</span>
+              <ChevronDown size={12} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-[240px] z-[150]">
+            <DropdownMenuItem
+              onClick={onCopyLayer}
+              disabled={!selectedLayerId}
+            >
+              <Copy size={16} />
+              <span>Copy Layer</span>
+              <Kbd className="ml-auto">Ctrl+C</Kbd>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={onPasteLayer}
+              disabled={!copiedLayer}
+            >
+              <Clipboard size={16} />
+              <span>Paste Layer</span>
+              <Kbd className="ml-auto">Ctrl+V</Kbd>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={onDuplicateLayer}
+              disabled={!selectedLayerId}
+            >
+              <CopyPlus size={16} />
+              <span>Duplicate Layer</span>
+              <Kbd className="ml-auto">Ctrl+D</Kbd>
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem
+              onClick={onMoveLayerUp}
+              disabled={!selectedLayerId || !canMoveUp}
+            >
+              <ArrowUp size={16} />
+              <span>Move Up</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={onMoveLayerDown}
+              disabled={!selectedLayerId || !canMoveDown}
+            >
+              <ArrowDown size={16} />
+              <span>Move Down</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem
+              onClick={onMoveLayerToFront}
+              disabled={!selectedLayerId || !canMoveUp}
+            >
+              <ChevronsUp size={16} />
+              <span>Bring to Front</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={onMoveLayerToBack}
+              disabled={!selectedLayerId || !canMoveDown}
+            >
+              <ChevronsDown size={16} />
+              <span>Send to Back</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -184,7 +288,18 @@ const arePropsEqual = (
     prevProps.canUndo === nextProps.canUndo &&
     prevProps.canRedo === nextProps.canRedo &&
     prevProps.onUndo === nextProps.onUndo &&
-    prevProps.onRedo === nextProps.onRedo
+    prevProps.onRedo === nextProps.onRedo &&
+    prevProps.selectedLayerId === nextProps.selectedLayerId &&
+    prevProps.copiedLayer === nextProps.copiedLayer &&
+    prevProps.onCopyLayer === nextProps.onCopyLayer &&
+    prevProps.onPasteLayer === nextProps.onPasteLayer &&
+    prevProps.onDuplicateLayer === nextProps.onDuplicateLayer &&
+    prevProps.onMoveLayerUp === nextProps.onMoveLayerUp &&
+    prevProps.onMoveLayerDown === nextProps.onMoveLayerDown &&
+    prevProps.onMoveLayerToFront === nextProps.onMoveLayerToFront &&
+    prevProps.onMoveLayerToBack === nextProps.onMoveLayerToBack &&
+    prevProps.canMoveUp === nextProps.canMoveUp &&
+    prevProps.canMoveDown === nextProps.canMoveDown
     // Intentionally ignore isPrinting and isConnected
     // as they only affect PrintSection which is memoized separately
   );

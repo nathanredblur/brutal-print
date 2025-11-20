@@ -20,6 +20,9 @@ interface KeyboardShortcutHandlers {
   // Layer actions
   onToggleVisibility?: () => void;
   onToggleLock?: () => void;
+  onCopyLayer?: () => void;
+  onPasteLayer?: () => void;
+  onDuplicateLayer?: () => void;
 
   // Document actions
   onUndo?: () => void;
@@ -120,6 +123,27 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
       }
 
       // Document shortcuts - work even when typing (standard behavior)
+
+      // Copy (Cmd/Ctrl + C)
+      if (cmdOrCtrl && key.toLowerCase() === "c" && !isTyping()) {
+        e.preventDefault();
+        handlers.onCopyLayer?.();
+        return;
+      }
+
+      // Paste (Cmd/Ctrl + V)
+      if (cmdOrCtrl && key.toLowerCase() === "v" && !isTyping()) {
+        e.preventDefault();
+        handlers.onPasteLayer?.();
+        return;
+      }
+
+      // Duplicate (Cmd/Ctrl + D)
+      if (cmdOrCtrl && key.toLowerCase() === "d" && !isTyping()) {
+        e.preventDefault();
+        handlers.onDuplicateLayer?.();
+        return;
+      }
 
       // Undo (Cmd/Ctrl + Z)
       if (cmdOrCtrl && key.toLowerCase() === "z" && !shiftKey) {
