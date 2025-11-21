@@ -426,6 +426,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           scaleX: scaleX,
           scaleY: scaleY,
           angle: layer.rotation,
+          flipX: layer.flipX,
+          flipY: layer.flipY,
           selectable: !layer.locked,
           opacity: layer.opacity,
           // Disable image smoothing for crisp 1-bit rendering
@@ -455,6 +457,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           textAlign: textLayer.align,
           fill: textLayer.color,
           angle: layer.rotation,
+          flipX: layer.flipX,
+          flipY: layer.flipY,
           selectable: !layer.locked,
           editable: !layer.locked,
           opacity: layer.opacity,
@@ -637,6 +641,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
             // Update properties
             obj.set({
               angle: layer.rotation,
+              flipX: layer.flipX,
+              flipY: layer.flipY,
               scaleX: targetScaleX,
               scaleY: targetScaleY,
               selectable: !layer.locked,
@@ -662,6 +668,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
               left: layer.x,
               top: layer.y,
               angle: layer.rotation,
+              flipX: layer.flipX,
+              flipY: layer.flipY,
               scaleX: targetScaleX,
               scaleY: targetScaleY,
               selectable: !layer.locked,
@@ -685,6 +693,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
 
           obj.set({
             angle: layer.rotation,
+            flipX: layer.flipX,
+            flipY: layer.flipY,
             text: textLayer.text,
             width: layer.width,
             fontSize: textLayer.fontSize,
@@ -718,6 +728,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
             left: layer.x,
             top: layer.y,
             angle: layer.rotation,
+            flipX: layer.flipX,
+            flipY: layer.flipY,
             text: textLayer.text,
             width: layer.width,
             fontSize: textLayer.fontSize,

@@ -183,6 +183,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
                   locked: layer.locked,
                   opacity: layer.opacity,
                   rotation: layer.rotation,
+                  flipX: layer.flipX,
+                  flipY: layer.flipY,
                   threshold: imageLayer.threshold,
                   brightness: imageLayer.brightness,
                   contrast: imageLayer.contrast,

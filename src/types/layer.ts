@@ -19,6 +19,8 @@ export interface BaseLayer {
   height: number;
   opacity: number; // 0-1
   rotation: number; // degrees
+  flipX: boolean; // Horizontal flip
+  flipY: boolean; // Vertical flip
 }
 
 export interface ImageLayer extends BaseLayer {
