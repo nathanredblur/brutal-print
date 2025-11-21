@@ -62,6 +62,8 @@ interface LayersStore extends LayerState {
   reprocessImageLayer: (
     id: string,
     updates: {
+      x?: number;
+      y?: number;
       ditherMethod?: string;
       threshold?: number;
       invert?: boolean;
@@ -551,6 +553,9 @@ export const useLayersStore = create<LayersStore>()(
                 return {
                   ...l,
                   imageData: processedCanvas,
+                  // Update position if provided (important for resize from left/top)
+                  x: updates.x ?? l.x,
+                  y: updates.y ?? l.y,
                   ditherMethod: params.ditherMethod,
                   threshold: params.threshold,
                   invert: params.invert,

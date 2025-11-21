@@ -74,15 +74,6 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       y: number;
     } | null>(null);
 
-    // Throttling refs for real-time scaling
-    const scalingThrottleRef = useRef<NodeJS.Timeout | null>(null);
-    const lastScaleProcessRef = useRef<number>(0);
-    const pendingScaleRef = useRef<{
-      layerId: string;
-      updates: Partial<Layer>;
-      wasScaled: boolean;
-    } | null>(null);
-
     // Ref for tracking hovered object (for custom border rendering)
     const hoveredObjectRef = useRef<FabricObjectWithData | null>(null);
 
@@ -103,6 +94,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
         selectionColor: SELECTION_COLOR,
         selectionBorderColor: SELECTION_BORDER_COLOR,
         selectionLineWidth: SELECTION_LINE_WIDTH,
+        // Disable scaling - use width/height instead
+        uniformScaling: false,
       });
 
       fabricRef.current = fabricCanvas;
@@ -134,57 +127,40 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
         selectLayer(null);
       });
 
-      // Handle real-time scaling (while dragging)
+      // Handle moving - snap to integer positions for crisp rendering
+      fabricCanvas.on("object:moving", (e: any) => {
+        const obj = e.target as FabricObjectWithData;
+        if (!obj) return;
+
+        // Round position to integers
+        obj.set({
+          left: Math.round(obj.left || 0),
+          top: Math.round(obj.top || 0),
+        });
+      });
+
+      // Handle scaling - for images, keep scale for preview; for text, convert to width
       fabricCanvas.on("object:scaling", (e: any) => {
         const obj = e.target as FabricObjectWithData;
-        if (obj?.data?.layerId) {
-          const finalWidth = (obj.width || 0) * (obj.scaleX || 1);
-          const finalHeight = (obj.height || 0) * (obj.scaleY || 1);
+        if (!obj) return;
 
-          const updates: Partial<Layer> = {
-            x: obj.left || 0,
-            y: obj.top || 0,
-            width: finalWidth,
-            height: finalHeight,
-            rotation: obj.angle || 0,
-          };
+        // For TEXT: Convert scale to width immediately (text box behavior)
+        if (obj instanceof fabric.Textbox) {
+          const newWidth = Math.round((obj.width || 0) * (obj.scaleX || 1));
+          const center = obj.getCenterPoint();
 
-          const wasScaled = obj.scaleX !== 1 || obj.scaleY !== 1;
+          obj.set({
+            width: newWidth,
+            scaleX: 1,
+            scaleY: 1,
+          });
 
-          // Throttle the processing
-          const now = Date.now();
-          const timeSinceLastProcess = now - lastScaleProcessRef.current;
-          const THROTTLE_MS = 150; // Process at most every 150ms
-
-          pendingScaleRef.current = {
-            layerId: obj.data.layerId,
-            updates,
-            wasScaled,
-          };
-
-          if (timeSinceLastProcess >= THROTTLE_MS) {
-            lastScaleProcessRef.current = now;
-            // Just update position/dimensions during scaling
-            updateLayer(obj.data.layerId, updates);
-            pendingScaleRef.current = null;
-          } else {
-            if (scalingThrottleRef.current) {
-              clearTimeout(scalingThrottleRef.current);
-            }
-
-            const delay = THROTTLE_MS - timeSinceLastProcess;
-            scalingThrottleRef.current = setTimeout(() => {
-              if (pendingScaleRef.current) {
-                lastScaleProcessRef.current = Date.now();
-                updateLayer(
-                  pendingScaleRef.current.layerId,
-                  pendingScaleRef.current.updates
-                );
-                pendingScaleRef.current = null;
-              }
-            }, delay);
-          }
+          obj.setPositionByOrigin(center, "center", "center");
+          obj.setCoords();
         }
+
+        // For IMAGES: Keep scale for smooth preview (will be processed on object:modified)
+        // This allows the image to stretch/shrink smoothly while dragging
       });
 
       // Handle text editing
@@ -258,108 +234,60 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       // Handle object modifications (drag, resize, rotate) - FINAL value
       fabricCanvas.on("object:modified", async (e: any) => {
         const obj = e.target as FabricObjectWithData;
-        if (obj?.data?.layerId) {
-          // Clear any pending scaling throttle
-          if (scalingThrottleRef.current) {
-            clearTimeout(scalingThrottleRef.current);
-            scalingThrottleRef.current = null;
-          }
+        if (!obj?.data?.layerId) return;
 
-          // Detect scaling by checking if scale is not 1:1
-          const wasScaled = obj.scaleX !== 1 || obj.scaleY !== 1;
+        const layerId = obj.data.layerId;
 
-          const layerId = (obj as FabricObjectWithData).data?.layerId;
-          if (!layerId) return;
+        // Get the modification type from the transform
+        const transform = fabricCanvas._currentTransform;
+        const wasResized = transform?.action?.includes("scale");
 
-          // For text: reset scale to 1 and keep dimensions as box size
-          // This allows resizing the text box without changing font size
-          if (obj instanceof fabric.Textbox && wasScaled) {
-            const finalWidth = (obj.width || 0) * (obj.scaleX || 1);
+        // Calculate final dimensions (for images, scale might not be 1)
+        // Round to integers to avoid blurry rendering and decimal artifacts
+        const finalWidth = Math.round((obj.width || 0) * (obj.scaleX || 1));
+        const finalHeight = Math.round((obj.height || 0) * (obj.scaleY || 1));
 
-            // Update textbox width and reset scale
-            obj.set({
-              width: finalWidth,
-              scaleX: 1,
-              scaleY: 1,
+        const updates: Partial<Layer> = {
+          x: Math.round(obj.left || 0),
+          y: Math.round(obj.top || 0),
+          width: finalWidth,
+          height: finalHeight,
+          rotation: obj.angle || 0,
+        };
+
+        logger.info("FabricCanvas", "🔍 Object modified", {
+          layerId,
+          wasResized,
+          type: obj.type,
+          dimensions: { width: finalWidth, height: finalHeight },
+          scale: { scaleX: obj.scaleX, scaleY: obj.scaleY },
+        });
+
+        // For images that were resized, reprocess with new dimensions AND position
+        if (wasResized && obj instanceof fabric.FabricImage) {
+          try {
+            await reprocessImageLayer(layerId, {
+              x: updates.x,
+              y: updates.y,
+              width: Math.round(finalWidth),
+              height: Math.round(finalHeight),
             });
-            obj.setCoords();
-            fabricCanvas.renderAll();
-
-            logger.info("FabricCanvas", "📝 Text box resized - width updated", {
+            logger.success("FabricCanvas", "Image reprocessed after resize", {
               layerId,
-              newWidth: finalWidth,
-              fontSize: obj.fontSize,
+              position: { x: updates.x, y: updates.y },
             });
-          }
-
-          // Calculate final dimensions AFTER scale reset
-          const finalWidth = (obj.width || 0) * (obj.scaleX || 1);
-          const finalHeight = (obj.height || 0) * (obj.scaleY || 1);
-
-          const updates: Partial<Layer> = {
-            x: obj.left || 0,
-            y: obj.top || 0,
-            width: finalWidth,
-            height: finalHeight,
-            rotation: obj.angle || 0,
-          };
-
-          // Add fontSize to updates for text layers (unchanged)
-          if (obj instanceof fabric.Textbox) {
-            (updates as any).fontSize = obj.fontSize;
-          }
-
-          logger.info("FabricCanvas", "🔍 Object modified EVENT [FINAL]", {
-            layerId,
-            wasScaled,
-            type: obj.type,
-            scaleValues: {
-              scaleX: obj.scaleX,
-              scaleY: obj.scaleY,
-            },
-            finalDimensions: {
-              width: finalWidth,
-              height: finalHeight,
-            },
-            fontSize: obj instanceof fabric.Textbox ? obj.fontSize : undefined,
-          });
-
-          // Process the final value
-          lastScaleProcessRef.current = Date.now();
-
-          // For images that were scaled, reprocess with new dimensions
-          if (wasScaled && obj instanceof fabric.FabricImage) {
-            try {
-              await reprocessImageLayer(layerId, {
-                width: Math.round(finalWidth),
-                height: Math.round(finalHeight),
-              });
-              logger.success(
-                "FabricCanvas",
-                "Image reprocessed after scaling",
-                {
-                  layerId,
-                }
-              );
-            } catch (error) {
-              logger.error("FabricCanvas", "Failed to reprocess image", error);
-              // Fallback: just update dimensions
-              updateLayer(layerId, updates);
-            }
-          } else {
-            // For text or non-scaled updates, just update
+          } catch (error) {
+            logger.error("FabricCanvas", "Failed to reprocess image", error);
+            // Fallback: just update dimensions
             updateLayer(layerId, updates);
           }
-
-          pendingScaleRef.current = null;
+        } else {
+          // For text or non-resized updates (drag, rotate), just update
+          updateLayer(layerId, updates);
         }
       });
 
       return () => {
-        // Clean up throttle timers
-        if (scalingThrottleRef.current) {
-          clearTimeout(scalingThrottleRef.current);
-        }
         fabricCanvas.dispose();
         fabricRef.current = null;
       };
@@ -534,9 +462,13 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           ...getDefaultObjectStyles(),
         }) as FabricObjectWithData;
 
-        // Disable top and bottom middle controls
-        text.setControlVisible("mt", false);
-        text.setControlVisible("mb", false);
+        // Disable top, bottom, and corner controls (only allow left/right resize)
+        text.setControlVisible("mt", false); // top middle
+        text.setControlVisible("mb", false); // bottom middle
+        text.setControlVisible("tl", false); // top-left corner
+        text.setControlVisible("tr", false); // top-right corner
+        text.setControlVisible("bl", false); // bottom-left corner
+        text.setControlVisible("br", false); // bottom-right corner
 
         obj = text;
       }
