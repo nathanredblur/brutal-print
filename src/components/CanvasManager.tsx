@@ -2,7 +2,7 @@
 import { useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { usePrinterStore } from "../stores/usePrinterStore";
-import { useLayersStore, selectSelectedLayer } from "../stores/useLayersStore";
+import { useLayersStore } from "../stores/useLayersStore";
 import { useCanvasStore } from "../stores/useCanvasStore";
 import { useUIStore, ActivePanel } from "../stores/useUIStore";
 import { useCanvasPersistence } from "../hooks/useCanvasPersistence";
@@ -25,7 +25,6 @@ import PrinterConnection from "./PrinterConnection";
 import TextGalleryPanel from "./TextGalleryPanel";
 import GlobalConfirmDialog from "./GlobalConfirmDialog";
 import FabricCanvas, { type FabricCanvasRef } from "./FabricCanvas";
-import { PRINTER_WIDTH } from "../lib/dithering";
 import { logger } from "../lib/logger";
 import type { Layer, ImageLayer } from "../types/layer";
 import { Panel } from "@/components/ui/panel";
@@ -38,7 +37,6 @@ export default function CanvasManager() {
   const layersRef = useRef<Layer[]>([]);
 
   // Canvas dimensions
-  const CANVAS_WIDTH = PRINTER_WIDTH;
   const canvasHeight = useCanvasStore((state) => state.canvasHeight);
   const setCanvasHeight = useCanvasStore((state) => state.setCanvasHeight);
 
@@ -60,22 +58,18 @@ export default function CanvasManager() {
   // Use Zustand store for layers
   const layers = useLayersStore((state) => state.layers);
   const selectedLayerId = useLayersStore((state) => state.selectedLayerId);
-  const selectedLayer = useLayersStore(selectSelectedLayer);
   const addImageLayer = useLayersStore((state) => state.addImageLayer);
   const addTextLayer = useLayersStore((state) => state.addTextLayer);
   const removeLayer = useLayersStore((state) => state.removeLayer);
   const toggleVisibility = useLayersStore((state) => state.toggleVisibility);
   const toggleLock = useLayersStore((state) => state.toggleLock);
   const selectLayer = useLayersStore((state) => state.selectLayer);
-  const moveLayer = useLayersStore((state) => state.moveLayer);
   const updateLayer = useLayersStore((state) => state.updateLayer);
   const reprocessImageLayer = useLayersStore(
     (state) => state.reprocessImageLayer
   );
-  const clearLayers = useLayersStore((state) => state.clearLayers);
   const copyLayer = useLayersStore((state) => state.copyLayer);
   const pasteLayer = useLayersStore((state) => state.pasteLayer);
-  const duplicateLayer = useLayersStore((state) => state.duplicateLayer);
   const copiedLayer = useLayersStore((state) => state.copiedLayer);
 
   // Keep layersRef updated with the latest layers
@@ -543,7 +537,6 @@ export default function CanvasManager() {
         <div className="flex-1 bg-slate-800 flex items-center justify-center overflow-auto p-6">
           <FabricCanvas
             ref={fabricCanvasRef}
-            width={CANVAS_WIDTH}
             height={canvasHeight}
             layers={layers}
             selectedLayerId={selectedLayerId}

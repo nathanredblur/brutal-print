@@ -227,7 +227,6 @@ export function orderedDither(
  */
 export function halftoneDither(
   imageData: ImageData,
-  threshold: number = 128,
   cellSize: number = 4
 ): boolean[][] {
   const { width, height } = imageData;
@@ -283,7 +282,7 @@ export function applyDithering(
     case "bayer":
       return orderedDither(imageData, threshold, bayerMatrixSize);
     case "pattern":
-      return halftoneDither(imageData, threshold, halftoneCellSize);
+      return halftoneDither(imageData, halftoneCellSize);
     case "none":
       return thresholdDither(imageData, 128);
     default:

@@ -1,8 +1,8 @@
 // Image processing utilities for thermal printer
 
-import { PRINTER_WIDTH } from './types';
-import type { ImageProcessingOptions } from './types';
-import { applyDithering } from './algorithms';
+import { CANVAS_WIDTH } from "../../constants/canvasStyles";
+import type { ImageProcessingOptions } from "./types";
+import { applyDithering } from "./algorithms";
 
 /**
  * Adjust image brightness and contrast
@@ -54,14 +54,14 @@ export function invertImage(imageData: ImageData): ImageData {
  */
 export function scaleImageToFit(
   image: HTMLImageElement | HTMLCanvasElement,
-  targetWidth: number = PRINTER_WIDTH,
+  targetWidth: number = CANVAS_WIDTH,
   maintainAspectRatio: boolean = true
 ): HTMLCanvasElement {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
   if (!ctx) {
-    throw new Error('Failed to get canvas context');
+    throw new Error("Failed to get canvas context");
   }
 
   let width = targetWidth;
@@ -77,7 +77,7 @@ export function scaleImageToFit(
 
   // Use high-quality image smoothing
   ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
+  ctx.imageSmoothingQuality = "high";
 
   ctx.drawImage(image, 0, 0, width, height);
 
@@ -91,11 +91,11 @@ export function rotateImage(
   image: HTMLImageElement | HTMLCanvasElement,
   degrees: 0 | 90 | 180 | 270
 ): HTMLCanvasElement {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
   if (!ctx) {
-    throw new Error('Failed to get canvas context');
+    throw new Error("Failed to get canvas context");
   }
 
   // Adjust canvas size based on rotation
@@ -123,7 +123,7 @@ export function processImageForPrinter(
   options: Partial<ImageProcessingOptions> = {}
 ): { canvas: HTMLCanvasElement; binaryData: boolean[][] } {
   const defaults: ImageProcessingOptions = {
-    ditherMethod: 'floydSteinberg',
+    ditherMethod: "steinberg",
     threshold: 128,
     invert: false,
     brightness: 128,
@@ -133,12 +133,12 @@ export function processImageForPrinter(
   const opts = { ...defaults, ...options };
 
   // Step 1: Scale to printer width
-  let canvas = scaleImageToFit(image, PRINTER_WIDTH, true);
+  let canvas = scaleImageToFit(image, CANVAS_WIDTH, true);
 
   // Step 2: Get image data
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) {
-    throw new Error('Failed to get canvas context');
+    throw new Error("Failed to get canvas context");
   }
 
   let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -156,8 +156,8 @@ export function processImageForPrinter(
 
   // Step 6: Apply dithering
   const binaryData = applyDithering(
-    imageData, 
-    opts.ditherMethod, 
+    imageData,
+    opts.ditherMethod,
     opts.threshold,
     opts.bayerMatrixSize,
     opts.halftoneCellSize
@@ -176,13 +176,13 @@ export function binaryDataToCanvas(
   const height = binaryData.length;
   const width = binaryData[0]?.length || 0;
 
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = width * scale;
   canvas.height = height * scale;
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   if (!ctx) {
-    throw new Error('Failed to get canvas context');
+    throw new Error("Failed to get canvas context");
   }
 
   // Create ImageData for efficient pixel manipulation
@@ -198,10 +198,10 @@ export function binaryDataToCanvas(
       for (let sy = 0; sy < scale; sy++) {
         for (let sx = 0; sx < scale; sx++) {
           const idx = ((y * scale + sy) * canvas.width + (x * scale + sx)) * 4;
-          data[idx] = color;     // R
+          data[idx] = color; // R
           data[idx + 1] = color; // G
           data[idx + 2] = color; // B
-          data[idx + 3] = 255;   // A
+          data[idx + 3] = 255; // A
         }
       }
     }
@@ -210,4 +210,3 @@ export function binaryDataToCanvas(
   ctx.putImageData(imageData, 0, 0);
   return canvas;
 }
-

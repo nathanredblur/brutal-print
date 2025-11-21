@@ -3,6 +3,8 @@
  * Centralized constants for Fabric.js canvas appearance
  */
 
+export const CANVAS_WIDTH = 384;
+
 // Colors
 export const SELECTION_COLOR = "rgba(167, 139, 250, 0.1)"; // purple-400 with 10% opacity
 export const SELECTION_BORDER_COLOR = "#a78bfa"; // purple-400

@@ -19,6 +19,7 @@ import { logger } from "../lib/logger";
 import { cn } from "../lib/utils";
 import { DEFAULT_FONT_FAMILY } from "../constants/fonts";
 import {
+  CANVAS_WIDTH,
   SELECTION_COLOR,
   SELECTION_BORDER_COLOR,
   SELECTION_LINE_WIDTH,
@@ -47,7 +48,7 @@ import {
 
 interface FabricCanvasProps {
   className?: string;
-  width: number;
+  width?: number;
   height: number;
   layers: Layer[];
   selectedLayerId: string | null;
@@ -84,7 +85,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
   (
     {
       className,
-      width,
+      width = CANVAS_WIDTH,
       height,
       layers,
       selectedLayerId,
