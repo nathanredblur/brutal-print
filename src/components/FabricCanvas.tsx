@@ -28,24 +28,7 @@ import {
   HOVER_STROKE_WIDTH,
   getDefaultObjectStyles,
 } from "../constants/canvasStyles";
-import { useConfirmDialogStore } from "../stores/useConfirmDialogStore";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import { Kbd } from "@/components/ui/kbd";
-import {
-  Eye,
-  EyeOff,
-  Lock,
-  Unlock,
-  Trash2,
-  Copy,
-  Clipboard,
-} from "lucide-react";
+import { LayerContextMenu } from "./LayerContextMenu";
 
 interface FabricCanvasProps {
   className?: string;
@@ -72,22 +55,17 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
     // Consume Zustand store directly
     const layers = useLayersStore((state) => state.layers);
     const selectedLayerId = useLayersStore((state) => state.selectedLayerId);
-    const copiedLayer = useLayersStore((state) => state.copiedLayer);
     const selectLayer = useLayersStore((state) => state.selectLayer);
     const updateLayer = useLayersStore((state) => state.updateLayer);
     const reprocessImageLayer = useLayersStore(
       (state) => state.reprocessImageLayer
     );
-    const toggleVisibility = useLayersStore((state) => state.toggleVisibility);
-    const toggleLock = useLayersStore((state) => state.toggleLock);
-    const removeLayer = useLayersStore((state) => state.removeLayer);
-    const copyLayer = useLayersStore((state) => state.copyLayer);
-    const pasteLayer = useLayersStore((state) => state.pasteLayer);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fabricRef = useRef<fabric.Canvas | null>(null);
     const layerObjectsRef = useRef<Map<string, fabric.FabricObject>>(new Map());
-    const confirmDialog = useConfirmDialogStore((state) => state.confirm);
+    const containerRef = useRef<HTMLDivElement>(null);
 
+    // Context menu state
     const [contextMenuLayerId, setContextMenuLayerId] = useState<string | null>(
       null
     );
@@ -95,7 +73,6 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       x: number;
       y: number;
     } | null>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
 
     // Throttling refs for real-time scaling
     const scalingThrottleRef = useRef<NodeJS.Timeout | null>(null);
@@ -957,51 +934,6 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       },
     }));
 
-    // Context menu handlers
-    const handleContextMenuVisibility = useCallback(() => {
-      if (contextMenuLayerId) {
-        toggleVisibility(contextMenuLayerId);
-      }
-    }, [contextMenuLayerId, toggleVisibility]);
-
-    const handleContextMenuLock = useCallback(() => {
-      if (contextMenuLayerId) {
-        toggleLock(contextMenuLayerId);
-      }
-    }, [contextMenuLayerId, toggleLock]);
-
-    const handleContextMenuDelete = useCallback(async () => {
-      if (!contextMenuLayerId) return;
-
-      const layer = layers.find((l) => l.id === contextMenuLayerId);
-      if (!layer) return;
-
-      const confirmed = await confirmDialog(
-        "Delete Layer?",
-        `Are you sure you want to delete "${layer.name}"? This action cannot be undone.`,
-        { confirmText: "Delete", cancelText: "Cancel" }
-      );
-
-      if (confirmed) {
-        removeLayer(contextMenuLayerId);
-      }
-    }, [contextMenuLayerId, layers, removeLayer, confirmDialog]);
-
-    const handleContextMenuCopy = useCallback(() => {
-      if (contextMenuLayerId) {
-        copyLayer(contextMenuLayerId);
-      }
-    }, [contextMenuLayerId, copyLayer]);
-
-    const handleContextMenuPaste = useCallback(() => {
-      if (contextMenuPosition) {
-        pasteLayer(contextMenuPosition.x, contextMenuPosition.y);
-      }
-    }, [pasteLayer, contextMenuPosition]);
-
-    // Get current context menu layer
-    const contextMenuLayer = layers.find((l) => l.id === contextMenuLayerId);
-
     // Handle right click to detect layer under cursor
     const handleContextMenu = useCallback(
       (e: React.MouseEvent) => {
@@ -1027,6 +959,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
         }
 
         if (targetObject?.data?.layerId) {
+          // Right-click on a layer
           const layerId = targetObject.data.layerId;
           const layer = layers.find((l) => l.id === layerId);
 
@@ -1036,93 +969,45 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           if (layer && !layer.locked) {
             selectLayer(layerId);
           }
-        } else if (selectedLayerId) {
-          // Si no hay objeto bajo el cursor pero hay una capa seleccionada, usar esa
-          setContextMenuLayerId(selectedLayerId);
+
+          logger.debug("FabricCanvas", "Context menu on layer", { layerId });
+        } else {
+          // Right-click on empty area
+          // Deselect any selected layer
+          selectLayer(null);
+          setContextMenuLayerId(null);
+
+          logger.debug(
+            "FabricCanvas",
+            "Context menu on empty area - deselected"
+          );
         }
       },
-      [layers, selectedLayerId, selectLayer]
+      [layers, selectLayer]
     );
 
     return (
-      <ContextMenu
+      <LayerContextMenu
+        contextMenuLayerId={contextMenuLayerId}
+        contextMenuPosition={contextMenuPosition}
         onOpenChange={(open) => {
           if (!open) {
             setContextMenuLayerId(null);
           }
         }}
       >
-        <ContextMenuTrigger asChild>
-          <div
-            className={cn(
-              "fabric-canvas-container",
-              "flex flex-1 justify-center items-center w-full h-full",
-              className
-            )}
-            ref={containerRef}
-            onContextMenu={handleContextMenu}
-          >
-            <canvas className="shadow-lg rounded-sm" ref={canvasRef} />
-          </div>
-        </ContextMenuTrigger>
-
-        <ContextMenuContent className="w-64">
-          {contextMenuLayer ? (
-            <>
-              <ContextMenuItem onClick={handleContextMenuCopy}>
-                <Copy size={16} />
-                <span>Copy Layer</span>
-                <Kbd className="ml-auto">Ctrl+C</Kbd>
-              </ContextMenuItem>
-
-              <ContextMenuSeparator />
-
-              <ContextMenuItem onClick={handleContextMenuVisibility}>
-                {contextMenuLayer.visible ? (
-                  <EyeOff size={16} />
-                ) : (
-                  <Eye size={16} />
-                )}
-                <span>
-                  {contextMenuLayer.visible ? "Hide Layer" : "Show Layer"}
-                </span>
-                <Kbd className="ml-auto">H</Kbd>
-              </ContextMenuItem>
-
-              <ContextMenuItem onClick={handleContextMenuLock}>
-                {contextMenuLayer.locked ? (
-                  <Unlock size={16} />
-                ) : (
-                  <Lock size={16} />
-                )}
-                <span>
-                  {contextMenuLayer.locked ? "Unlock Layer" : "Lock Layer"}
-                </span>
-                <Kbd className="ml-auto">L</Kbd>
-              </ContextMenuItem>
-
-              <ContextMenuSeparator />
-
-              <ContextMenuItem
-                variant="destructive"
-                onClick={handleContextMenuDelete}
-              >
-                <Trash2 size={16} />
-                <span>Delete Layer</span>
-                <Kbd className="ml-auto">Del</Kbd>
-              </ContextMenuItem>
-            </>
-          ) : (
-            copiedLayer && (
-              <ContextMenuItem onClick={handleContextMenuPaste}>
-                <Clipboard size={16} />
-                <span>Paste Here</span>
-                <Kbd className="ml-auto">Ctrl+V</Kbd>
-              </ContextMenuItem>
-            )
+        <div
+          className={cn(
+            "fabric-canvas-container",
+            "flex flex-1 justify-center items-center w-full h-full",
+            className
           )}
-        </ContextMenuContent>
-      </ContextMenu>
+          ref={containerRef}
+          onContextMenu={handleContextMenu}
+        >
+          <canvas className="shadow-lg rounded-sm" ref={canvasRef} />
+        </div>
+      </LayerContextMenu>
     );
   }
 );
