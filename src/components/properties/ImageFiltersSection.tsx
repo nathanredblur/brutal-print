@@ -33,11 +33,7 @@ const DITHER_METHODS = [
 
 interface ImageFiltersSectionProps {
   layer: ImageLayer;
-  onReprocessImageLayer: (
-    layerId: string,
-    newImageData: HTMLCanvasElement,
-    updates: any
-  ) => void;
+  onReprocessImageLayer: (layerId: string, updates: any) => Promise<void>;
 }
 
 const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
@@ -98,46 +94,14 @@ const ImageFiltersSection: FC<ImageFiltersSectionProps> = ({
   // Helper to trigger reprocessing with updated parameters
   const reprocessWithUpdates = useCallback(
     async (updates: any) => {
-      const { reprocessImage } = await import("../../utils/imageReprocessor");
-
-      const params = {
-        ditherMethod: updates.ditherMethod || layer.ditherMethod,
-        threshold:
-          updates.threshold !== undefined ? updates.threshold : layer.threshold,
-        invert: updates.invert !== undefined ? updates.invert : layer.invert,
-        brightness:
-          updates.brightness !== undefined
-            ? updates.brightness
-            : layer.brightness ?? DEFAULT_BRIGHTNESS,
-        contrast:
-          updates.contrast !== undefined
-            ? updates.contrast
-            : layer.contrast ?? DEFAULT_CONTRAST,
-        bayerMatrixSize:
-          updates.bayerMatrixSize !== undefined
-            ? updates.bayerMatrixSize
-            : layer.bayerMatrixSize ?? 4,
-        halftoneCellSize:
-          updates.halftoneCellSize !== undefined
-            ? updates.halftoneCellSize
-            : layer.halftoneCellSize ?? 4,
-        targetWidth: layer.width,
-        targetHeight: layer.height,
-      };
-
       try {
-        const result = await reprocessImage(
-          layer.originalImageData,
-          params.ditherMethod as any,
-          params
-        );
-
-        onReprocessImageLayer(layer.id, result.canvas, updates);
+        // onReprocessImageLayer now handles all the reprocessing internally
+        await onReprocessImageLayer(layer.id, updates);
       } catch (error) {
         console.error("Failed to reprocess image:", error);
       }
     },
-    [layer, onReprocessImageLayer]
+    [layer.id, onReprocessImageLayer]
   );
 
   // Throttled processing

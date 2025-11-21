@@ -19,8 +19,8 @@ export interface ReprocessOptions {
   brightness?: number;
   contrast?: number;
   invert?: boolean;
-  targetWidth?: number;
-  targetHeight?: number;
+  width?: number;
+  height?: number;
   bayerMatrixSize?: number;
   halftoneCellSize?: number;
 }
@@ -36,10 +36,10 @@ export async function reprocessImage(
     img.onload = () => {
       try {
         // Scale image to target dimensions if provided
-        if (options?.targetWidth && options?.targetHeight) {
+        if (options?.width && options?.height) {
           const tempCanvas = document.createElement("canvas");
-          tempCanvas.width = options.targetWidth;
-          tempCanvas.height = options.targetHeight;
+          tempCanvas.width = options.width;
+          tempCanvas.height = options.height;
           const tempCtx = tempCanvas.getContext("2d");
           if (!tempCtx) {
             reject(new Error("Failed to get 2d context"));
@@ -49,22 +49,12 @@ export async function reprocessImage(
           // Draw with high quality scaling
           tempCtx.imageSmoothingEnabled = true;
           tempCtx.imageSmoothingQuality = "high";
-          tempCtx.drawImage(
-            img,
-            0,
-            0,
-            options.targetWidth,
-            options.targetHeight
-          );
+          tempCtx.drawImage(img, 0, 0, options.width, options.height);
 
           // Create a new image from the scaled canvas
           const scaledImg = new Image();
           scaledImg.onload = () => {
-            processImageWithDither(
-              scaledImg,
-              options.targetWidth,
-              options.targetHeight
-            );
+            processImageWithDither(scaledImg, options.width, options.height);
           };
           scaledImg.onerror = () => {
             reject(new Error("Failed to scale image"));
@@ -136,7 +126,7 @@ export async function reprocessImage(
           threshold: options?.threshold ?? DEFAULT_THRESHOLD,
           invert: options?.invert ?? false,
           size: { width: canvas.width, height: canvas.height },
-          scaled: options?.targetWidth ? true : false,
+          scaled: options?.width ? true : false,
         });
 
         resolve({ canvas, binaryData });

@@ -5,7 +5,6 @@ import { usePrinterStore } from "../stores/usePrinterStore";
 import { useLayersStore } from "../stores/useLayersStore";
 import { useCanvasStore } from "../stores/useCanvasStore";
 import { useUIStore, ActivePanel } from "../stores/useUIStore";
-import { useCanvasPersistence } from "../hooks/useCanvasPersistence";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useConfirmDialogStore } from "../stores/useConfirmDialogStore";
 import {
@@ -33,9 +32,6 @@ import { DEFAULT_FONT_FAMILY } from "../constants/fonts";
 export default function CanvasManager() {
   const fabricCanvasRef = useRef<FabricCanvasRef>(null);
 
-  // Keep a ref to always have fresh layers data
-  const layersRef = useRef<Layer[]>([]);
-
   // Canvas dimensions
   const canvasHeight = useCanvasStore((state) => state.canvasHeight);
   const setCanvasHeight = useCanvasStore((state) => state.setCanvasHeight);
@@ -52,43 +48,13 @@ export default function CanvasManager() {
   const isConnected = usePrinterStore((state) => state.isConnected);
   const isPrinting = usePrinterStore((state) => state.isPrinting);
 
-  // Use confirm dialog store
-  const confirmDialog = useConfirmDialogStore((state) => state.confirm);
-
   // Use Zustand store for layers
+  const hasHydrated = useLayersStore((state) => state._hasHydrated);
   const layers = useLayersStore((state) => state.layers);
   const selectedLayerId = useLayersStore((state) => state.selectedLayerId);
   const addImageLayer = useLayersStore((state) => state.addImageLayer);
   const addTextLayer = useLayersStore((state) => state.addTextLayer);
-  const removeLayer = useLayersStore((state) => state.removeLayer);
-  const toggleVisibility = useLayersStore((state) => state.toggleVisibility);
-  const toggleLock = useLayersStore((state) => state.toggleLock);
   const selectLayer = useLayersStore((state) => state.selectLayer);
-  const updateLayer = useLayersStore((state) => state.updateLayer);
-  const reprocessImageLayer = useLayersStore(
-    (state) => state.reprocessImageLayer
-  );
-  const copyLayer = useLayersStore((state) => state.copyLayer);
-  const pasteLayer = useLayersStore((state) => state.pasteLayer);
-  const copiedLayer = useLayersStore((state) => state.copiedLayer);
-
-  // Keep layersRef updated with the latest layers
-  useEffect(() => {
-    layersRef.current = layers;
-  }, [layers]);
-
-  // Enable persistence (auto-save)
-  const persistence = useCanvasPersistence(canvasHeight);
-
-  // Load saved state after component mounts (client-side only)
-  useEffect(() => {
-    persistence.loadState().then((state) => {
-      if (state) {
-        setCanvasHeight(state.canvasHeight || 800);
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Log printer state changes (only when they actually change)
   useEffect(() => {
@@ -101,48 +67,29 @@ export default function CanvasManager() {
 
   const handleImageUploaded = useCallback(
     async (imageDataUrl: string) => {
-      // Process image and add as a new layer
-      const layerName = `Image ${layers.length + 1}`;
-
-      // Load image and process it
-      const img = new Image();
-      img.onload = async () => {
-        const { processImageForPrinter, binaryDataToCanvas } = await import(
-          "../lib/dithering"
-        );
-
-        // Process with default settings
-        const { binaryData } = processImageForPrinter(img, {
-          ditherMethod: DEFAULT_DITHER_METHOD,
+      try {
+        // addImageLayer now processes the image internally
+        await addImageLayer(imageDataUrl, DEFAULT_DITHER_METHOD, {
+          name: `Image ${layers.length + 1}`,
+          x: 0,
+          y: 0,
           threshold: DEFAULT_THRESHOLD,
           brightness: DEFAULT_BRIGHTNESS,
           contrast: DEFAULT_CONTRAST,
           invert: false,
         });
 
-        // Convert binary data to B&W canvas
-        const processedCanvas = binaryDataToCanvas(binaryData, 1);
-
-        addImageLayer(
-          processedCanvas,
-          imageDataUrl,
-          DEFAULT_DITHER_METHOD,
-          DEFAULT_THRESHOLD,
-          false,
-          {
-            name: layerName,
-            x: 0,
-            y: 0,
-          }
-        );
-
         logger.success(
           "CanvasManager",
           "Image added as layer with dithering applied"
         );
         closeActivePanel();
-      };
-      img.src = imageDataUrl;
+      } catch (error) {
+        logger.error("CanvasManager", "Failed to add image layer", error);
+        toast.error("Failed to add image", {
+          description: "Please try again with a different image.",
+        });
+      }
     },
     [addImageLayer, layers.length, closeActivePanel]
   );
@@ -225,179 +172,11 @@ export default function CanvasManager() {
     [addTextLayer, layers.length, toast]
   );
 
-  // Handle layer updates from Fabric.js
-  const handleLayerUpdate = useCallback(
-    async (layerId: string, updates: any, wasScaled?: boolean) => {
-      logger.info("CanvasManager", "🎯 handleLayerUpdate called", {
-        layerId,
-        wasScaled,
-        updates,
-        layersAvailable: layersRef.current.length,
-      });
-
-      // Always update position/rotation/dimensions immediately for smooth interaction
-      updateLayer(layerId, updates);
-
-      // If an image was scaled, reprocess it asynchronously
-      if (wasScaled) {
-        logger.info(
-          "CanvasManager",
-          "✅ wasScaled is TRUE, checking layer type..."
-        );
-
-        // IMPORTANT: Use layersRef.current to get fresh data
-        // The layers array in closure is stale
-        const currentLayers = layersRef.current;
-        logger.info("CanvasManager", "Current layers array (from ref):", {
-          currentLayers,
-          layersCount: currentLayers.length,
-          searchingFor: layerId,
-        });
-
-        const layer = currentLayers.find((l) => l.id === layerId);
-        logger.info("CanvasManager", "Layer found:", {
-          layer,
-          type: layer?.type,
-          allLayerIds: currentLayers.map((l) => l.id),
-        });
-
-        if (layer?.type === "image") {
-          const imageLayer = layer as ImageLayer;
-
-          const targetWidth = Math.round(updates.width);
-          const targetHeight = Math.round(updates.height);
-
-          logger.info(
-            "CanvasManager",
-            "Image scaling completed, reprocesing...",
-            {
-              layerId,
-              oldSize: { width: layer.width, height: layer.height },
-              newSize: { width: targetWidth, height: targetHeight },
-            }
-          );
-
-          try {
-            logger.info("CanvasManager", "🔄 Starting reprocess...", {
-              layerId,
-              targetSize: { width: targetWidth, height: targetHeight },
-              originalImageData:
-                imageLayer.originalImageData.substring(0, 50) + "...",
-            });
-
-            const { reprocessImage } = await import(
-              "../utils/imageReprocessor"
-            );
-            const result = await reprocessImage(
-              imageLayer.originalImageData,
-              imageLayer.ditherMethod as any,
-              {
-                threshold: imageLayer.threshold,
-                invert: imageLayer.invert,
-                targetWidth,
-                targetHeight,
-                brightness: imageLayer.brightness ?? DEFAULT_BRIGHTNESS,
-                contrast: imageLayer.contrast ?? DEFAULT_CONTRAST,
-                bayerMatrixSize: imageLayer.bayerMatrixSize ?? 4,
-                halftoneCellSize: imageLayer.halftoneCellSize ?? 4,
-              }
-            );
-
-            logger.info(
-              "CanvasManager",
-              "✅ Reprocess completed, updating layer...",
-              {
-                layerId,
-                resultCanvasSize: {
-                  width: result.canvas.width,
-                  height: result.canvas.height,
-                },
-                canvasElement: result.canvas,
-              }
-            );
-
-            // Update layer with reprocessed image
-            // This will trigger Fabric to update with the new canvas at 1:1 scale
-            reprocessImageLayer(layerId, result.canvas, {
-              ditherMethod: imageLayer.ditherMethod,
-              threshold: imageLayer.threshold,
-              invert: imageLayer.invert,
-            });
-
-            logger.success(
-              "CanvasManager",
-              "✨ Layer updated with new canvas",
-              {
-                layerId,
-                finalSize: {
-                  width: result.canvas.width,
-                  height: result.canvas.height,
-                },
-              }
-            );
-          } catch (error) {
-            logger.error(
-              "CanvasManager",
-              "Failed to reprocess scaled image",
-              error
-            );
-            // Fallback: update with scaled dimensions
-            updateLayer(layerId, {
-              width: targetWidth,
-              height: targetHeight,
-            });
-          }
-          return;
-        }
-      }
-
-      // For non-image layers or non-scaled updates, update dimensions normally
-      if (updates.width !== undefined || updates.height !== undefined) {
-        updateLayer(layerId, {
-          width: updates.width,
-          height: updates.height,
-        });
-      }
-    },
-    [updateLayer, reprocessImageLayer, toast] // Removed 'layers' - using layersRef instead
-  );
-
-  // Handle layer selection from Fabric.js
-  const handleLayerSelect = useCallback(
-    (layerId: string | null) => {
-      selectLayer(layerId);
-    },
-    [selectLayer]
-  );
-
   // Handle canvas height change
   const handleCanvasHeightChange = useCallback((height: number) => {
     setCanvasHeight(height);
     logger.info("CanvasManager", "Canvas height changed", { height });
   }, []);
-
-  // Handle image reprocessing with new filter
-  const handleReprocessImageLayer = useCallback(
-    (
-      layerId: string,
-      newImageData: HTMLCanvasElement,
-      updates: {
-        ditherMethod?: string;
-        threshold?: number;
-        invert?: boolean;
-        brightness?: number;
-        contrast?: number;
-        bayerMatrixSize?: number;
-        halftoneCellSize?: number;
-      }
-    ) => {
-      reprocessImageLayer(layerId, newImageData, updates);
-      // No toasts - keep UI clean and non-intrusive
-    },
-    [reprocessImageLayer]
-  );
-
-  // Handle new canvas (clear all layers)
 
   // Handle export
   const handleExport = useCallback(async () => {
@@ -453,13 +232,6 @@ export default function CanvasManager() {
     }
   }, [toast, selectedLayerId, selectLayer]);
 
-  // Handle canvas selection (when clicking on empty canvas area)
-  const handleCanvasSelect = useCallback(() => {
-    selectLayer(null);
-    closeActivePanel();
-    logger.info("CanvasManager", "Canvas container clicked - deselecting");
-  }, [selectLayer, closeActivePanel]);
-
   // Keyboard shortcuts
   // Keyboard shortcuts - now consuming stores directly
   useKeyboardShortcuts({
@@ -496,7 +268,7 @@ export default function CanvasManager() {
 
         {/* Additional left panels - appear conditionally */}
         {activePanel && (
-          <div className="w-[280px] bg-gradient-to-br from-slate-900/60 to-slate-950/80 backdrop-blur-md border-r border-slate-700 p-3 overflow-y-auto flex flex-col gap-3">
+          <div className="w-[280px] bg-linear-to-br from-slate-900/60 to-slate-950/80 backdrop-blur-md border-r border-slate-700 p-3 overflow-y-auto flex flex-col gap-3">
             {/* Printer Panel */}
             {activePanel === ActivePanel.PrintSettings && (
               <Panel title="Printer" onClose={closeActivePanel}>
@@ -535,29 +307,16 @@ export default function CanvasManager() {
 
         {/* Canvas Section */}
         <div className="flex-1 bg-slate-800 flex items-center justify-center overflow-auto p-6">
-          <FabricCanvas
-            ref={fabricCanvasRef}
-            height={canvasHeight}
-            layers={layers}
-            selectedLayerId={selectedLayerId}
-            onLayerUpdate={handleLayerUpdate}
-            onLayerSelect={handleLayerSelect}
-            onCanvasSelect={handleCanvasSelect}
-            onToggleVisibility={toggleVisibility}
-            onToggleLock={toggleLock}
-            onRemoveLayer={removeLayer}
-            onCopyLayer={(layerId) => {
-              copyLayer(layerId);
-              toast.success("Layer copied", {
-                description: "Press Cmd+V to paste",
-              });
-            }}
-            onPasteLayer={(x, y) => {
-              pasteLayer(x, y);
-              toast.success("Layer pasted");
-            }}
-            hasCopiedLayer={!!copiedLayer}
-          />
+          {hasHydrated ? (
+            <FabricCanvas ref={fabricCanvasRef} height={canvasHeight} />
+          ) : (
+            <div className="flex items-center justify-center text-slate-400">
+              <div className="flex flex-col items-center gap-3">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                <p className="text-sm">Loading canvas...</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Panel - Properties */}

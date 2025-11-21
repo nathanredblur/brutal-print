@@ -15,6 +15,7 @@ import {
 } from "react";
 import * as fabric from "fabric";
 import type { Layer, ImageLayer, TextLayer } from "../types/layer";
+import { useLayersStore } from "../stores/useLayersStore";
 import { logger } from "../lib/logger";
 import { cn } from "../lib/utils";
 import { DEFAULT_FONT_FAMILY } from "../constants/fonts";
@@ -50,21 +51,6 @@ interface FabricCanvasProps {
   className?: string;
   width?: number;
   height: number;
-  layers: Layer[];
-  selectedLayerId: string | null;
-  onLayerUpdate?: (
-    layerId: string,
-    updates: Partial<Layer>,
-    wasScaled?: boolean
-  ) => void;
-  onLayerSelect?: (layerId: string | null) => void;
-  onCanvasSelect?: () => void;
-  onToggleVisibility?: (layerId: string) => void;
-  onToggleLock?: (layerId: string) => void;
-  onRemoveLayer?: (layerId: string) => void;
-  onCopyLayer?: (layerId: string) => void;
-  onPasteLayer?: (x?: number, y?: number) => void;
-  hasCopiedLayer?: boolean;
 }
 
 export interface FabricCanvasRef {
@@ -82,25 +68,21 @@ interface FabricObjectWithData extends fabric.FabricObject {
 }
 
 const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
-  (
-    {
-      className,
-      width = CANVAS_WIDTH,
-      height,
-      layers,
-      selectedLayerId,
-      onLayerUpdate,
-      onLayerSelect,
-      onCanvasSelect,
-      onToggleVisibility,
-      onToggleLock,
-      onRemoveLayer,
-      onCopyLayer,
-      onPasteLayer,
-      hasCopiedLayer = false,
-    },
-    ref
-  ) => {
+  ({ className, width = CANVAS_WIDTH, height }, ref) => {
+    // Consume Zustand store directly
+    const layers = useLayersStore((state) => state.layers);
+    const selectedLayerId = useLayersStore((state) => state.selectedLayerId);
+    const copiedLayer = useLayersStore((state) => state.copiedLayer);
+    const selectLayer = useLayersStore((state) => state.selectLayer);
+    const updateLayer = useLayersStore((state) => state.updateLayer);
+    const reprocessImageLayer = useLayersStore(
+      (state) => state.reprocessImageLayer
+    );
+    const toggleVisibility = useLayersStore((state) => state.toggleVisibility);
+    const toggleLock = useLayersStore((state) => state.toggleLock);
+    const removeLayer = useLayersStore((state) => state.removeLayer);
+    const copyLayer = useLayersStore((state) => state.copyLayer);
+    const pasteLayer = useLayersStore((state) => state.pasteLayer);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fabricRef = useRef<fabric.Canvas | null>(null);
     const layerObjectsRef = useRef<Map<string, fabric.FabricObject>>(new Map());
@@ -160,19 +142,19 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       fabricCanvas.on("selection:created", (e: any) => {
         const selected = e.selected?.[0] as FabricObjectWithData;
         if (selected?.data?.layerId) {
-          onLayerSelect?.(selected.data.layerId);
+          selectLayer(selected.data.layerId);
         }
       });
 
       fabricCanvas.on("selection:updated", (e: any) => {
         const selected = e.selected?.[0] as FabricObjectWithData;
         if (selected?.data?.layerId) {
-          onLayerSelect?.(selected.data.layerId);
+          selectLayer(selected.data.layerId);
         }
       });
 
       fabricCanvas.on("selection:cleared", () => {
-        onLayerSelect?.(null);
+        selectLayer(null);
       });
 
       // Handle real-time scaling (while dragging)
@@ -205,7 +187,8 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
 
           if (timeSinceLastProcess >= THROTTLE_MS) {
             lastScaleProcessRef.current = now;
-            onLayerUpdate?.(obj.data.layerId, updates, wasScaled);
+            // Just update position/dimensions during scaling
+            updateLayer(obj.data.layerId, updates);
             pendingScaleRef.current = null;
           } else {
             if (scalingThrottleRef.current) {
@@ -216,10 +199,9 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
             scalingThrottleRef.current = setTimeout(() => {
               if (pendingScaleRef.current) {
                 lastScaleProcessRef.current = Date.now();
-                onLayerUpdate?.(
+                updateLayer(
                   pendingScaleRef.current.layerId,
-                  pendingScaleRef.current.updates,
-                  pendingScaleRef.current.wasScaled
+                  pendingScaleRef.current.updates
                 );
                 pendingScaleRef.current = null;
               }
@@ -241,7 +223,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           });
 
           // Update the layer with new text content
-          onLayerUpdate?.(layerId, { text: newText } as any);
+          updateLayer(layerId, { text: newText } as any);
         }
       });
 
@@ -297,7 +279,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       });
 
       // Handle object modifications (drag, resize, rotate) - FINAL value
-      fabricCanvas.on("object:modified", (e: any) => {
+      fabricCanvas.on("object:modified", async (e: any) => {
         const obj = e.target as FabricObjectWithData;
         if (obj?.data?.layerId) {
           // Clear any pending scaling throttle
@@ -367,7 +349,31 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
 
           // Process the final value
           lastScaleProcessRef.current = Date.now();
-          onLayerUpdate?.(layerId, updates, wasScaled);
+
+          // For images that were scaled, reprocess with new dimensions
+          if (wasScaled && obj instanceof fabric.FabricImage) {
+            try {
+              await reprocessImageLayer(layerId, {
+                width: Math.round(finalWidth),
+                height: Math.round(finalHeight),
+              });
+              logger.success(
+                "FabricCanvas",
+                "Image reprocessed after scaling",
+                {
+                  layerId,
+                }
+              );
+            } catch (error) {
+              logger.error("FabricCanvas", "Failed to reprocess image", error);
+              // Fallback: just update dimensions
+              updateLayer(layerId, updates);
+            }
+          } else {
+            // For text or non-scaled updates, just update
+            updateLayer(layerId, updates);
+          }
+
           pendingScaleRef.current = null;
         }
       });
@@ -395,7 +401,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
 
         // Deselect if clicking on the gray area (not on canvas itself)
         if (isInsideContainer && !isCanvas) {
-          onCanvasSelect?.();
+          selectLayer(null);
           logger.info(
             "FabricCanvas",
             "Clicked on canvas container (not on canvas) - deselecting"
@@ -407,7 +413,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       return () => {
         document.removeEventListener("mousedown", handleClickOutside);
       };
-    }, [onCanvasSelect]);
+    }, [selectLayer]);
 
     // Update canvas dimensions when they change
     useEffect(() => {
@@ -661,7 +667,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
               Math.abs(newX - layer.x) > 0.01 ||
               Math.abs(newY - layer.y) > 0.01
             ) {
-              onLayerUpdate?.(layer.id, { x: newX, y: newY });
+              updateLayer(layer.id, { x: newX, y: newY });
             }
           } else {
             obj.set({
@@ -739,7 +745,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
               Math.abs(newX - layer.x) > 0.01 ||
               Math.abs(newY - layer.y) > 0.01
             ) {
-              onLayerUpdate?.(layer.id, { x: newX, y: newY });
+              updateLayer(layer.id, { x: newX, y: newY });
             }
           } else {
             // For other changes, use direct position
@@ -796,7 +802,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
             Math.abs(newX - layer.x) > 0.01 ||
             Math.abs(newY - layer.y) > 0.01
           ) {
-            onLayerUpdate?.(layer.id, { x: newX, y: newY });
+            updateLayer(layer.id, { x: newX, y: newY });
           }
         } else {
           obj.set({
@@ -855,7 +861,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
             Math.abs(newX - layer.x) > 0.01 ||
             Math.abs(newY - layer.y) > 0.01
           ) {
-            onLayerUpdate?.(layer.id, { x: newX, y: newY });
+            updateLayer(layer.id, { x: newX, y: newY });
           }
         } else {
           obj.set({
@@ -953,19 +959,19 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
 
     // Context menu handlers
     const handleContextMenuVisibility = useCallback(() => {
-      if (contextMenuLayerId && onToggleVisibility) {
-        onToggleVisibility(contextMenuLayerId);
+      if (contextMenuLayerId) {
+        toggleVisibility(contextMenuLayerId);
       }
-    }, [contextMenuLayerId, onToggleVisibility]);
+    }, [contextMenuLayerId, toggleVisibility]);
 
     const handleContextMenuLock = useCallback(() => {
-      if (contextMenuLayerId && onToggleLock) {
-        onToggleLock(contextMenuLayerId);
+      if (contextMenuLayerId) {
+        toggleLock(contextMenuLayerId);
       }
-    }, [contextMenuLayerId, onToggleLock]);
+    }, [contextMenuLayerId, toggleLock]);
 
     const handleContextMenuDelete = useCallback(async () => {
-      if (!contextMenuLayerId || !onRemoveLayer) return;
+      if (!contextMenuLayerId) return;
 
       const layer = layers.find((l) => l.id === contextMenuLayerId);
       if (!layer) return;
@@ -977,21 +983,21 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       );
 
       if (confirmed) {
-        onRemoveLayer(contextMenuLayerId);
+        removeLayer(contextMenuLayerId);
       }
-    }, [contextMenuLayerId, layers, onRemoveLayer, confirmDialog]);
+    }, [contextMenuLayerId, layers, removeLayer, confirmDialog]);
 
     const handleContextMenuCopy = useCallback(() => {
-      if (contextMenuLayerId && onCopyLayer) {
-        onCopyLayer(contextMenuLayerId);
+      if (contextMenuLayerId) {
+        copyLayer(contextMenuLayerId);
       }
-    }, [contextMenuLayerId, onCopyLayer]);
+    }, [contextMenuLayerId, copyLayer]);
 
     const handleContextMenuPaste = useCallback(() => {
-      if (onPasteLayer && contextMenuPosition) {
-        onPasteLayer(contextMenuPosition.x, contextMenuPosition.y);
+      if (contextMenuPosition) {
+        pasteLayer(contextMenuPosition.x, contextMenuPosition.y);
       }
-    }, [onPasteLayer, contextMenuPosition]);
+    }, [pasteLayer, contextMenuPosition]);
 
     // Get current context menu layer
     const contextMenuLayer = layers.find((l) => l.id === contextMenuLayerId);
@@ -1027,15 +1033,15 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
           setContextMenuLayerId(layerId);
 
           // Si la capa NO está bloqueada, seleccionarla
-          if (layer && !layer.locked && onLayerSelect) {
-            onLayerSelect(layerId);
+          if (layer && !layer.locked) {
+            selectLayer(layerId);
           }
         } else if (selectedLayerId) {
           // Si no hay objeto bajo el cursor pero hay una capa seleccionada, usar esa
           setContextMenuLayerId(selectedLayerId);
         }
       },
-      [layers, selectedLayerId, onLayerSelect]
+      [layers, selectedLayerId, selectLayer]
     );
 
     return (
@@ -1107,7 +1113,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
               </ContextMenuItem>
             </>
           ) : (
-            hasCopiedLayer && (
+            copiedLayer && (
               <ContextMenuItem onClick={handleContextMenuPaste}>
                 <Clipboard size={16} />
                 <span>Paste Here</span>
