@@ -14,6 +14,7 @@ import {
   DEFAULT_BRIGHTNESS,
   DEFAULT_CONTRAST,
   DEFAULT_THRESHOLD,
+  DEFAULT_DITHER_METHOD,
 } from "../constants/imageDefaults";
 import { markProjectDirty } from "../utils/markProjectDirty";
 import { reprocessImage } from "../utils/imageReprocessor";
@@ -34,7 +35,7 @@ interface LayersStore extends LayerState {
 
   addImageLayer: (
     originalImageData: string,
-    ditherMethod: DitherMethod,
+    ditherMethod?: DitherMethod,
     options?: Partial<ImageLayer> & {
       threshold?: number;
       invert?: boolean;
@@ -304,7 +305,7 @@ export const useLayersStore = create<LayersStore>()(
       },
 
       // Actions
-      addImageLayer: async (originalImageData, ditherMethod, options) => {
+      addImageLayer: async (originalImageData, ditherMethod = DEFAULT_DITHER_METHOD, options) => {
         const state = get();
 
         logger.info("useLayersStore", "Processing image for new layer...", {

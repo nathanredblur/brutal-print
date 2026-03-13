@@ -7,12 +7,7 @@ import { useCanvasStore } from "../stores/useCanvasStore";
 import { useUIStore, ActivePanel } from "../stores/useUIStore";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useConfirmDialogStore } from "../stores/useConfirmDialogStore";
-import {
-  DEFAULT_DITHER_METHOD,
-  DEFAULT_THRESHOLD,
-  DEFAULT_BRIGHTNESS,
-  DEFAULT_CONTRAST,
-} from "../constants/imageDefaults";
+import { DEFAULT_DITHER_METHOD, DEFAULT_BRIGHTNESS } from "../constants/imageDefaults";
 import Header from "./Header";
 import LayersPanel from "./LayersPanel";
 import PropertiesPanel from "./PropertiesPanel";
@@ -71,12 +66,6 @@ export default function CanvasManager() {
         // addImageLayer now processes the image internally
         await addImageLayer(imageDataUrl, DEFAULT_DITHER_METHOD, {
           name: `Image ${layers.length + 1}`,
-          x: 0,
-          y: 0,
-          threshold: DEFAULT_THRESHOLD,
-          brightness: DEFAULT_BRIGHTNESS,
-          contrast: DEFAULT_CONTRAST,
-          invert: false,
         });
 
         logger.success(

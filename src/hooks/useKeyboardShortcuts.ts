@@ -15,6 +15,11 @@ import {
   handleOpenProject,
   handleSaveProject,
 } from "../utils/projectActions";
+import {
+  getImageFromPasteEvent,
+  pasteImageAsLayer,
+  markClipboardAsLayerCopy,
+} from "../utils/clipboardImage";
 
 interface KeyboardShortcutHandlers {
   // Only export needs canvas ref, so it must be passed from parent
@@ -162,6 +167,8 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
         e.preventDefault();
         copyLayer();
         if (selectedLayerId) {
+          // Write marker to system clipboard so paste knows the latest copy was a layer
+          markClipboardAsLayerCopy();
           toast.success("Layer copied", {
             description: "Press Cmd+V to paste",
           });
@@ -169,17 +176,9 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
         return;
       }
 
-      // Paste (Cmd/Ctrl + V)
+      // Paste (Cmd/Ctrl + V) - let the "paste" event handler below decide
+      // what to paste based on system clipboard contents
       if (cmdOrCtrl && key.toLowerCase() === "v" && !isTyping()) {
-        e.preventDefault();
-        if (copiedLayer) {
-          pasteLayer();
-          toast.success("Layer pasted");
-        } else {
-          toast.info("No layer to paste", {
-            description: "Copy a layer first with Cmd+C",
-          });
-        }
         return;
       }
 
@@ -239,10 +238,35 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
       }
     };
 
+    const handlePaste = async (e: ClipboardEvent) => {
+      if (isTyping()) return;
+      e.preventDefault();
+
+      // System clipboard has an image → paste as new image layer
+      const imageDataUrl = getImageFromPasteEvent(e);
+      if (imageDataUrl) {
+        try {
+          await pasteImageAsLayer(await imageDataUrl);
+          toast.success("Image pasted as new layer");
+        } catch {
+          toast.error("Failed to paste image");
+        }
+        return;
+      }
+
+      // No image in clipboard → paste internal copied layer
+      if (copiedLayer) {
+        pasteLayer();
+        toast.success("Layer pasted");
+      }
+    };
+
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("paste", handlePaste);
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("paste", handlePaste);
     };
   }, [
     handlers,

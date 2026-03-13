@@ -5,7 +5,7 @@
  * Consumes useLayersStore directly to avoid prop drilling
  */
 
-import { useCallback, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -26,6 +26,12 @@ import {
 import { useLayersStore } from "@/stores/useLayersStore";
 import { useConfirmDialogStore } from "@/stores/useConfirmDialogStore";
 import { toast } from "sonner";
+import {
+  getImageFromClipboard,
+  canPasteFromClipboard,
+  pasteImageAsLayer,
+  markClipboardAsLayerCopy,
+} from "@/utils/clipboardImage";
 
 interface LayerContextMenuProps {
   children: ReactNode;
@@ -49,6 +55,8 @@ export function LayerContextMenu({
   const copyLayer = useLayersStore((state) => state.copyLayer);
   const pasteLayer = useLayersStore((state) => state.pasteLayer);
   const confirmDialog = useConfirmDialogStore((state) => state.confirm);
+
+  const [canPasteImage, setCanPasteImage] = useState(false);
 
   // Get context menu layer
   const contextMenuLayer = layers.find((l) => l.id === contextMenuLayerId);
@@ -89,21 +97,49 @@ export function LayerContextMenu({
   const handleContextMenuCopy = useCallback(() => {
     if (contextMenuLayerId) {
       copyLayer(contextMenuLayerId);
+      markClipboardAsLayerCopy();
       toast.success("Layer copied", {
         description: "Press Cmd+V to paste",
       });
     }
   }, [contextMenuLayerId, copyLayer]);
 
-  const handleContextMenuPaste = useCallback(() => {
-    if (contextMenuPosition) {
-      pasteLayer(contextMenuPosition.x, contextMenuPosition.y);
+  // Unified paste: clipboard image takes priority, then internal layer
+  const handlePaste = useCallback(async () => {
+    try {
+      const dataUrl = await getImageFromClipboard();
+      if (dataUrl) {
+        await pasteImageAsLayer(dataUrl, contextMenuPosition ?? undefined);
+        toast.success("Image pasted as new layer");
+        return;
+      }
+    } catch {
+      toast.error("Failed to paste from clipboard");
+      return;
+    }
+
+    if (copiedLayer) {
+      pasteLayer(contextMenuPosition?.x, contextMenuPosition?.y);
       toast.success("Layer pasted");
     }
-  }, [pasteLayer, contextMenuPosition]);
+  }, [copiedLayer, pasteLayer, contextMenuPosition]);
+
+  const canPaste = copiedLayer || canPasteImage;
+
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (open) {
+        canPasteFromClipboard()
+          .then(setCanPasteImage)
+          .catch(() => setCanPasteImage(false));
+      }
+      onOpenChange?.(open);
+    },
+    [onOpenChange]
+  );
 
   return (
-    <ContextMenu onOpenChange={onOpenChange}>
+    <ContextMenu onOpenChange={handleOpenChange}>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
 
       <ContextMenuContent
@@ -158,12 +194,9 @@ export function LayerContextMenu({
             </ContextMenuItem>
           </>
         ) : (
-          <ContextMenuItem
-            onClick={handleContextMenuPaste}
-            disabled={!copiedLayer}
-          >
+          <ContextMenuItem onClick={handlePaste} disabled={!canPaste}>
             <Clipboard size={16} />
-            <span>Paste Here</span>
+            <span>Paste</span>
             <Kbd className="ml-auto">Ctrl+V</Kbd>
           </ContextMenuItem>
         )}

@@ -139,8 +139,8 @@ See [DEBUGGING.md](./DEBUGGING.md) for detailed troubleshooting.
 
 ### Roadmap v2.0
 
-- [ ] Detect unsupported browsers (no Web Bluetooth) and show a help message
-- [ ] Paste images from clipboard as new image layers
+- [x] Detect unsupported browsers (no Web Bluetooth) and show a help message
+- [x] Paste images from clipboard as new image layers
 - [ ] Drawing tools
 - [ ] Shape tools
 - [ ] Icons library
