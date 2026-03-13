@@ -1,8 +1,17 @@
-# ⚡ Thermal Print Studio
+<p align="center">
+  <img src="public/logo.svg" width="80" height="80" alt="Brutal Print" />
+</p>
 
-A modern web application for designing and printing on MXW01 thermal printers. Drag, resize, and rotate elements like Canva, then print directly via Bluetooth.
+<h1 align="center">Brutal Print</h1>
 
-**Live site**: [print.nathanredblur.dev](https://print.nathanredblur.dev/)
+<p align="center">
+  A modern web application for designing and printing on MXW01 thermal printers.<br/>
+  Drag, resize, and rotate elements like Canva, then print directly via Bluetooth.
+</p>
+
+<p align="center">
+  <a href="https://print.nathanredblur.dev/"><strong>print.nathanredblur.dev</strong></a>
+</p>
 
 ![Neuro Core Design](https://img.shields.io/badge/Design-Neuro_Core-A78BFA?style=for-the-badge)
 ![Astro](https://img.shields.io/badge/Astro-5.x-FF5D01?style=for-the-badge&logo=astro)
