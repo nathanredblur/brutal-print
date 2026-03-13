@@ -15,11 +15,7 @@ import {
   handleOpenProject,
   handleSaveProject,
 } from "../utils/projectActions";
-import {
-  getImageFromPasteEvent,
-  pasteImageAsLayer,
-  markClipboardAsLayerCopy,
-} from "../utils/clipboardImage";
+import { useEditActions } from "./useEditActions";
 
 interface KeyboardShortcutHandlers {
   // Only export needs canvas ref, so it must be passed from parent
@@ -54,14 +50,12 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
 
   const layers = useLayersStore((state) => state.layers);
   const selectedLayerId = useLayersStore((state) => state.selectedLayerId);
-  const copiedLayer = useLayersStore((state) => state.copiedLayer);
   const removeLayer = useLayersStore((state) => state.removeLayer);
   const toggleVisibility = useLayersStore((state) => state.toggleVisibility);
   const toggleLock = useLayersStore((state) => state.toggleLock);
-  const copyLayer = useLayersStore((state) => state.copyLayer);
-  const pasteLayer = useLayersStore((state) => state.pasteLayer);
-  const duplicateLayer = useLayersStore((state) => state.duplicateLayer);
   const updateLayer = useLayersStore((state) => state.updateLayer);
+
+  const { copy, pasteFromEvent, duplicate } = useEditActions();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -165,14 +159,7 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
       // Copy (Cmd/Ctrl + C)
       if (cmdOrCtrl && key.toLowerCase() === "c" && !isTyping()) {
         e.preventDefault();
-        copyLayer();
-        if (selectedLayerId) {
-          // Write marker to system clipboard so paste knows the latest copy was a layer
-          markClipboardAsLayerCopy();
-          toast.success("Layer copied", {
-            description: "Press Cmd+V to paste",
-          });
-        }
+        copy();
         return;
       }
 
@@ -185,10 +172,7 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
       // Duplicate (Cmd/Ctrl + D)
       if (cmdOrCtrl && key.toLowerCase() === "d" && !isTyping()) {
         e.preventDefault();
-        duplicateLayer();
-        if (selectedLayerId) {
-          toast.success("Layer duplicated");
-        }
+        duplicate();
         return;
       }
 
@@ -241,24 +225,7 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
     const handlePaste = async (e: ClipboardEvent) => {
       if (isTyping()) return;
       e.preventDefault();
-
-      // System clipboard has an image → paste as new image layer
-      const imageDataUrl = getImageFromPasteEvent(e);
-      if (imageDataUrl) {
-        try {
-          await pasteImageAsLayer(await imageDataUrl);
-          toast.success("Image pasted as new layer");
-        } catch {
-          toast.error("Failed to paste image");
-        }
-        return;
-      }
-
-      // No image in clipboard → paste internal copied layer
-      if (copiedLayer) {
-        pasteLayer();
-        toast.success("Layer pasted");
-      }
+      await pasteFromEvent(e);
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -273,13 +240,12 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
     setActivePanel,
     layers,
     selectedLayerId,
-    copiedLayer,
     removeLayer,
     toggleVisibility,
     toggleLock,
-    copyLayer,
-    pasteLayer,
-    duplicateLayer,
     updateLayer,
+    copy,
+    pasteFromEvent,
+    duplicate,
   ]);
 }

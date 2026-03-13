@@ -39,6 +39,7 @@ import {
   handleOpenProject,
   handleSaveProject,
 } from "@/utils/projectActions";
+import { useEditActions } from "@/hooks/useEditActions";
 
 interface HeaderProps {
   onExport: () => void;
@@ -60,14 +61,12 @@ const Header: FC<HeaderProps> = ({
   // Get layer state from Zustand store
   const layers = useLayersStore((state) => state.layers);
   const selectedLayerId = useLayersStore((state) => state.selectedLayerId);
-  const copiedLayer = useLayersStore((state) => state.copiedLayer);
-  const copyLayer = useLayersStore((state) => state.copyLayer);
-  const pasteLayer = useLayersStore((state) => state.pasteLayer);
-  const duplicateLayer = useLayersStore((state) => state.duplicateLayer);
   const moveLayerUp = useLayersStore((state) => state.moveLayerUp);
   const moveLayerDown = useLayersStore((state) => state.moveLayerDown);
   const moveLayerToFront = useLayersStore((state) => state.moveLayerToFront);
   const moveLayerToBack = useLayersStore((state) => state.moveLayerToBack);
+
+  const { copy, pasteFromClipboard, duplicate, canPaste } = useEditActions();
 
   // Get project state from Zustand store
   const isDirty = useProjectStore((state) => state.isDirty);
@@ -148,7 +147,7 @@ const Header: FC<HeaderProps> = ({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="min-w-[240px] z-150">
             <DropdownMenuItem
-              onClick={() => copyLayer()}
+              onClick={() => copy()}
               disabled={!selectedLayerId}
             >
               <Copy size={16} />
@@ -157,16 +156,16 @@ const Header: FC<HeaderProps> = ({
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              onClick={() => pasteLayer()}
-              disabled={!copiedLayer}
+              onClick={() => pasteFromClipboard()}
+              disabled={!canPaste}
             >
               <Clipboard size={16} />
-              <span>Paste Layer</span>
+              <span>Paste</span>
               <Kbd className="ml-auto">Ctrl+V</Kbd>
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              onClick={() => duplicateLayer()}
+              onClick={() => duplicate()}
               disabled={!selectedLayerId}
             >
               <CopyPlus size={16} />

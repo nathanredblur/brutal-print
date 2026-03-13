@@ -26,12 +26,8 @@ import {
 import { useLayersStore } from "@/stores/useLayersStore";
 import { useConfirmDialogStore } from "@/stores/useConfirmDialogStore";
 import { toast } from "sonner";
-import {
-  getImageFromClipboard,
-  canPasteFromClipboard,
-  pasteImageAsLayer,
-  markClipboardAsLayerCopy,
-} from "@/utils/clipboardImage";
+import { canPasteFromClipboard } from "@/utils/clipboardImage";
+import { useEditActions } from "@/hooks/useEditActions";
 
 interface LayerContextMenuProps {
   children: ReactNode;
@@ -46,22 +42,18 @@ export function LayerContextMenu({
   contextMenuPosition,
   onOpenChange,
 }: LayerContextMenuProps) {
-  // Consume store directly
   const layers = useLayersStore((state) => state.layers);
-  const copiedLayer = useLayersStore((state) => state.copiedLayer);
   const toggleVisibility = useLayersStore((state) => state.toggleVisibility);
   const toggleLock = useLayersStore((state) => state.toggleLock);
   const removeLayer = useLayersStore((state) => state.removeLayer);
-  const copyLayer = useLayersStore((state) => state.copyLayer);
-  const pasteLayer = useLayersStore((state) => state.pasteLayer);
   const confirmDialog = useConfirmDialogStore((state) => state.confirm);
 
-  const [canPasteImage, setCanPasteImage] = useState(false);
+  const { copy, pasteFromClipboard, canPaste: hasInternalCopy } = useEditActions();
+  const [hasClipboardContent, setHasClipboardContent] = useState(false);
 
   // Get context menu layer
   const contextMenuLayer = layers.find((l) => l.id === contextMenuLayerId);
 
-  // Context menu handlers
   const handleContextMenuVisibility = useCallback(() => {
     if (contextMenuLayerId) {
       toggleVisibility(contextMenuLayerId);
@@ -94,44 +86,16 @@ export function LayerContextMenu({
     }
   }, [contextMenuLayerId, layers, removeLayer, confirmDialog]);
 
-  const handleContextMenuCopy = useCallback(() => {
-    if (contextMenuLayerId) {
-      copyLayer(contextMenuLayerId);
-      markClipboardAsLayerCopy();
-      toast.success("Layer copied", {
-        description: "Press Cmd+V to paste",
-      });
-    }
-  }, [contextMenuLayerId, copyLayer]);
-
-  // Unified paste: clipboard image takes priority, then internal layer
-  const handlePaste = useCallback(async () => {
-    try {
-      const dataUrl = await getImageFromClipboard();
-      if (dataUrl) {
-        await pasteImageAsLayer(dataUrl, contextMenuPosition ?? undefined);
-        toast.success("Image pasted as new layer");
-        return;
-      }
-    } catch {
-      toast.error("Failed to paste from clipboard");
-      return;
-    }
-
-    if (copiedLayer) {
-      pasteLayer(contextMenuPosition?.x, contextMenuPosition?.y);
-      toast.success("Layer pasted");
-    }
-  }, [copiedLayer, pasteLayer, contextMenuPosition]);
-
-  const canPaste = copiedLayer || canPasteImage;
+  const handlePaste = useCallback(() => {
+    pasteFromClipboard(contextMenuPosition ?? undefined);
+  }, [pasteFromClipboard, contextMenuPosition]);
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
       if (open) {
         canPasteFromClipboard()
-          .then(setCanPasteImage)
-          .catch(() => setCanPasteImage(false));
+          .then(setHasClipboardContent)
+          .catch(() => setHasClipboardContent(false));
       }
       onOpenChange?.(open);
     },
@@ -150,7 +114,7 @@ export function LayerContextMenu({
       >
         {contextMenuLayer ? (
           <>
-            <ContextMenuItem onClick={handleContextMenuCopy}>
+            <ContextMenuItem onClick={() => copy(contextMenuLayerId!)}>
               <Copy size={16} />
               <span>Copy Layer</span>
               <Kbd className="ml-auto">Ctrl+C</Kbd>
@@ -194,7 +158,10 @@ export function LayerContextMenu({
             </ContextMenuItem>
           </>
         ) : (
-          <ContextMenuItem onClick={handlePaste} disabled={!canPaste}>
+          <ContextMenuItem
+            onClick={handlePaste}
+            disabled={!hasInternalCopy && !hasClipboardContent}
+          >
             <Clipboard size={16} />
             <span>Paste</span>
             <Kbd className="ml-auto">Ctrl+V</Kbd>
