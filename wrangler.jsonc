@@ -1,0 +1,13 @@
+{
+	"name": "brutal-print",
+	"compatibility_date": "2026-02-02",
+	"assets": {
+		"directory": "./dist"
+	},
+	"routes": [
+		{
+			"pattern": "print.nathanredblur.dev",
+			"custom_domain": true
+		}
+	]
+}

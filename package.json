@@ -6,7 +6,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "cloudflare:preview": "wrangler dev",
+    "cloudflare:deploy": "wrangler deploy"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.13",
@@ -43,6 +45,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "tw-animate-css": "^1.4.0"
+    "tw-animate-css": "^1.4.0",
+    "wrangler": "^4.62.0"
   }
 }
