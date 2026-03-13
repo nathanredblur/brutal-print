@@ -2,10 +2,12 @@
 
 A modern web application for designing and printing on MXW01 thermal printers. Drag, resize, and rotate elements like Canva, then print directly via Bluetooth.
 
+**Live site**: [print.nathanredblur.dev](https://print.nathanredblur.dev/)
+
 ![Neuro Core Design](https://img.shields.io/badge/Design-Neuro_Core-A78BFA?style=for-the-badge)
-![Astro](https://img.shields.io/badge/Astro-4.x-FF5D01?style=for-the-badge&logo=astro)
+![Astro](https://img.shields.io/badge/Astro-5.x-FF5D01?style=for-the-badge&logo=astro)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript)
-![React](https://img.shields.io/badge/React-18+-61DAFB?style=for-the-badge&logo=react)
+![React](https://img.shields.io/badge/React-19+-61DAFB?style=for-the-badge&logo=react)
 
 ## 🚀 Quick Start
 
@@ -137,6 +139,8 @@ See [DEBUGGING.md](./DEBUGGING.md) for detailed troubleshooting.
 
 ### Roadmap v2.0
 
+- [ ] Detect unsupported browsers (no Web Bluetooth) and show a help message
+- [ ] Paste images from clipboard as new image layers
 - [ ] Drawing tools
 - [ ] Shape tools
 - [ ] Icons library
