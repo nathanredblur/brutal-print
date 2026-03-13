@@ -86,10 +86,10 @@ const Header: FC<HeaderProps> = ({
     <header className="flex justify-between items-center px-6 py-3 bg-linear-to-br from-slate-900/60 to-slate-950/80 backdrop-blur-md border-b border-border z-100 animate-in slide-in-from-top duration-300">
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">⚡</span>
+          <img src="/logo.svg" alt="Brutal Print" className="w-8 h-8" />
           <div className="flex flex-col">
             <h1 className="text-lg font-bold tracking-wide m-0 bg-linear-to-r from-purple-400 via-purple-300 to-blue-400 bg-clip-text text-transparent">
-              THERMAL PRINT STUDIO
+              Brutal Print
             </h1>
             {projectName && (
               <span className="text-xs text-slate-400">
@@ -289,7 +289,7 @@ PrintSection.displayName = "PrintSection";
 // Custom comparison function to prevent re-renders
 const arePropsEqual = (
   prevProps: HeaderProps,
-  nextProps: HeaderProps
+  nextProps: HeaderProps,
 ): boolean => {
   return (
     prevProps.onExport === nextProps.onExport &&
