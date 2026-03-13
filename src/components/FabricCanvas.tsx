@@ -112,6 +112,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       fabricCanvas.on("selection:created", (e: any) => {
         const selected = e.selected?.[0] as FabricObjectWithData;
         if (selected?.data?.layerId) {
+          hoveredObjectRef.current = null;
           selectLayer(selected.data.layerId);
         }
       });
@@ -119,6 +120,7 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       fabricCanvas.on("selection:updated", (e: any) => {
         const selected = e.selected?.[0] as FabricObjectWithData;
         if (selected?.data?.layerId) {
+          hoveredObjectRef.current = null;
           selectLayer(selected.data.layerId);
         }
       });
@@ -345,6 +347,9 @@ const FabricCanvas = forwardRef<FabricCanvasRef, FabricCanvasProps>(
       // Remove objects that no longer have layers
       for (const [layerId, obj] of layerObjectsRef.current.entries()) {
         if (!currentLayerIds.has(layerId)) {
+          if (hoveredObjectRef.current === obj) {
+            hoveredObjectRef.current = null;
+          }
           fabricCanvas.remove(obj);
           layerObjectsRef.current.delete(layerId);
           logger.debug("FabricCanvas", "Removed object", { layerId });
