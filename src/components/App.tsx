@@ -8,12 +8,14 @@
 
 import { Toaster } from "@/components/ui/sonner";
 import CanvasManager from "./CanvasManager";
+import BluetoothWarning from "./BluetoothWarning";
 
 export default function App() {
   return (
     <>
       <CanvasManager />
       <Toaster position="top-right" />
+      <BluetoothWarning />
     </>
   );
 }
