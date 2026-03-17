@@ -17,6 +17,7 @@ import AboutDialog from "./AboutDialog";
 import ImageUploader from "./ImageUploader";
 import PrinterConnection from "./PrinterConnection";
 import TextGalleryPanel from "./TextGalleryPanel";
+import IconBrowserPanel from "./IconBrowserPanel";
 import GlobalConfirmDialog from "./GlobalConfirmDialog";
 import FabricCanvas, { type FabricCanvasRef } from "./FabricCanvas";
 import { logger } from "../lib/logger";
@@ -161,6 +162,23 @@ export default function CanvasManager() {
     [addTextLayer, layers.length, toast]
   );
 
+  const handleAddIcon = useCallback(
+    async (dataUrl: string, iconName: string) => {
+      try {
+        await addImageLayer(dataUrl, DEFAULT_DITHER_METHOD, {
+          name: `Icon ${iconName}`,
+        });
+        logger.success("CanvasManager", "Icon added as layer");
+      } catch (error) {
+        logger.error("CanvasManager", "Failed to add icon layer", error);
+        toast.error("Failed to add icon", {
+          description: "Please try again.",
+        });
+      }
+    },
+    [addImageLayer, toast]
+  );
+
   // Handle canvas height change
   const handleCanvasHeightChange = useCallback((height: number) => {
     setCanvasHeight(height);
@@ -287,6 +305,16 @@ export default function CanvasManager() {
               <div className="bg-slate-800/50 border border-slate-700 rounded-md p-3">
                 <TextGalleryPanel
                   onAddText={handleAddText}
+                  onClose={closeActivePanel}
+                />
+              </div>
+            )}
+
+            {/* Icon Browser Panel */}
+            {activePanel === ActivePanel.IconPanel && (
+              <div className="bg-slate-800/50 border border-slate-700 rounded-md p-3">
+                <IconBrowserPanel
+                  onIconSelect={handleAddIcon}
                   onClose={closeActivePanel}
                 />
               </div>

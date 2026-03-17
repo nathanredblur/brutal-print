@@ -121,7 +121,7 @@ export function rotateImage(
 export function processImageForPrinter(
   image: HTMLImageElement,
   options: Partial<ImageProcessingOptions> = {}
-): { canvas: HTMLCanvasElement; binaryData: boolean[][] } {
+): { canvas: HTMLCanvasElement; binaryData: boolean[][]; alphaMask: boolean[][] | null } {
   const defaults: ImageProcessingOptions = {
     ditherMethod: "steinberg",
     threshold: 128,
@@ -133,7 +133,7 @@ export function processImageForPrinter(
   const opts = { ...defaults, ...options };
 
   // Step 1: Scale to printer width
-  let canvas = scaleImageToFit(image, CANVAS_WIDTH, true);
+  const canvas = scaleImageToFit(image, CANVAS_WIDTH, true);
 
   // Step 2: Get image data
   const ctx = canvas.getContext("2d");
@@ -143,18 +143,23 @@ export function processImageForPrinter(
 
   let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-  // Step 3: Apply brightness and contrast
+  // Step 3: Extract alpha mask and composite transparent pixels against white.
+  // This ensures transparent areas become white (no ink) during dithering
+  // while preserving the original transparency info for canvas display.
+  const alphaMask = extractAlphaAndFlatten(imageData);
+
+  // Step 4: Apply brightness and contrast
   imageData = adjustImageBrightness(imageData, opts.brightness, opts.contrast);
 
-  // Step 4: Invert if needed
+  // Step 5: Invert if needed
   if (opts.invert) {
     imageData = invertImage(imageData);
   }
 
-  // Step 5: Put processed data back
+  // Step 6: Put processed data back
   ctx.putImageData(imageData, 0, 0);
 
-  // Step 6: Apply dithering
+  // Step 7: Apply dithering
   const binaryData = applyDithering(
     imageData,
     opts.ditherMethod,
@@ -163,15 +168,59 @@ export function processImageForPrinter(
     opts.halftoneCellSize
   );
 
-  return { canvas, binaryData };
+  return { canvas, binaryData, alphaMask };
 }
 
 /**
- * Convert boolean array to visual canvas for preview
+ * Extract alpha mask from image data and composite transparent pixels
+ * against white. Returns null for fully-opaque images (fast path).
+ * Returns a 2D boolean mask (true = opaque) for images with transparency.
+ * Mutates imageData in place: transparent pixels become white + opaque.
+ */
+function extractAlphaAndFlatten(imageData: ImageData): boolean[][] | null {
+  const { data, width, height } = imageData;
+
+  // Fast check: if all pixels are fully opaque, skip the full pass
+  let hasTransparency = false;
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] < 255) {
+      hasTransparency = true;
+      break;
+    }
+  }
+  if (!hasTransparency) return null;
+
+  const mask: boolean[][] = [];
+  for (let y = 0; y < height; y++) {
+    const row: boolean[] = [];
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      const alpha = data[idx + 3];
+      row.push(alpha >= 128);
+
+      if (alpha < 255) {
+        const a = alpha / 255;
+        data[idx] = Math.round(data[idx] * a + 255 * (1 - a));
+        data[idx + 1] = Math.round(data[idx + 1] * a + 255 * (1 - a));
+        data[idx + 2] = Math.round(data[idx + 2] * a + 255 * (1 - a));
+        data[idx + 3] = 255;
+      }
+    }
+    mask.push(row);
+  }
+
+  return mask;
+}
+
+/**
+ * Convert boolean array to visual canvas for preview.
+ * When alphaMask is provided, white pixels that were originally transparent
+ * are rendered with alpha=0 to preserve transparency on the canvas.
  */
 export function binaryDataToCanvas(
   binaryData: boolean[][],
-  scale: number = 1
+  scale: number = 1,
+  alphaMask?: boolean[][] | null,
 ): HTMLCanvasElement {
   const height = binaryData.length;
   const width = binaryData[0]?.length || 0;
@@ -193,15 +242,18 @@ export function binaryDataToCanvas(
     for (let x = 0; x < width; x++) {
       const isBlack = binaryData[y][x];
       const color = isBlack ? 0 : 255;
+      const isOpaque = alphaMask ? alphaMask[y]?.[x] ?? true : true;
+      // Transparent white pixels (background) get alpha=0
+      const alpha = !isBlack && !isOpaque ? 0 : 255;
 
       // Fill scaled pixels
       for (let sy = 0; sy < scale; sy++) {
         for (let sx = 0; sx < scale; sx++) {
           const idx = ((y * scale + sy) * canvas.width + (x * scale + sx)) * 4;
-          data[idx] = color; // R
-          data[idx + 1] = color; // G
-          data[idx + 2] = color; // B
-          data[idx + 3] = 255; // A
+          data[idx] = color;
+          data[idx + 1] = color;
+          data[idx + 2] = color;
+          data[idx + 3] = alpha;
         }
       }
     }

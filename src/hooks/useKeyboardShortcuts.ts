@@ -78,6 +78,13 @@ export function useKeyboardShortcuts(handlers: KeyboardShortcutHandlers) {
           return;
         }
 
+        // Icon tool (G for glyph)
+        if (key.toLowerCase() === "g" && !cmdOrCtrl) {
+          e.preventDefault();
+          setActivePanel(ActivePanel.IconPanel);
+          return;
+        }
+
         // Delete element (Delete or Backspace)
         if (key === "Delete" || key === "Backspace") {
           e.preventDefault();

@@ -75,7 +75,7 @@ export async function reprocessImage(
       expectedHeight?: number
     ) {
       try {
-        const { binaryData } = processImageForPrinter(imgToProcess, {
+        const { binaryData, alphaMask } = processImageForPrinter(imgToProcess, {
           ditherMethod,
           threshold: options?.threshold ?? DEFAULT_THRESHOLD,
           brightness: options?.brightness ?? DEFAULT_BRIGHTNESS,
@@ -85,8 +85,8 @@ export async function reprocessImage(
           halftoneCellSize: options?.halftoneCellSize ?? 4,
         });
 
-        // Create 1-bit dithered canvas for display
-        const canvas = binaryDataToCanvas(binaryData, 1);
+        // Create 1-bit dithered canvas for display (with alpha for transparency)
+        const canvas = binaryDataToCanvas(binaryData, 1, alphaMask);
 
         // Verify the canvas has the expected dimensions
         if (expectedWidth && expectedHeight) {

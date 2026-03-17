@@ -13,7 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Kbd } from "@/components/ui/kbd";
-import { Image, Type, Layout, Printer, Info } from "lucide-react";
+import { Image, Type, Sticker, Layout, Printer, Info } from "lucide-react";
 import { useUIStore, ActivePanel } from "@/stores/useUIStore";
 
 // Static tools configuration - no need for useMemo
@@ -34,6 +34,12 @@ const TOOLS: Array<{
     icon: <Type size={20} />,
     label: "Text",
     shortcut: "T",
+  },
+  {
+    id: ActivePanel.IconPanel,
+    icon: <Sticker size={20} />,
+    label: "Icons",
+    shortcut: "G",
   },
 ];
 

@@ -10,6 +10,7 @@ import { logger } from "../lib/logger";
 export enum ActivePanel {
   ImagePanel = "imagePanel",
   TextPanel = "textPanel",
+  IconPanel = "iconPanel",
   CanvasSettings = "canvasSettings",
   PrintSettings = "printSettings",
 }
@@ -31,6 +32,7 @@ interface UIStore {
   // Helper getters (computed values)
   isImagePanelOpen: () => boolean;
   isTextPanelOpen: () => boolean;
+  isIconPanelOpen: () => boolean;
   isCanvasSettingsOpen: () => boolean;
   isPrintSettingsOpen: () => boolean;
 }
@@ -80,6 +82,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   // Helper getters
   isImagePanelOpen: () => get().activePanel === ActivePanel.ImagePanel,
   isTextPanelOpen: () => get().activePanel === ActivePanel.TextPanel,
+  isIconPanelOpen: () => get().activePanel === ActivePanel.IconPanel,
   isCanvasSettingsOpen: () => get().activePanel === ActivePanel.CanvasSettings,
   isPrintSettingsOpen: () => get().activePanel === ActivePanel.PrintSettings,
 }));
