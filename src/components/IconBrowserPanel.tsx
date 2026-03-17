@@ -3,28 +3,19 @@
  * Browse and insert icons from Iconify into the canvas.
  */
 
-import {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  type FC,
-} from "react";
+import { useState, useEffect, useCallback, useRef, type FC } from "react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PanelHeader } from "@/components/ui/panel";
-import {
-  ArrowLeft,
-  Search,
-  Loader2,
-} from "lucide-react";
+import { ArrowLeft, Search, Loader2 } from "lucide-react";
 import {
   fetchCollections,
   searchIcons,
   fetchCollectionIcons,
   getIconSvgUrl,
   svgUrlToDataUrl,
+  isAnimatedCollection,
   type IconCollection,
   type SearchResult,
   type CollectionDetail,
@@ -43,6 +34,19 @@ const POPULAR_PREFIXES = [
   "heroicons",
   "bi",
 ];
+
+function filterAnimatedIcons(result: SearchResult | null): string[] {
+  if (!result) return [];
+  const animatedPrefixes = new Set(
+    Object.entries(result.collections)
+      .filter(([, col]) => isAnimatedCollection(col))
+      .map(([prefix]) => prefix),
+  );
+  return result.icons.filter((id) => {
+    const prefix = id.split(":")[0];
+    return !animatedPrefixes.has(prefix);
+  });
+}
 
 interface IconBrowserPanelProps {
   onIconSelect: (dataUrl: string, name: string) => void;
@@ -63,9 +67,7 @@ const IconBrowserPanel: FC<IconBrowserPanelProps> = ({
   const [collections, setCollections] = useState<
     Record<string, IconCollection>
   >({});
-  const [searchResult, setSearchResult] = useState<SearchResult | null>(
-    null,
-  );
+  const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
   const [collectionDetail, setCollectionDetail] =
     useState<CollectionDetail | null>(null);
   const [loading, setLoading] = useState(false);
@@ -83,48 +85,45 @@ const IconBrowserPanel: FC<IconBrowserPanelProps> = ({
   }, []);
 
   // Debounced search with AbortController to cancel stale fetches
-  const handleSearchChange = useCallback(
-    (value: string) => {
-      setQuery(value);
-      clearTimeout(debounceRef.current);
-      abortRef.current?.abort();
+  const handleSearchChange = useCallback((value: string) => {
+    setQuery(value);
+    clearTimeout(debounceRef.current);
+    abortRef.current?.abort();
 
-      if (!value.trim()) {
-        setView({ kind: "browse" });
-        setSearchResult(null);
-        return;
-      }
+    if (!value.trim()) {
+      setView({ kind: "browse" });
+      setSearchResult(null);
+      return;
+    }
 
-      debounceRef.current = setTimeout(async () => {
-        const controller = new AbortController();
-        abortRef.current = controller;
+    debounceRef.current = setTimeout(async () => {
+      const controller = new AbortController();
+      abortRef.current = controller;
 
-        setLoading(true);
-        setView({ kind: "search", query: value });
-        try {
-          const result = await searchIcons(
-            value,
-            undefined,
-            64,
-            controller.signal,
-          );
-          if (!controller.signal.aborted) {
-            setSearchResult(result);
-          }
-        } catch (error) {
-          if (error instanceof DOMException && error.name === "AbortError") {
-            return;
-          }
-          setSearchResult(null);
-        } finally {
-          if (!controller.signal.aborted) {
-            setLoading(false);
-          }
+      setLoading(true);
+      setView({ kind: "search", query: value });
+      try {
+        const result = await searchIcons(
+          value,
+          undefined,
+          64,
+          controller.signal,
+        );
+        if (!controller.signal.aborted) {
+          setSearchResult(result);
         }
-      }, 300);
-    },
-    [],
-  );
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+        setSearchResult(null);
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    }, 300);
+  }, []);
 
   // Open a collection
   const handleOpenCollection = useCallback(
@@ -228,7 +227,7 @@ const IconBrowserPanel: FC<IconBrowserPanelProps> = ({
           />
         ) : view.kind === "search" ? (
           <IconGrid
-            icons={searchResult?.icons ?? []}
+            icons={filterAnimatedIcons(searchResult)}
             insertingIcon={insertingIcon}
             onIconClick={handleIconClick}
             emptyMessage="No icons found"
@@ -256,7 +255,9 @@ function CollectionGrid({
   loadError: boolean;
   onOpen: (prefix: string, title: string) => void;
 }) {
-  const popular = POPULAR_PREFIXES.filter((p) => p in collections);
+  const popular = POPULAR_PREFIXES.filter(
+    (p) => p in collections && !isAnimatedCollection(collections[p]),
+  );
 
   if (loadError) {
     return (
@@ -329,9 +330,7 @@ function IconGrid({
 }) {
   if (icons.length === 0) {
     return (
-      <p className="text-xs text-slate-500 text-center py-6">
-        {emptyMessage}
-      </p>
+      <p className="text-xs text-slate-500 text-center py-6">{emptyMessage}</p>
     );
   }
 
@@ -378,10 +377,7 @@ function LoadingState() {
   return (
     <div className="grid grid-cols-4 gap-1.5">
       {Array.from({ length: 16 }).map((_, i) => (
-        <div
-          key={i}
-          className="flex flex-col items-center gap-1 p-2"
-        >
+        <div key={i} className="flex flex-col items-center gap-1 p-2">
           <div className="w-7 h-7 rounded bg-slate-700/50 animate-pulse" />
           <div className="w-10 h-2 rounded bg-slate-700/30 animate-pulse" />
         </div>

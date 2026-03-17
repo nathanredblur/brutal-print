@@ -11,7 +11,14 @@ export interface IconCollection {
   name: string;
   total: number;
   category?: string;
+  tags?: string[];
   samples: string[];
+}
+
+const ANIMATED_TAG = "Contains Animations";
+
+export function isAnimatedCollection(collection: IconCollection): boolean {
+  return collection.tags?.includes(ANIMATED_TAG) ?? false;
 }
 
 export interface SearchResult {
@@ -113,6 +120,13 @@ export async function svgUrlToDataUrl(url: string): Promise<string> {
   // Force explicit dimensions so the browser renders at the right size
   svgEl.setAttribute("width", String(CANVAS_WIDTH));
   svgEl.removeAttribute("height"); // Let height scale from viewBox
+
+  // Strip animation elements so animated SVGs render their static frame
+  for (const el of svgEl.querySelectorAll(
+    "animate, animateTransform, animateMotion, set",
+  )) {
+    el.remove();
+  }
 
   const serializer = new XMLSerializer();
   const fixedSvg = serializer.serializeToString(svgEl);
